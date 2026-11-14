@@ -1,0 +1,48 @@
+{
+  "packageId": "app.uranie.vr.astrologie",
+  "host": "ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app",
+  "name": "Uranie VR",
+  "launcherName": "Uranie VR",
+  "display": "fullscreen",
+  "themeColor": "#05070E",
+  "navigationColor": "#05070E",
+  "navigationColorDark": "#05070E",
+  "navigationDividerColor": "#05070E",
+  "navigationDividerColorDark": "#05070E",
+  "backgroundColor": "#05070E",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/pwa-512x512.png",
+  "maskableIconUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/pwa-maskable-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "uranie-vr"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "appsFlyer": {
+      "enabled": false
+    },
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "isMetaQuest": true,
+  "fullScopeUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/",
+  "minSdkVersion": 29,
+  "orientation": "landscape"
+}

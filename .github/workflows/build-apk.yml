@@ -1,0 +1,100 @@
+name: Compiler APK Meta Quest (Autonome & WebXR)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-standalone-apk:
+    name: Compiler APK Autonome Hors-Ligne (Capacitor)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installer Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurer Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Installer les dépendances & compiler le bundle Web
+        run: |
+          npm install
+          npm run build
+
+      - name: Générer et compiler l'APK Capacitor autonome
+        run: |
+          npx cap add android
+          npx cap sync android
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ] && ! grep -q "screenOrientation" "$MANIFEST"; then
+            sed -i 's/<activity/<activity android:screenOrientation="sensorLandscape"/' "$MANIFEST"
+          fi
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cd ..
+          cp android/app/build/outputs/apk/debug/app-debug.apk uranie-vr-autonome.apk
+
+      - name: Publier l'APK autonome en téléchargement
+        uses: actions/upload-artifact@v4
+        with:
+          name: uranie-vr-autonome-apk
+          path: uranie-vr-autonome.apk
+          retention-days: 30
+
+  build-quest-webxr-apk:
+    name: Compiler APK WebXR VR/Passthrough (Bubblewrap TWA)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installer Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurer Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Générer clé de signature & compiler l'APK Meta Quest TWA
+        run: |
+          if [ ! -f "./android.keystore" ]; then
+            keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass uranievr123 -keypass uranievr123 \
+              -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
+          fi
+          printf "uranievr123\nuranievr123\n" | npx --yes @bubblewrap/cli update --manifest="./twa-manifest.json" || true
+          printf "uranievr123\nuranievr123\n" | npx --yes @bubblewrap/cli build
+          if [ -f "app-release-signed.apk" ]; then
+            cp app-release-signed.apk uranie-vr-quest3-webxr.apk
+          fi
+
+      - name: Publier l'APK Meta Quest WebXR en téléchargement
+        if: hashFiles('uranie-vr-quest3-webxr.apk') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: uranie-vr-quest3-webxr-apk
+          path: uranie-vr-quest3-webxr.apk
+          retention-days: 30

@@ -1,0 +1,6 @@
+{
+  "name": "Uranie VR",
+  "description": "Observatoire astrologique et astronomique en réalité virtuelle : thème natal 3D, transits en temps réel, sphère armillaire et lecture spatiale des aspects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
