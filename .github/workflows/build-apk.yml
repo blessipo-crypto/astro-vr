@@ -28,10 +28,15 @@ jobs:
 
       - name: Configurer Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
 
       - name: Installer les dépendances & compiler le bundle Web
         run: |
-          npm install
+          npm install --legacy-peer-deps
           npm run build
 
       - name: Générer et compiler l'APK Capacitor autonome
@@ -76,9 +81,16 @@ jobs:
 
       - name: Configurer Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
 
       - name: Configurer Bubblewrap & compiler l'APK Meta Quest TWA
         run: |
+          npm install --legacy-peer-deps
+          npm run build
           npm install -g @bubblewrap/cli
           bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="${ANDROID_SDK_ROOT:-$ANDROID_HOME}" || true
           if [ ! -f "./android.keystore" ]; then
@@ -87,7 +99,22 @@ jobs:
               -storepass uranievr123 -keypass uranievr123 \
               -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
           fi
-          printf "uranievr123\nuranievr123\n" | bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade || true
+          python3 -m http.server 8787 -d dist >/dev/null 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          sleep 2
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync("twa-manifest.json", "utf8"));
+            fetch(m.iconUrl, { method: "HEAD" }).then(r => {
+              if (!r.ok) throw new Error("not ok");
+            }).catch(() => {
+              m.iconUrl = "http://127.0.0.1:8787/pwa-512x512.png";
+              m.maskableIconUrl = "http://127.0.0.1:8787/pwa-maskable-512x512.png";
+              fs.writeFileSync("twa-manifest.json", JSON.stringify(m, null, 2));
+            });
+          '
+          printf "uranievr123\nuranievr123\n" | bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade
           printf "uranievr123\nuranievr123\n" | bubblewrap build --skipVersionUpgrade --skipPwaValidation
           if [ -f "app-release-signed.apk" ]; then
             cp app-release-signed.apk uranie-vr-quest3-webxr.apk
