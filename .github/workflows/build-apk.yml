@@ -22,10 +22,12 @@ jobs:
 
       - name: Setup Java JDK 21
         uses: actions/setup-java@v5
-       
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        
 
       - name: Install and build web bundle
         run: |
@@ -73,11 +75,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: |
-            platform-tools
-            platforms;android-35
-            build-tools;35.0.0
 
       - name: Build Meta Quest TWA APK
         run: |
