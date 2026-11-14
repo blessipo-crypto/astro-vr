@@ -10,7 +10,7 @@ on:
 jobs:
   build-standalone-apk:
     name: Compiler APK Autonome Hors-Ligne (Capacitor)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v6
@@ -62,7 +62,7 @@ jobs:
 
   build-quest-webxr-apk:
     name: Compiler APK WebXR VR/Passthrough (Bubblewrap TWA)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
       - name: Récupérer le dépôt
