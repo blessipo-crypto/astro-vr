@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Script de compilation d'un APK 100% autonome (hors-ligne) via Capacitor Android
-# Prérequis locaux : Node.js >= 20, Java JDK 17+, Android SDK
+# Prérequis locaux : Node.js >= 22, Java JDK 21+, Android SDK
 
 echo "=== Uranie VR — Compilation APK Autonome Hors-Ligne (Capacitor) ==="
 npm run build
