@@ -91,6 +91,8 @@ jobs:
 
   build-quest-webxr-apk:
     name: Compiler APK WebXR VR/Passthrough (Bubblewrap TWA)
+    needs: deploy-pages
+    if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     continue-on-error: true
