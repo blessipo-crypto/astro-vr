@@ -12,6 +12,10 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy-pages:
     name: Deployer WebXR HTTPS (GitHub Pages)
@@ -28,6 +32,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22'
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Install and build web bundle
         run: |
@@ -126,23 +135,23 @@ jobs:
           npm install -g @bubblewrap/cli
 
           SDK_PATH="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          SDKMANAGER=""
-          if [ -x "$SDK_PATH/cmdline-tools/latest/bin/sdkmanager" ]; then
-            SDKMANAGER="$SDK_PATH/cmdline-tools/latest/bin/sdkmanager"
-          elif [ -x "$SDK_PATH/tools/bin/sdkmanager" ]; then
-            SDKMANAGER="$SDK_PATH/tools/bin/sdkmanager"
-          elif [ -x "$SDK_PATH/bin/sdkmanager" ]; then
-            SDKMANAGER="$SDK_PATH/bin/sdkmanager"
-          fi
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "SDK_PATH=$SDK_PATH"
 
-          if [ ! -d "$SDK_PATH/tools" ] && [ ! -d "$SDK_PATH/bin" ] && [ -d "$SDK_PATH/cmdline-tools/latest/bin" ]; then
-            ln -sfn "$SDK_PATH/cmdline-tools/latest/bin" "$SDK_PATH/bin"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_PATH" -maxdepth 4 -name sdkmanager -type f 2>/dev/null | head -n 1 || true)"
           fi
+          echo "SDKMANAGER=$SDKMANAGER"
 
           if [ -n "$SDKMANAGER" ]; then
-            echo "Accepting Android SDK licenses and installing build-tools;36.1.0..."
-            yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" --licenses >/dev/null 2>&1 || true
-            yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" "build-tools;36.1.0" "platforms;android-36"
+            SDK_BIN_DIR="$(dirname "$SDKMANAGER")"
+            if [ ! -d "$SDK_PATH/tools" ] && [ ! -d "$SDK_PATH/bin" ]; then
+              ln -sfn "$SDK_BIN_DIR" "$SDK_PATH/bin" 2>/dev/null || sudo ln -sfn "$SDK_BIN_DIR" "$SDK_PATH/bin" || true
+            fi
+            echo "Accepting Android SDK licenses and installing build-tools;36.1.0 + android-36..."
+            (yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" --licenses >/dev/null 2>&1) || (yes | sudo "$SDKMANAGER" --sdk_root="$SDK_PATH" --licenses >/dev/null 2>&1) || true
+            (yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" "platform-tools" "build-tools;36.1.0" "platforms;android-36") || (yes | sudo "$SDKMANAGER" --sdk_root="$SDK_PATH" "platform-tools" "build-tools;36.1.0" "platforms;android-36")
           fi
 
           mkdir -p "$HOME/.bubblewrap"
@@ -152,20 +161,29 @@ jobs:
             keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr -keyalg RSA -keysize 2048 -validity 10000 -storepass uranievr123 -keypass uranievr123 -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
           fi
 
-          python3 -m http.server 8787 -d dist >/dev/null 2>&1 &
+          python3 -m http.server 8787 --bind 127.0.0.1 -d dist >/dev/null 2>&1 &
           SERVER_PID=$!
           trap "kill $SERVER_PID 2>/dev/null || true" EXIT
-          sleep 2
+          for i in $(seq 1 15); do
+            if curl -sf http://127.0.0.1:8787/manifest.webmanifest >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
 
           if ! curl -sfI "https://blessipo-crypto.github.io/astro-vr/manifest.webmanifest" >/dev/null 2>&1; then
             echo "GitHub Pages not yet reachable, using local HTTP fallback for icons and webManifest..."
             node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync("twa-manifest.json","utf8"));m.iconUrl="http://127.0.0.1:8787/pwa-512x512.png";m.maskableIconUrl="http://127.0.0.1:8787/pwa-maskable-512x512.png";m.webManifestUrl="http://127.0.0.1:8787/manifest.webmanifest";fs.writeFileSync("twa-manifest.json",JSON.stringify(m,null,2));'
           fi
 
+          echo "Running bubblewrap update..."
           bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade < /dev/null
+          echo "Running bubblewrap build..."
           bubblewrap build --skipVersionUpgrade < /dev/null
+
           if [ -f "app-release-signed.apk" ]; then
             cp app-release-signed.apk uranie-vr-quest3-webxr.apk
+            echo "Built uranie-vr-quest3-webxr.apk successfully."
           fi
 
       - name: Upload Quest WebXR APK
