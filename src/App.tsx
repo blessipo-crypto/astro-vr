@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Glasses, ScanEye, Share2 } from 'lucide-react';
+import { Clock, Glasses, Info, ScanEye, Share2 } from 'lucide-react';
 import {
   analyzeComparison,
   analyzeSolarReturn,
@@ -27,6 +27,7 @@ import { ComparativePairKind, ControlDock } from './components/ControlDock';
 import { InspectorPanel } from './components/InspectorPanel';
 import { PrintableChartReport } from './components/PrintableChartReport';
 import { PWAInstallButton } from './components/PWAInstallButton';
+import { AboutCreatorModal } from './components/AboutCreatorModal';
 import { QuestGuideModal } from './components/QuestGuideModal';
 import { SharePrintModal } from './components/SharePrintModal';
 import {
@@ -183,6 +184,16 @@ export default function App() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [questModalOpen, setQuestModalOpen] = useState<boolean>(false);
+  const [aboutOpen, setAboutOpen] = useState<boolean>(() => {
+    if (initialShared) return false;
+    try {
+      const always = localStorage.getItem('uranie_vr_intro_always_v1') === '1';
+      if (always) return true;
+      return localStorage.getItem('uranie_vr_intro_seen_v1') !== '1';
+    } catch {
+      return true;
+    }
+  });
   const [sharePrintOpen, setSharePrintOpen] = useState<boolean>(false);
   const [snapshotDataUrl, setSnapshotDataUrl] = useState<string | null>(null);
   const [contextLost, setContextLost] = useState<boolean>(false);
@@ -923,8 +934,19 @@ export default function App() {
 
       {/* Top Bar: Clean 3-Zone Contract */}
       <header className="no-print pointer-events-none fixed top-0 left-0 right-0 z-20 flex items-center justify-between gap-8 px-5 py-4">
-        <div className="pointer-events-auto font-display text-2xl font-semibold tracking-tight text-[#f8f3e6] whitespace-nowrap shrink-0">
-          Uranie VR
+        <div className="pointer-events-auto flex items-center gap-3 shrink-0">
+          <div className="font-display text-2xl font-semibold tracking-tight text-[#f8f3e6] whitespace-nowrap shrink-0">
+            Uranie VR
+          </div>
+          <button
+            type="button"
+            onClick={() => setAboutOpen(true)}
+            title="Présentation du programme et des créateurs"
+            className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#0d1428]/90 px-2.5 py-1.5 text-xs font-medium text-[#e7cfa0] hover:border-[#d4af37]/60 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Info className="w-3.5 h-3.5 text-[#d4af37]" />
+            <span>Présentation</span>
+          </button>
         </div>
 
         <div className="hidden lg:flex items-center gap-2.5 text-xs text-slate-300 font-mono-tabular whitespace-nowrap">
@@ -1155,6 +1177,22 @@ export default function App() {
         onEnterVR={() => void sceneRef.current?.enterVR()}
         onEnterMR={() => void sceneRef.current?.enterMR()}
         shareUrl={shareUrl}
+      />
+
+      <AboutCreatorModal
+        open={aboutOpen}
+        onClose={() => {
+          setAboutOpen(false);
+          try {
+            localStorage.setItem('uranie_vr_intro_seen_v1', '1');
+          } catch {
+            // Ignore storage errors
+          }
+        }}
+        webXRSupported={webXRSupported}
+        mrSupported={mrSupported}
+        onEnterVR={() => void sceneRef.current?.enterVR()}
+        onEnterMR={() => void sceneRef.current?.enterMR()}
       />
 
       <SharePrintModal
