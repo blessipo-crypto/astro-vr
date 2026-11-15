@@ -29,7 +29,12 @@ import {
   searchPlacesByQuery,
 } from '../astro/astroEngine';
 import { ZodiacTradition } from '../astro/chineseAstrology';
-import { AspectFilter, CameraPreset, SceneDisplayFocus } from '../vr/AstrologyScene';
+import {
+  AspectFilter,
+  CameraPreset,
+  SceneDisplayFocus,
+  SkyAnimationsConfig,
+} from '../vr/AstrologyScene';
 import {
   STARFIELD_BACKDROP_STYLES,
   StarfieldBackdropStyle,
@@ -124,9 +129,12 @@ interface ControlDockProps {
   onCameraPresetChange: (preset: CameraPreset) => void;
   audioEnabled: boolean;
   onToggleAudio: () => void;
+  skyAnimations: SkyAnimationsConfig;
+  onSkyAnimationsChange: (next: SkyAnimationsConfig) => void;
   selectedPlanetId: PlanetId | null;
   onSelectPlanet: (id: PlanetId, layer: 'base' | 'outer') => void;
   onOpenFullSummary: () => void;
+  onOpenAscendantCalculator: () => void;
   onOpenQuestGuide: () => void;
 }
 
@@ -413,9 +421,12 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onCameraPresetChange,
   audioEnabled,
   onToggleAudio,
+  skyAnimations,
+  onSkyAnimationsChange,
   selectedPlanetId,
   onSelectPlanet,
   onOpenFullSummary,
+  onOpenAscendantCalculator,
   onOpenQuestGuide,
 }) => {
   const [activeTab, setActiveTab] = useState<DockTab>('natal');
@@ -431,7 +442,15 @@ export const ControlDock: React.FC<ControlDockProps> = ({
 
   const birthParts = (() => {
     const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(draftProfile.birthDateIso);
-    if (!m) return { year: 1992, month: 5, day: 14, time: '08:30' };
+    if (!m) {
+      const now = new Date();
+      return {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        time: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
+      };
+    }
     return {
       year: Number(m[1]),
       month: Number(m[2]),
@@ -692,6 +711,16 @@ export const ControlDock: React.FC<ControlDockProps> = ({
 
             <button
               type="button"
+              onClick={onOpenAscendantCalculator}
+              title="Calculer uniquement l'Ascendant (date, heure, lieu, créneau du signe)"
+              className="flex items-center gap-1.5 rounded-md border border-[#38bdf8]/40 bg-[#0d1428] px-2.5 py-1.5 text-xs font-medium text-[#7dd3fc] hover:border-[#38bdf8] hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Ascendant seul</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onOpenFullSummary}
               className="flex items-center gap-1.5 rounded-md border border-[#d4af37]/35 bg-[#121931] px-2.5 py-1.5 text-xs font-medium text-[#e7cfa0] hover:border-[#d4af37] hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
@@ -809,9 +838,9 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                   onChange={(e) => onSelectProfile(e.target.value)}
                   className="rounded-lg border border-[#d4af37]/35 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none cursor-pointer"
                 >
-                  {profiles.map((pr) => (
+                  {profiles.map((pr, idx) => (
                     <option key={pr.id} value={pr.id}>
-                      {pr.name}
+                      {pr.name.trim() || `Thème ${idx + 1}`}
                     </option>
                   ))}
                 </select>
@@ -822,6 +851,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                 >
                   <Plus className="w-3.5 h-3.5 text-[#d4af37]" />
                   <span>Nouveau thème</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenAscendantCalculator}
+                  className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/40 bg-[#0d1428] px-2.5 py-1.5 text-xs font-medium text-[#7dd3fc] hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Calculer l’Ascendant seul</span>
                 </button>
                 {profiles.length > 1 && (
                   <button
@@ -857,14 +894,15 @@ export const ControlDock: React.FC<ControlDockProps> = ({
             <div className="grid grid-cols-2 gap-2 md:grid-cols-12 items-end">
               <div className="col-span-2 md:col-span-2">
                 <label htmlFor="natal-name" className="block text-[11px] text-slate-400 mb-1">
-                  Intitulé du thème
+                  Prénom
                 </label>
                 <input
                   id="natal-name"
                   type="text"
+                  placeholder="Saisir un prénom..."
                   value={draftProfile.name}
                   onChange={(e) => onDraftProfileChange({ name: e.target.value })}
-                  className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                  className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] placeholder:text-slate-500 focus:border-[#d4af37] focus:outline-none"
                 />
               </div>
 
@@ -1235,9 +1273,9 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                       onChange={(e) => onPartnerProfileChange(e.target.value)}
                       className="rounded-lg border border-[#38bdf8]/40 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] cursor-pointer"
                     >
-                      {profiles.map((pr) => (
+                      {profiles.map((pr, idx) => (
                         <option key={pr.id} value={pr.id}>
-                          {pr.name}
+                          {pr.name.trim() || `Thème ${idx + 1}`}
                         </option>
                       ))}
                     </select>
@@ -1571,17 +1609,19 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                     onChange={(e) => onPartnerProfileChange(e.target.value)}
                     className="rounded-lg border border-[#38bdf8]/40 bg-[#0d1428] px-3 py-1.5 text-xs text-[#f3efe6] focus:border-[#38bdf8] focus:outline-none cursor-pointer"
                   >
-                    {profiles.map((pr) => (
+                    {profiles.map((pr, idx) => (
                       <option key={pr.id} value={pr.id}>
-                        {pr.name}
+                        {pr.name.trim() || `Thème ${idx + 1}`}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="text-xs text-slate-300 pb-1.5">
-                  {mode === 'synastry'
-                    ? 'Double roue 3D : Profil A (Or) comparé au Profil B (Cyan).'
-                    : 'Thème unique calculé par mi-points écliptiques exacts entre A et B.'}
+                  {profiles.length < 2
+                    ? 'Créez un second thème via « + Nouveau thème » dans l’onglet Thème Natal pour comparer deux personnes.'
+                    : mode === 'synastry'
+                      ? 'Double roue 3D : Profil A (Or) comparé au Profil B (Cyan).'
+                      : 'Thème unique calculé par mi-points écliptiques exacts entre A et B.'}
                 </div>
               </div>
             )}
@@ -1773,6 +1813,63 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-[#0d1428]/70 px-3 py-2">
+              <div className="text-[11px] font-medium text-slate-300">
+                Animations célestes discrètes dans le ciel
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    ['shootingStars', 'Étoiles filantes'],
+                    ['nebulae', 'Nébuleuses'],
+                    ['aurora', 'Aurores boréales'],
+                  ] as const
+                ).map(([key, label]) => {
+                  const active = skyAnimations[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() =>
+                        onSkyAnimationsChange({
+                          ...skyAnimations,
+                          [key]: !active,
+                        })
+                      }
+                      className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        active
+                          ? 'border-[#38bdf8]/55 bg-[#38bdf8]/15 text-[#bae6fd]'
+                          : 'border-white/10 bg-[#080d1c] text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                {(() => {
+                  const anyEnabled =
+                    skyAnimations.shootingStars ||
+                    skyAnimations.nebulae ||
+                    skyAnimations.aurora;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onSkyAnimationsChange({
+                          shootingStars: !anyEnabled,
+                          nebulae: !anyEnabled,
+                          aurora: !anyEnabled,
+                        })
+                      }
+                      className="rounded-md border border-white/15 bg-[#121931] px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:border-[#d4af37]/50 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      {anyEnabled ? 'Tout désactiver' : 'Tout activer'}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
 

@@ -851,29 +851,7 @@ export const CHART_PRESETS: ChartPreset[] = [
   { id: 'conj2020', label: 'Grande Conjonction 2020', dateIso: '2020-12-21T18:20:00Z', cityId: 'paris' },
 ];
 
-export const DEFAULT_NATAL_PROFILES: NatalProfile[] = [
-  {
-    id: 'default-marie',
-    name: 'Thème Exemple · Printemps',
-    birthDateIso: '1992-05-14T08:30',
-    cityId: 'paris',
-    houseSystem: 'placidus',
-  },
-  {
-    id: 'default-solstice',
-    name: 'Thème Exemple · Solstice',
-    birthDateIso: '1988-06-21T14:15',
-    cityId: 'lyon',
-    houseSystem: 'placidus',
-  },
-  {
-    id: 'default-hiver',
-    name: 'Thème Exemple · Verseau',
-    birthDateIso: '1996-02-04T21:45',
-    cityId: 'montreal',
-    houseSystem: 'placidus',
-  },
-];
+export const DEFAULT_NATAL_PROFILES: NatalProfile[] = [];
 
 /**
  * Finds the exact astronomical Date in `targetYear` when the Sun returns to `natalSunLon`
@@ -1286,6 +1264,101 @@ export function analyzeComparison(
     mcInBaseHouseRoman: baseChart.houses[mcHouse - 1].roman,
   };
 }
+
+export interface AscendantCalculationResult {
+  date: Date;
+  cityName: string;
+  latitude: number;
+  longitude: number;
+  ascendant: number;
+  ascSign: ZodiacSign;
+  ascDegInSign: number;
+  ascFormattedDeg: string;
+  descendant: number;
+  dscSign: ZodiacSign;
+  dscFormattedDeg: string;
+  midheaven: number;
+  mcSign: ZodiacSign;
+  mcFormattedDeg: string;
+  siderealTimeHours: number;
+  signWindowStart: Date | null;
+  signWindowEnd: Date | null;
+}
+
+export function calculateAscendantOnly(
+  date: Date,
+  latitude: number,
+  longitude: number,
+  cityName: string
+): AscendantCalculationResult {
+  const { ascendant, midheaven, lstHours } = computeAngles(date, latitude, longitude);
+  const ascFmt = formatDegreeInSign(ascendant);
+  const descendant = normalizeDeg(ascendant + 180);
+  const dscFmt = formatDegreeInSign(descendant);
+  const mcFmt = formatDegreeInSign(midheaven);
+  const targetSignIdx = ascFmt.sign.index;
+
+  // Locate entry & exit times of this Ascendant sign within +/- 5 hours (1-minute precision)
+  const stepMs = 5 * 60_000;
+  const maxSteps = 60;
+  let signWindowStart: Date | null = null;
+  let signWindowEnd: Date | null = null;
+
+  for (let s = 1; s <= maxSteps; s++) {
+    const probeMs = date.getTime() - s * stepMs;
+    const probeIdx = formatDegreeInSign(computeAngles(new Date(probeMs), latitude, longitude).ascendant).sign.index;
+    if (probeIdx !== targetSignIdx) {
+      let lo = probeMs;
+      let hi = probeMs + stepMs;
+      for (let k = 0; k < 4; k++) {
+        const mid = Math.floor((lo + hi) / 2);
+        const midIdx = formatDegreeInSign(computeAngles(new Date(mid), latitude, longitude).ascendant).sign.index;
+        if (midIdx === targetSignIdx) hi = mid;
+        else lo = mid;
+      }
+      signWindowStart = new Date(hi);
+      break;
+    }
+  }
+
+  for (let s = 1; s <= maxSteps; s++) {
+    const probeMs = date.getTime() + s * stepMs;
+    const probeIdx = formatDegreeInSign(computeAngles(new Date(probeMs), latitude, longitude).ascendant).sign.index;
+    if (probeIdx !== targetSignIdx) {
+      let lo = probeMs - stepMs;
+      let hi = probeMs;
+      for (let k = 0; k < 4; k++) {
+        const mid = Math.floor((lo + hi) / 2);
+        const midIdx = formatDegreeInSign(computeAngles(new Date(mid), latitude, longitude).ascendant).sign.index;
+        if (midIdx === targetSignIdx) lo = mid;
+        else hi = mid;
+      }
+      signWindowEnd = new Date(lo);
+      break;
+    }
+  }
+
+  return {
+    date,
+    cityName,
+    latitude,
+    longitude,
+    ascendant,
+    ascSign: ascFmt.sign,
+    ascDegInSign: ascFmt.degInSign,
+    ascFormattedDeg: ascFmt.formattedDeg,
+    descendant,
+    dscSign: dscFmt.sign,
+    dscFormattedDeg: dscFmt.formattedDeg,
+    midheaven,
+    mcSign: mcFmt.sign,
+    mcFormattedDeg: mcFmt.formattedDeg,
+    siderealTimeHours: lstHours,
+    signWindowStart,
+    signWindowEnd,
+  };
+}
+
 
 
 

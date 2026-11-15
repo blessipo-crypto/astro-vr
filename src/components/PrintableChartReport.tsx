@@ -379,7 +379,7 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
             Uranie VR · Dossier Astrologique Imprimable
           </div>
           <h1 className="text-2xl font-serif font-bold text-slate-950 mt-0.5">
-            {profile.name} — {modeLabel}
+            {profile.name.trim() || 'Thème astral'} — {modeLabel}
           </h1>
           <div className="text-xs text-slate-600 mt-1">
             Base : {fmtDate(baseChart.date)} · {baseChart.cityName} ({baseChart.latitude.toFixed(2)}°,{' '}

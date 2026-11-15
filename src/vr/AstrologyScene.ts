@@ -13,6 +13,11 @@ import {
 import { ZodiacTradition } from '../astro/chineseAstrology';
 import { celestialAudio } from './audio';
 import {
+  DEFAULT_SKY_ANIMATIONS,
+  SkyAnimationsConfig,
+  SkyAnimationsController,
+} from './skyAnimations';
+import {
   createAstrolabeFloorTexture,
   createGlowSpriteTexture,
   createGlyphBadgeTexture,
@@ -27,6 +32,8 @@ import {
   ZodiacWheelStyle,
 } from './textures';
 
+export { DEFAULT_SKY_ANIMATIONS };
+export type { SkyAnimationsConfig };
 export type CameraPreset = 'overview' | 'center' | 'ecliptic' | 'horizon';
 export type AspectFilter = 'all' | 'comparison' | 'natal' | 'harmonious' | 'tense' | 'none';
 export type SceneDisplayFocus = 'all' | 'planetsOnly' | 'aspectsOnly' | 'housesOnly';
@@ -147,6 +154,7 @@ export class AstrologyScene {
   private outerPlanetsGroup = new THREE.Group();
   private aspectsGroup = new THREE.Group();
   private starDomeGroup = new THREE.Group();
+  private skyAnimations!: SkyAnimationsController;
   private armillaryOuterGroup = new THREE.Group();
 
   private outerAscMarker!: THREE.Group;
@@ -554,6 +562,10 @@ export class AstrologyScene {
         this.starDomeGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), constMat));
       }
     }
+
+    // 5. Subtle animated celestial phenomena (shooting stars, compact nebulae, northern aurora)
+    this.skyAnimations = new SkyAnimationsController();
+    this.starDomeGroup.add(this.skyAnimations.rootGroup);
   }
 
   private buildAnnularCollarGeometry(innerR: number, outerR: number, segments: number): THREE.BufferGeometry {
@@ -1436,6 +1448,10 @@ export class AstrologyScene {
     skyMat.needsUpdate = true;
   }
 
+  public setSkyAnimations(config: SkyAnimationsConfig) {
+    this.skyAnimations?.setConfig(config);
+  }
+
   public setCameraPreset(preset: CameraPreset) {
     this.cameraTransitionActive = true;
     if (preset === 'overview') {
@@ -1669,6 +1685,9 @@ export class AstrologyScene {
     }
 
     this.armillaryOuterGroup.rotation.y = Math.sin(elapsed * 0.05) * 0.04;
+    if (this.starDomeGroup.visible) {
+      this.skyAnimations?.update(delta, elapsed);
+    }
 
     if (!this.vrSession) {
       if (this.cameraTransitionActive) {

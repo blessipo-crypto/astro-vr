@@ -646,3 +646,122 @@ export function describeSlowTransitInHouse(planet: PlanetPosition, natalHouse: H
   const action = verbByPlanet[planet.id] ?? 'active ce secteur';
   return `${planet.symbol} ${planet.name} en ${planet.sign.name}${retro} traverse votre Maison ${natalHouse.roman} natale (${natalHouse.title}) : il ${action} ${focus}.`;
 }
+
+export interface AscendantDeepInterpretation {
+  temperament: string;
+  firstImpression: string;
+  axisBalance: string;
+  decanNote: string;
+}
+
+const ASCENDANT_PROFILES: Array<Omit<AscendantDeepInterpretation, 'decanNote'>> = [
+  {
+    temperament:
+      'Élan direct, franc et entreprenant : vous abordez l’existence de front avec spontanéité, courage et besoin d’agir rapidement.',
+    firstImpression:
+      'On perçoit d’emblée une présence dynamique, décidée, parfois impatiente, qui préfère initier plutôt qu’attendre.',
+    axisBalance:
+      'Avec le Descendant en Balance, vous apprenez à tempérer l’impulsivité par l’écoute, le tact et la coopération avec l’autre.',
+  },
+  {
+    temperament:
+      'Ancrage posé, sensuel et persévérant : vous avancez à votre rythme, avec bon sens, fiabilité et goût du concret durable.',
+    firstImpression:
+      'Vous dégagez une aura rassurante, calme et déterminée ; on sent une force tranquille difficile à déstabiliser.',
+    axisBalance:
+      'Avec le Descendant en Scorpion, les relations vous invitent à sortir de la routine sécurisante pour vivre des liens profonds et transformateurs.',
+  },
+  {
+    temperament:
+      'Vivacité d’esprit, curiosité et mobilité : vous explorez le monde par les idées, le dialogue, l’humour et les liens multiples.',
+    firstImpression:
+      'On vous perçoit alerte, adaptable, communicatif et rapide à saisir chaque nuance d’une situation.',
+    axisBalance:
+      'Avec le Descendant en Sagittaire, l’autre vous invite à passer du foisonnement d’idées à une vision plus large et engagée.',
+  },
+  {
+    temperament:
+      'Sensibilité intuitive, bienveillance et prudence protectrice : vous ressentez l’ambiance d’un lieu avant même de parler.',
+    firstImpression:
+      'Vous inspirez douceur, écoute et empathie, tout en gardant un cercle intérieur protégé tant que la confiance n’est pas établie.',
+    axisBalance:
+      'Avec le Descendant en Capricorne, vous recherchez chez l’autre solidité, loyauté durable et sens des responsabilités.',
+  },
+  {
+    temperament:
+      'Rayonnement chaleureux, créativité et noblesse d’élan : vous aimez vivre avec panache, générosité et authenticité.',
+    firstImpression:
+      'On remarque immédiatement votre présence solaire, votre charisme naturel et la franchise de vos élans du cœur.',
+    axisBalance:
+      'Avec le Descendant en Verseau, vos relations vous apprennent à conjuguer fierté personnelle et liberté égalitaire au sein du collectif.',
+  },
+  {
+    temperament:
+      'Discernement, précision et sens du détail utile : vous observez, analysez et cherchez à améliorer concrètement ce qui vous entoure.',
+    firstImpression:
+      'On perçoit une allure soignée, modeste, fiable et attentive aux subtilités que d’autres ne voient pas.',
+    axisBalance:
+      'Avec le Descendant en Poissons, l’autre ouvre votre sensibilité à la confiance intuitive, au lâcher-prise et à l’empathie sans calcul.',
+  },
+  {
+    temperament:
+      'Sens de l’harmonie, diplomatie et raffinement : vous recherchez l’équilibre juste entre vos désirs et ceux de votre entourage.',
+    firstImpression:
+      'Vous dégagez élégance, courtoisie et sociabilité ; votre premier réflexe est de créer un terrain d’entente agréable.',
+    axisBalance:
+      'Avec le Descendant en Bélier, le miroir relationnel vous pousse à oser trancher, vous affirmer et défendre vos choix francs.',
+  },
+  {
+    temperament:
+      'Intensité silencieuse, lucidité et magnétisme : vous ne vous contentez jamais des apparences et cherchez la vérité des êtres.',
+    firstImpression:
+      'Votre regard pénétrant et votre réserve maîtrisée intriguent ; on sent une forte détermination intérieure.',
+    axisBalance:
+      'Avec le Descendant en Taureau, vous cherchez dans le lien stabilité tangible, tendresse simple et fidélité apaisante.',
+  },
+  {
+    temperament:
+      'Enthousiasme ouvert, optimisme et soif d’horizons : vous avez besoin d’espace, de sens, de mouvement et de découvertes.',
+    firstImpression:
+      'On perçoit une énergie chaleureuse, directe et confiante, tournée vers l’avenir et les grands projets.',
+    axisBalance:
+      'Avec le Descendant en Gémeaux, l’autre vous aide à affiner vos élans par le dialogue concret, la nuance et la curiosité du quotidien.',
+  },
+  {
+    temperament:
+      'Maîtrise calme, endurance et sens de la responsabilité : vous prenez le temps de bâtir solidement sur la durée.',
+    firstImpression:
+      'Vous projetez sérieux, maturité et autonomie ; on vous accorde volontiers crédit et autorité naturelle.',
+    axisBalance:
+      'Avec le Descendant en Cancer, vos liens intimes vous invitent à montrer votre tendresse et à cultiver un foyer chaleureux.',
+  },
+  {
+    temperament:
+      'Indépendance d’esprit, originalité et fraternité : vous tracez votre route hors des sentiers battus avec lucidité.',
+    firstImpression:
+      'On remarque votre singularité, votre esprit libre et votre aisance à relier des idées ou des personnes différentes.',
+    axisBalance:
+      'Avec le Descendant en Lion, les relations vous apprennent à accueillir la chaleur du cœur et la reconnaissance personnelle sincère.',
+  },
+  {
+    temperament:
+      'Réceptivité subtile, compassion et imagination inspirée : vous captez intuitivement les courants émotionnels et symboliques.',
+    firstImpression:
+      'Vous dégagez douceur, mystère et souplesse, avec une sensibilité artistique ou humaine immédiatement perceptible.',
+    axisBalance:
+      'Avec le Descendant en Vierge, le partenaire ou le concret vous aide à structurer vos intuitions dans des réalisations claires.',
+  },
+];
+
+export function getAscendantDeepInterpretation(
+  sign: ZodiacSign,
+  degInSign: number
+): AscendantDeepInterpretation {
+  const base = ASCENDANT_PROFILES[sign.index] ?? ASCENDANT_PROFILES[0];
+  const decan = getDecanInfo(sign, degInSign);
+  return {
+    ...base,
+    decanNote: `${decan.label} — ${decan.nuance}`,
+  };
+}
+

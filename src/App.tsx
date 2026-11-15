@@ -14,7 +14,6 @@ import {
   CITY_PRESETS,
   ComparativeAnalysis,
   ComparisonAspectInfo,
-  DEFAULT_NATAL_PROFILES,
   HouseCusp,
   NatalProfile,
   PlanetId,
@@ -28,13 +27,16 @@ import { InspectorPanel } from './components/InspectorPanel';
 import { PrintableChartReport } from './components/PrintableChartReport';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { AboutCreatorModal } from './components/AboutCreatorModal';
+import { AscendantCalculatorModal } from './components/AscendantCalculatorModal';
 import { QuestGuideModal } from './components/QuestGuideModal';
 import { SharePrintModal } from './components/SharePrintModal';
 import {
   AspectFilter,
   AstrologyScene,
   CameraPreset,
+  DEFAULT_SKY_ANIMATIONS,
   SceneDisplayFocus,
+  SkyAnimationsConfig,
   XRSessionModeKind,
 } from './vr/AstrologyScene';
 import { celestialAudio } from './vr/audio';
@@ -43,15 +45,28 @@ import type { StarfieldBackdropStyle, ZodiacSignStyle, ZodiacWheelStyle } from '
 const REAL_TIME_DAYS_PER_SEC = 1 / 86400;
 
 const STORAGE_KEY = 'uranie_vr_natal_profiles_v1';
+const SKY_ANIMS_STORAGE_KEY = 'uranie_vr_sky_anims_v1';
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+const LEGACY_EXAMPLE_IDS = new Set(['default-marie', 'default-solstice', 'default-hiver']);
+
+function createDefaultUserProfile(): NatalProfile {
+  return {
+    id: 'mon-theme',
+    name: '',
+    birthDateIso: toLocalDatetimeInput(new Date()),
+    cityId: 'paris',
+    houseSystem: 'placidus',
+  };
+}
+
 function parseProfileDate(iso: string): Date {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? new Date('1992-05-14T08:30') : d;
+  return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
 function resolveProfileLocation(profile: NatalProfile): {
@@ -84,15 +99,19 @@ export default function App() {
   const initialShared = useMemo(() => readSharedThemeFromUrl(), []);
 
   const [profiles, setProfiles] = useState<NatalProfile[]>(() => {
-    let base: NatalProfile[] = DEFAULT_NATAL_PROFILES;
+    let base: NatalProfile[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as NatalProfile[];
-        if (Array.isArray(parsed) && parsed.length > 0) base = parsed;
+        if (Array.isArray(parsed)) {
+          base = parsed.filter(
+            (p) => !(LEGACY_EXAMPLE_IDS.has(p.id) && p.name.startsWith('Thème Exemple'))
+          );
+        }
       }
     } catch {
-      // Fallback to defaults
+      // Ignore storage errors
     }
     if (initialShared?.profile) {
       const exists = base.some((p) => p.id === initialShared.profile.id);
@@ -104,17 +123,20 @@ export default function App() {
       const pExists = base.some((p) => p.id === initialShared.partner!.id);
       if (!pExists) base = [...base, initialShared.partner];
     }
+    if (base.length === 0) {
+      base = [createDefaultUserProfile()];
+    }
     return base;
   });
 
   const [activeProfileId, setActiveProfileId] = useState<string>(
-    () => initialShared?.profile.id ?? profiles[0]?.id ?? 'default-marie'
+    () => initialShared?.profile.id ?? profiles[0]?.id ?? 'mon-theme'
   );
   const [draftProfile, setDraftProfile] = useState<NatalProfile>(
-    () => initialShared?.profile ?? profiles[0] ?? DEFAULT_NATAL_PROFILES[0]
+    () => initialShared?.profile ?? profiles[0] ?? createDefaultUserProfile()
   );
   const [partnerProfileId, setPartnerProfileId] = useState<string>(
-    () => initialShared?.partner?.id ?? profiles[1]?.id ?? profiles[0]?.id ?? 'default-solstice'
+    () => initialShared?.partner?.id ?? profiles[1]?.id ?? profiles[0]?.id ?? 'mon-theme'
   );
 
   const [mode, setMode] = useState<ChartMode>(() => initialShared?.mode ?? 'transits');
@@ -184,6 +206,23 @@ export default function App() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [questModalOpen, setQuestModalOpen] = useState<boolean>(false);
+  const [ascendantModalOpen, setAscendantModalOpen] = useState<boolean>(false);
+  const [skyAnimations, setSkyAnimations] = useState<SkyAnimationsConfig>(() => {
+    try {
+      const raw = localStorage.getItem(SKY_ANIMS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<SkyAnimationsConfig>;
+        return {
+          shootingStars: parsed.shootingStars ?? true,
+          nebulae: parsed.nebulae ?? true,
+          aurora: parsed.aurora ?? true,
+        };
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return DEFAULT_SKY_ANIMATIONS;
+  });
   const [aboutOpen, setAboutOpen] = useState<boolean>(() => {
     if (initialShared) return false;
     try {
@@ -279,7 +318,7 @@ export default function App() {
       const comp = calculateCompositeChart(
         natalChart,
         partnerChart,
-        `${draftProfile.name} + ${partnerProfile.name}`
+        `${draftProfile.name.trim() || 'Thème A'} + ${partnerProfile.name.trim() || 'Thème B'}`
       );
       return { baseChart: comp, outerChart: null, comparisonAspects: [] };
     }
@@ -534,6 +573,15 @@ export default function App() {
     sceneRef.current?.setStarfieldStyle(starfieldStyle);
   }, [starfieldStyle]);
 
+  useEffect(() => {
+    sceneRef.current?.setSkyAnimations(skyAnimations);
+    try {
+      localStorage.setItem(SKY_ANIMS_STORAGE_KEY, JSON.stringify(skyAnimations));
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [skyAnimations]);
+
   // Keep selected planet synced when date or mode changes
   useEffect(() => {
     if (selectedPlanet) {
@@ -655,7 +703,7 @@ export default function App() {
     const newId = `profile-${Date.now()}`;
     const newProfile: NatalProfile = {
       id: newId,
-      name: `Thème ${profiles.length + 1}`,
+      name: '',
       birthDateIso: toLocalDatetimeInput(new Date()),
       cityId: 'paris',
       houseSystem: 'placidus',
@@ -663,7 +711,7 @@ export default function App() {
     setProfiles((prev) => [...prev, newProfile]);
     setActiveProfileId(newId);
     setDraftProfile(newProfile);
-  }, [profiles.length]);
+  }, []);
 
   const handleDeleteProfile = useCallback(
     (id: string) => {
@@ -1159,6 +1207,8 @@ export default function App() {
         onCameraPresetChange={handleCameraPresetChange}
         audioEnabled={audioEnabled}
         onToggleAudio={handleToggleAudio}
+        skyAnimations={skyAnimations}
+        onSkyAnimationsChange={setSkyAnimations}
         selectedPlanetId={selectedPlanet?.id ?? null}
         onSelectPlanet={handleSelectPlanet}
         onOpenFullSummary={() => {
@@ -1166,7 +1216,17 @@ export default function App() {
           sceneRef.current?.selectHouse(null);
           setShowFullSummary((v) => !v);
         }}
+        onOpenAscendantCalculator={() => setAscendantModalOpen(true)}
         onOpenQuestGuide={() => setQuestModalOpen(true)}
+      />
+
+      <AscendantCalculatorModal
+        open={ascendantModalOpen}
+        onClose={() => setAscendantModalOpen(false)}
+        initialProfile={draftProfile}
+        onApplyToProfile={(patch) => {
+          handleDraftProfileChange(patch);
+        }}
       />
 
       <QuestGuideModal
