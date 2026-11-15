@@ -85,11 +85,13 @@ function startStaticServer(distDir) {
 }
 
 let activeServer = null;
+let mainWindow = null;
 
 async function createMainWindow() {
   const distDir = resolveDistDir();
   const { server, port } = await startStaticServer(distDir);
   activeServer = server;
+  const localOrigin = `http://127.0.0.1:${port}`;
 
   Menu.setApplicationMenu(null);
 
@@ -109,35 +111,70 @@ async function createMainWindow() {
       sandbox: true,
     },
   });
+  mainWindow = win;
 
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
+  });
+
+  // Allow F11 fullscreen toggle on PC
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      win.setFullScreen(!win.isFullScreen());
+      event.preventDefault();
+    }
+  });
+
+  // Open external HTTP(S) & mailto links in Windows default browser/mail client
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://') || url.startsWith('http://127.0.0.1')) {
-      if (!url.startsWith(`http://127.0.0.1:${port}`)) {
+    if (url.startsWith(localOrigin)) {
+      return { action: 'allow' };
+    }
+    if (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('mailto:')) {
+      void shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  win.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith(localOrigin)) {
+      event.preventDefault();
+      if (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('mailto:')) {
         void shell.openExternal(url);
-        return { action: 'deny' };
       }
     }
-    return { action: 'allow' };
   });
 
-  await win.loadURL(`http://127.0.0.1:${port}/`);
+  await win.loadURL(`${localOrigin}/`);
 }
 
-app.whenReady().then(async () => {
-  await createMainWindow();
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      await createMainWindow();
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
-});
 
-app.on('window-all-closed', () => {
-  if (activeServer) {
-    activeServer.close();
-    activeServer = null;
-  }
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+  app.whenReady().then(async () => {
+    await createMainWindow();
+    app.on('activate', async () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        await createMainWindow();
+      }
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (activeServer) {
+      activeServer.close();
+      activeServer = null;
+    }
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+}

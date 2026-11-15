@@ -61,7 +61,12 @@ export function decodeSharedTheme(token: string): SharedThemePayload | null {
 }
 
 export function buildShareThemeUrl(payload: SharedThemePayload): string {
-  const url = new URL(window.location.href);
+  const isElectronLocal =
+    window.location.hostname === '127.0.0.1' &&
+    (window.location.port === '41789' || navigator.userAgent.includes('Electron'));
+  const url = new URL(
+    isElectronLocal ? 'https://blessipo-crypto.github.io/astro-vr/' : window.location.href
+  );
   url.search = '';
   url.hash = '';
   url.searchParams.set('theme', encodeSharedTheme(payload));
