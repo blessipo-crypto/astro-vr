@@ -596,13 +596,13 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
         </div>
       )}
 
-      {/* Complete Aspects Breakdown (Natal / Solar Return RS -> Natal & RS <-> RS) */}
+      {/* Complete Aspects Breakdown (All modes) */}
       {interpretation.detailedAspects && interpretation.detailedAspects.length > 0 && (
         <div className="mb-5 space-y-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-amber-900 border-b border-slate-300 pb-1">
-            {mode === 'solarReturn'
-              ? `Analyse Complète des Aspects Révolution Solaire → Natal (${interpretation.detailedAspects.length})`
-              : `Analyse Complète des Aspects Natals (${interpretation.detailedAspects.length})`}
+            {outerChart
+              ? `Analyse Complète des Aspects ${modeLabel} → Base (${interpretation.detailedAspects.length})`
+              : `Analyse Complète des Aspects (${interpretation.detailedAspects.length})`}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
             {interpretation.detailedAspects.map((asp) => (
@@ -623,10 +623,10 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
         </div>
       )}
 
-      {mode === 'solarReturn' && interpretation.secondaryAspects && interpretation.secondaryAspects.length > 0 && (
+      {interpretation.secondaryAspects && interpretation.secondaryAspects.length > 0 && (
         <div className="mb-5 space-y-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-sky-900 border-b border-slate-300 pb-1">
-            Aspects Internes de la Révolution Solaire (RS ↔ RS · {interpretation.secondaryAspects.length})
+            {interpretation.secondaryAspectsLabel ?? `Aspects Internes (${modeLabel} · ${interpretation.secondaryAspects.length})`}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
             {interpretation.secondaryAspects.map((asp) => (

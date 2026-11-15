@@ -2,6 +2,7 @@ import type {
   AspectInfo,
   AspectType,
   AstroChart,
+  ChartMode,
   ElementType,
   HouseCusp,
   PlanetId,
@@ -9,6 +10,10 @@ import type {
   ZodiacSign,
 } from './astroEngine';
 import type { WuXingElement } from './chineseAstrology';
+import {
+  getPlanetInHouseMeaning,
+  getPlanetInHouseModeContext,
+} from './planetHouseKnowledge';
 
 export type DignityStatus = 'Domicile' | 'Exaltation' | 'Exil' | 'Chute' | 'Pérégrine';
 
@@ -401,13 +406,13 @@ export function getPlanetSignDeepMeaning(planet: PlanetPosition, houses: HouseCu
   const trait = PLANET_SIGN_TRAITS[planet.id]?.[planet.sign.index] ?? planet.sign.keywords.toLowerCase();
   const dignity = getPlanetDignity(planet.id, planet.sign.index);
   const decan = getDecanInfo(planet.sign, planet.degInSign);
-  const houseFocus = PLANET_HOUSE_FOCUS[planet.house] ?? houses[planet.house - 1]?.meaning ?? '';
+  const planetHouseSpecific = getPlanetInHouseMeaning(planet.id, planet.house);
   const retroNote = planet.retrograde && RETROGRADE_PLANET_NOTES[planet.id] ? ` ${RETROGRADE_PLANET_NOTES[planet.id]}` : '';
 
   const dignityTag =
     dignity.status !== 'Pérégrine' ? ` [${dignity.status} en ${planet.sign.name}]` : '';
 
-  return `${planet.name} en ${planet.sign.name}${dignityTag} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan · sous-influence ${decan.subSignName}) se manifeste par : ${trait}. Placée en Maison ${houses[planet.house - 1].roman}, cette énergie s’investit prioritairement ${houseFocus}.${retroNote}`;
+  return `${planet.name} en ${planet.sign.name}${dignityTag} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan · sous-influence ${decan.subSignName}) s’exprime par : ${trait}. ${planetHouseSpecific}${retroNote}`;
 }
 
 export function getHouseCuspInterpretation(house: HouseCusp, allPlanets: PlanetPosition[]): string {
@@ -821,18 +826,27 @@ export function getHouseRulerInfo(
 export function getNatalPlanetDetailedText(
   planet: PlanetPosition,
   chart: AstroChart,
-  aspectCount: number
+  aspectCount: number,
+  modeContext: 'natal' | 'composite' | 'live' = 'natal'
 ): string {
   const trait = PLANET_SIGN_TRAITS[planet.id]?.[planet.sign.index] ?? planet.sign.keywords.toLowerCase();
   const dignity = getPlanetDignity(planet.id, planet.sign.index);
   const decan = getDecanInfo(planet.sign, planet.degInSign);
   const house = chart.houses[planet.house - 1];
-  const houseFocus = PLANET_HOUSE_FOCUS[planet.house] ?? house.meaning;
+  const houseSpecific = getPlanetInHouseModeContext(
+    modeContext,
+    planet.id,
+    planet.name,
+    house.roman,
+    planet.house,
+    house.roman,
+    house.title
+  );
   const ruled = getRuledHousesLabels(planet.id, chart.houses);
 
   const ruledSentence =
     ruled.length > 0
-      ? ` Comme maître ${ruled.length > 1 ? 'des Maisons' : 'de la Maison'} ${ruled.join(' et ')}, cet astre relie directement ${ruled.length > 1 ? 'ces secteurs' : 'ce secteur'} à votre Maison ${house.roman}.`
+      ? ` Comme maître ${ruled.length > 1 ? 'des Maisons' : 'de la Maison'} ${ruled.join(' et ')}, cet astre relie directement ${ruled.length > 1 ? 'ces secteurs' : 'ce secteur'} à la Maison ${house.roman}.`
       : '';
 
   const dignityDetail =
@@ -847,10 +861,10 @@ export function getNatalPlanetDetailedText(
 
   const aspectNote =
     aspectCount > 0
-      ? ` Relié par ${aspectCount} aspect${aspectCount > 1 ? 's' : ''} majeur${aspectCount > 1 ? 's' : ''} dans le thème.`
+      ? ` Relié par ${aspectCount} aspect${aspectCount > 1 ? 's' : ''} majeur${aspectCount > 1 ? 's' : ''}.`
       : ' Sans aspect majeur serré : fonctionne de manière autonome et directe.';
 
-  return `${planet.name} en ${planet.sign.name} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan · sous-influence ${decan.subSignName})${dignityDetail} se traduit par : ${trait}. En Maison ${house.roman} (${house.title}), cette fonction s’investit ${houseFocus}.${ruledSentence}${retroNote}${aspectNote}`;
+  return `${planet.name} en ${planet.sign.name} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan · sous-influence ${decan.subSignName})${dignityDetail} se traduit par : ${trait}. ${houseSpecific}${ruledSentence}${retroNote}${aspectNote}`;
 }
 
 export function getNatalHouseDetailedText(house: HouseCusp, chart: AstroChart): string {
@@ -867,10 +881,10 @@ export function getNatalHouseDetailedText(house: HouseCusp, chart: AstroChart): 
 
   const occupantsSentence =
     occupants.length > 0
-      ? ` ${occupants.length > 1 ? 'Les astres présents' : 'L’astre présent'} (${occupants.map((p) => `${p.symbol} ${p.name}${p.retrograde ? ' ℞' : ''}`).join(', ')}) ${occupants.length > 1 ? 'animent' : 'anime'} activement ce secteur tout au long de votre vie.`
+      ? ` ${occupants.length > 1 ? 'Les astres présents' : 'L’astre présent'} (${occupants.map((p) => `${p.symbol} ${p.name}${p.retrograde ? ' ℞' : ''}`).join(', ')}) ${occupants.length > 1 ? 'animent' : 'anime'} activement ce secteur.`
       : ' Sans planète occupante, ce secteur s’exprime avec fluidité à travers l’état et les aspects de son maître planétaire.';
 
-  return `${house.meaning} Avec sa cuspide en ${house.sign.symbol} ${house.sign.name} (${house.sign.element} · ${house.sign.modality}), vous abordez ce domaine avec ${house.sign.keywords.toLowerCase()}.${rulerSentence}${occupantsSentence}`;
+  return `${house.meaning} Avec sa cuspide en ${house.sign.symbol} ${house.sign.name} (${house.sign.element} · ${house.sign.modality}), ce domaine est abordé avec ${house.sign.keywords.toLowerCase()}.${rulerSentence}${occupantsSentence}`;
 }
 
 const SOLAR_RETURN_HOUSE_MEANINGS: Record<number, string> = {
@@ -917,6 +931,16 @@ export function getSolarReturnPlanetDetailedText(
   const decan = getDecanInfo(srPlanet.sign, srPlanet.degInSign);
   const trait = PLANET_SIGN_TRAITS[srPlanet.id]?.[srPlanet.sign.index] ?? srPlanet.sign.keywords.toLowerCase();
   const roleDesc = SOLAR_RETURN_PLANET_ROLE[srPlanet.id] ?? srPlanet.role;
+  const srHouseMeaning = getPlanetInHouseMeaning(srPlanet.id, srPlanet.house);
+  const natalActivation = getPlanetInHouseModeContext(
+    'solarReturn',
+    srPlanet.id,
+    srPlanet.name,
+    srHouse.roman,
+    natalHouse.house,
+    natalHouse.roman,
+    natalHouse.title
+  );
   const ruledSr = getRuledHousesLabels(srPlanet.id, srChart.houses);
 
   const dignityPart =
@@ -939,7 +963,7 @@ export function getSolarReturnPlanetDetailedText(
       ? ` (${srAspectCount} aspect${srAspectCount > 1 ? 's' : ''} actif${srAspectCount > 1 ? 's' : ''} en RS.)`
       : '';
 
-  return `${roleDesc}. Situé en ${srPlanet.sign.name}${dignityPart} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan) et en Maison ${srHouse.roman} RS (${srHouse.title}), il s’exprime par : ${trait}. En parallèle, il se projette sur votre Maison ${natalHouse.roman} natale (${natalHouse.title}), activant durant cette année ${PLANET_HOUSE_FOCUS[natalHouse.house] ?? natalHouse.meaning}.${ruledPart}${retroPart}${aspPart}`;
+  return `${roleDesc}. Situé en ${srPlanet.sign.name}${dignityPart} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan) : ${trait}. ${srHouseMeaning} ${natalActivation}${ruledPart}${retroPart}${aspPart}`;
 }
 
 export function getSolarReturnHouseDetailedText(
@@ -966,5 +990,76 @@ export function getSolarReturnHouseDetailedText(
 
   return `${baseMeaning} La cuspide RS en ${srHouse.sign.symbol} ${srHouse.sign.name} (${srHouse.sign.keywords.toLowerCase()}) se superpose à votre Maison ${natalSuperposedHouse.roman} natale (${natalSuperposedHouse.title}), reliant ce thème annuel à ${PLANET_HOUSE_FOCUS[natalSuperposedHouse.house] ?? natalSuperposedHouse.meaning}.${rulerSentence}${occSentence}`;
 }
+
+export function getComparisonPlanetDetailedText(
+  mode: ChartMode,
+  outerPlanet: PlanetPosition,
+  outerChart: AstroChart,
+  natalHouse: HouseCusp,
+  aspectCount: number
+): string {
+  const trait =
+    PLANET_SIGN_TRAITS[outerPlanet.id]?.[outerPlanet.sign.index] ??
+    outerPlanet.sign.keywords.toLowerCase();
+  const dignity = getPlanetDignity(outerPlanet.id, outerPlanet.sign.index);
+  const decan = getDecanInfo(outerPlanet.sign, outerPlanet.degInSign);
+  const outerHouse = outerChart.houses[outerPlanet.house - 1];
+  const overlayMeaning = getPlanetInHouseModeContext(
+    mode,
+    outerPlanet.id,
+    outerPlanet.name,
+    outerHouse.roman,
+    natalHouse.house,
+    natalHouse.roman,
+    natalHouse.title
+  );
+
+  const dignityPart =
+    outerPlanet.id !== 'northNode' && dignity.status !== 'Pérégrine'
+      ? ` [${dignity.status}]`
+      : '';
+
+  const retroPart =
+    outerPlanet.retrograde && RETROGRADE_PLANET_NOTES[outerPlanet.id]
+      ? ` ${RETROGRADE_PLANET_NOTES[outerPlanet.id]}`
+      : '';
+
+  const aspPart =
+    aspectCount > 0
+      ? ` (${aspectCount} aspect${aspectCount > 1 ? 's' : ''} actif${aspectCount > 1 ? 's' : ''} sur la carte de base.)`
+      : '';
+
+  return `${outerPlanet.name} en ${outerPlanet.sign.name}${dignityPart} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan) s’exprime par : ${trait}. ${overlayMeaning}${retroPart}${aspPart}`;
+}
+
+export function getNatalHouseWithOuterOverlayDetailedText(
+  mode: ChartMode,
+  natalHouse: HouseCusp,
+  baseChart: AstroChart,
+  outerOccupants: PlanetPosition[]
+): string {
+  const baseText = getNatalHouseDetailedText(natalHouse, baseChart);
+  if (outerOccupants.length === 0) {
+    return `${baseText} Aucun astre externe ne séjourne actuellement dans cette Maison : ce secteur reste dans son équilibre natal de fond.`;
+  }
+  const verb =
+    mode === 'synastry'
+      ? 'Le partenaire place ici'
+      : mode === 'transits'
+        ? 'Actuellement traversée en transit par'
+        : mode === 'progressions'
+          ? 'Actuellement activée en progression par'
+          : mode === 'lunarReturn'
+            ? 'Activée ce mois-ci par'
+            : 'Activée par';
+  const occDesc = outerOccupants
+    .map((p) => {
+      const hint = getPlanetInHouseMeaning(p.id, natalHouse.house).replace(/^[^:]+:\s*/, '');
+      return `${p.symbol} ${p.name} (${hint.split('.')[0]})`;
+    })
+    .join(' · ');
+  return `${baseText} ${verb} : ${occDesc}.`;
+}
+
 
 

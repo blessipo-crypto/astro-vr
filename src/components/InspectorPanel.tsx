@@ -29,6 +29,7 @@ import {
   getHouseCuspInterpretation,
   getPlanetDignity,
 } from '../astro/astroKnowledge';
+import { getPlanetInHouseModeContext } from '../astro/planetHouseKnowledge';
 import {
   buildChineseOppositesAndComplements,
   buildSignAffinityProfile,
@@ -428,7 +429,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <div className="space-y-2.5">
                 <div className="text-[11px] text-slate-400 flex items-center justify-between">
                   <span>Analyse des 12 Maisons ({interpretation.detailedContextLabel})</span>
-                  {mode === 'natal' && <span className="text-[#7dd3fc]">Cliquer pour cibler</span>}
+                  {interpretation.detailedHouses.some((h) => h.canTargetHouse !== false) && (
+                    <span className="text-[#7dd3fc]">Cliquer pour cibler</span>
+                  )}
                 </div>
                 {interpretation.detailedHouses.map((dh) => (
                   <div
@@ -436,7 +439,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-1.5"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      {mode === 'natal' && onSelectHouse ? (
+                      {dh.canTargetHouse !== false && onSelectHouse ? (
                         <button
                           type="button"
                           onClick={() => onSelectHouse(dh.house)}
@@ -469,10 +472,19 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <span className="text-[10.5px] text-slate-400">Occupants :</span>
                         {dh.occupants.map((occ) => (
                           <button
-                            key={occ.id}
+                            key={`${occ.layer ?? 'base'}-${occ.id}`}
                             type="button"
-                            onClick={() => onSelectPlanet(occ.id, mode === 'solarReturn' ? 'outer' : 'base')}
-                            className="rounded border border-[#d4af37]/30 bg-[#d4af37]/10 px-1.5 py-0.5 text-[10.5px] text-[#f3d67a] hover:bg-[#d4af37]/25 transition-colors cursor-pointer"
+                            onClick={() =>
+                              onSelectPlanet(
+                                occ.id,
+                                occ.layer ?? (mode === 'solarReturn' || mode === 'lunarReturn' ? 'outer' : 'base')
+                              )
+                            }
+                            className={`rounded border px-1.5 py-0.5 text-[10.5px] transition-colors cursor-pointer ${
+                              occ.layer === 'outer'
+                                ? 'border-[#38bdf8]/35 bg-[#38bdf8]/10 text-[#7dd3fc] hover:bg-[#38bdf8]/25'
+                                : 'border-[#d4af37]/30 bg-[#d4af37]/10 text-[#f3d67a] hover:bg-[#d4af37]/25'
+                            }`}
                           >
                             <span className="font-glyph">{occ.symbol}</span> {occ.name} ({occ.formattedDeg})
                           </button>
@@ -488,7 +500,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               </div>
             )}
 
-            {/* VIEW 4: Complete Aspects (Natal or RS -> Natal + RS <-> RS) */}
+            {/* VIEW 4: Complete Aspects (All modes) */}
             {interpFilter === 'aspects' && (
               <div className="space-y-3">
                 {/* Harmony Filter */}
@@ -531,9 +543,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       <div className="space-y-2">
                         <div className="text-[11px] font-semibold text-[#e7cfa0] flex items-center justify-between">
                           <span>
-                            {mode === 'solarReturn'
-                              ? `Aspects Révolution Solaire → Natal (${primaryList.length})`
-                              : `Aspects Natals complets (${primaryList.length})`}
+                            {outerChart
+                              ? `Aspects ${outerLabel} → Base (${primaryList.length})`
+                              : `Aspects complets (${primaryList.length})`}
                           </span>
                           <span className="font-normal text-slate-400">Cliquer pour tracer</span>
                         </div>
@@ -568,14 +580,14 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         )}
                       </div>
 
-                      {mode === 'solarReturn' && (interpretation.secondaryAspects?.length ?? 0) > 0 && (
+                      {(interpretation.secondaryAspects?.length ?? 0) > 0 && (
                         <div className="space-y-2 border-t border-white/10 pt-3">
                           <div className="text-[11px] font-semibold text-[#7dd3fc]">
-                            Aspects internes de la Révolution Solaire (RS ↔ RS · {secondaryList.length})
+                            {interpretation.secondaryAspectsLabel ?? `Aspects internes ${outerLabel} (${secondaryList.length})`}
                           </div>
                           {secondaryList.length === 0 ? (
                             <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] text-slate-400">
-                              Aucun aspect interne RS dans cette catégorie.
+                              Aucun aspect interne dans cette catégorie.
                             </div>
                           ) : (
                             secondaryList.map((asp) => (
@@ -602,7 +614,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                         onClick={() => onSelectPlanet(asp.planetA!, 'outer')}
                                         className="text-[#7dd3fc] hover:underline cursor-pointer"
                                       >
-                                        Voir 1er astre RS
+                                        Voir 1er astre ({outerLabel})
                                       </button>
                                     )}
                                     {asp.planetB && (
@@ -611,7 +623,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                         onClick={() => onSelectPlanet(asp.planetB!, 'outer')}
                                         className="text-[#7dd3fc] hover:underline cursor-pointer"
                                       >
-                                        Voir 2e astre RS
+                                        Voir 2e astre ({outerLabel})
                                       </button>
                                     )}
                                   </div>
@@ -1033,7 +1045,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     const dignity = getPlanetDignity(p.id, p.sign.index);
     const decan = getDecanInfo(p.sign, p.degInSign);
     const natalActivatedHouse =
-      isOuter && mode === 'solarReturn'
+      isOuter && outerChart
         ? baseChart.houses[findHouseForLongitude(p.longitude, baseChart.houses) - 1]
         : null;
 
@@ -1047,11 +1059,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             <div className={`flex flex-wrap items-center gap-1.5 text-xs ${isOuter ? 'text-[#38bdf8]' : 'text-[#e7cfa0]'}`}>
               <span>{isOuter ? outerLabel : mode === 'composite' ? 'Composite' : mode === 'live' ? 'En direct' : 'Base'}</span>
               <span aria-hidden="true">·</span>
-              <span>Maison {house.roman}{isOuter && mode === 'solarReturn' ? ' RS' : ''}</span>
+              <span>Maison {house.roman}{isOuter ? ` ${outerLabel}` : ''}</span>
               {natalActivatedHouse && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span className="text-[#e7cfa0]">M.{natalActivatedHouse.roman} natale</span>
+                  <span className="text-[#e7cfa0]">M.{natalActivatedHouse.roman} base</span>
                 </>
               )}
               <span aria-hidden="true">·</span>
@@ -1131,6 +1143,24 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </div>
 
         <p className="mt-3 text-xs leading-relaxed text-[#f3efe6]">{p.signMeaning}</p>
+        {natalActivatedHouse && (
+          <div className="mt-2.5 rounded-lg border border-[#38bdf8]/25 bg-[#0c162d] px-3 py-2 text-[11px] space-y-1">
+            <div className="font-semibold text-[#7dd3fc]">
+              Impact sur la Maison {natalActivatedHouse.roman} de base ({natalActivatedHouse.title})
+            </div>
+            <p className="text-slate-200 leading-relaxed">
+              {getPlanetInHouseModeContext(
+                mode,
+                p.id,
+                p.name,
+                house.roman,
+                natalActivatedHouse.house,
+                natalActivatedHouse.roman,
+                natalActivatedHouse.title
+              )}
+            </p>
+          </div>
+        )}
         <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
           Fonction archétypale : {p.role}. {decan.nuance}
         </p>
