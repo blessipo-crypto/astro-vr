@@ -22,6 +22,7 @@ import {
   speakSingleFrenchUtterance,
   stopFrenchSpeech,
 } from '../vr/audio';
+import { VoiceDictationButton } from './VoiceDictationButton';
 
 export type HelpTargetTab = 'natal' | 'derived' | 'aspects' | 'settings' | 'help';
 
@@ -247,6 +248,16 @@ const HELP_TOPICS: HelpTopic[] = [
     actionLabel: 'Lancer l’intro audio',
     runAction: (a) => a.onOpenAudioIntro(),
   },
+  {
+    id: 'voice-control',
+    category: 'start',
+    title: 'Piloter l’application à la voix & Dictée de recherche (En option)',
+    answer:
+      'Activez « Voix » en haut ou dans Réglages pour commander Uranie à la voix (ex : « Thème natal de Marie née le 15 mai 1988 à Lyon », « Transits », « Cherche Saint-Malo », « Montre Vénus », « Vue 2D », « Centre 360 »). Chaque champ de recherche possède aussi un bouton micro optionnel.',
+    keywords: 'voix micro dictee reconnaissance vocale parler recherche commande',
+    actionLabel: 'Ouvrir Réglages Voix',
+    runAction: (a) => a.onSwitchTab('settings'),
+  },
 ];
 
 const QUICK_GLOSSARY = [
@@ -270,9 +281,13 @@ const QUICK_GLOSSARY = [
 
 interface InteractiveHelpTabProps {
   actions: InteractiveHelpActions;
+  showVoiceDictation?: boolean;
 }
 
-export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({ actions }) => {
+export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
+  actions,
+  showVoiceDictation = true,
+}) => {
   const [stepIdx, setStepIdx] = useState<number>(0);
   const [query, setQuery] = useState<string>('');
   const [category, setCategory] = useState<HelpCategory>('all');
@@ -427,15 +442,24 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({ actions 
       {/* 2. Recherche & Fiches d'aide cliquables */}
       <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="relative flex-1 min-w-[210px]">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher une aide (ex : ascendant, 2D, animations, quest, pdf...)"
-              className="w-full rounded-lg border border-white/15 bg-[#070b18] pl-8 pr-3 py-1.5 text-xs text-[#f3efe6] placeholder:text-slate-500 focus:border-[#38bdf8] focus:outline-none"
-            />
+          <div className="flex items-center gap-1.5 flex-1 min-w-[230px]">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Rechercher une aide (ex : voix, ascendant, 2D, animations, quest...)"
+                className="w-full rounded-lg border border-white/15 bg-[#070b18] pl-8 pr-3 py-1.5 text-xs text-[#f3efe6] placeholder:text-slate-500 focus:border-[#38bdf8] focus:outline-none"
+              />
+            </div>
+            {showVoiceDictation && (
+              <VoiceDictationButton
+                accent="cyan"
+                title="Rechercher une rubrique d’aide à la voix"
+                onTranscript={(spoken) => setQuery(spoken)}
+              />
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-1">

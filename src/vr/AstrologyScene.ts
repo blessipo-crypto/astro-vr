@@ -27,6 +27,7 @@ import {
   createZodiacWheelTextures,
   DiegeticPlaqueRenderer,
   StarfieldBackdropStyle,
+  VRMenuButtonId,
   ZODIAC_CONSTELLATION_POINTS,
   ZodiacSignStyle,
   ZodiacWheelStyle,
@@ -48,6 +49,14 @@ export interface SceneCallbacks {
   onVRSessionChange: (inVR: boolean) => void;
   onXRModeChange: (mode: XRSessionModeKind) => void;
   onVRTimeStep?: (deltaMinutes: number) => void;
+  onVRSelectMode?: (mode: ChartMode) => void;
+  onVRTogglePlay?: () => void;
+  onVRToggleTradition?: () => void;
+  onVRToggleHouses?: () => void;
+  onVRToggleSkyAnims?: () => void;
+  onVRToggleVoice?: () => void;
+  onVRQuitApp?: () => void;
+  onCameraPresetChange?: (preset: CameraPreset) => void;
 }
 
 interface PlanetNode {
@@ -197,6 +206,14 @@ export class AstrologyScene {
 
   private plaqueRenderer!: DiegeticPlaqueRenderer;
   private vrLecternGroup = new THREE.Group();
+  private vrScreenMesh!: THREE.Mesh;
+  private hoveredVrButtonId: VRMenuButtonId | null = null;
+  private vrCenterView = false;
+  private isPlaying = false;
+  private skyAnimsOn = true;
+  private voiceListening = false;
+  private voiceStatus = '';
+  private currentCameraPreset: CameraPreset = 'overview';
 
   private texturesToDispose: THREE.Texture[] = [];
   private maxAniso = 4;
@@ -749,16 +766,48 @@ export class AstrologyScene {
       map: this.plaqueRenderer.texture,
     });
 
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.15, 1.075), screenMat);
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.35, 1.56), screenMat);
     screen.position.z = 0.02;
+    screen.userData = { kind: 'vr-menu' };
+    screen.layers.enable(1);
+    this.vrScreenMesh = screen;
+    this.interactables.push(screen);
     this.vrLecternGroup.add(screen);
 
-    const backing = new THREE.Mesh(new THREE.BoxGeometry(2.26, 1.18, 0.03), frameMat);
+    const backing = new THREE.Mesh(new THREE.BoxGeometry(2.46, 1.66, 0.03), frameMat);
     this.vrLecternGroup.add(backing);
 
     this.vrLecternGroup.position.set(0, 1.15, 4.9);
     this.vrLecternGroup.rotation.x = -0.35;
     this.scene.add(this.vrLecternGroup);
+  }
+
+  public bringMenuInFrontOfViewer() {
+    const camPos = new THREE.Vector3();
+    const camDir = new THREE.Vector3();
+    this.camera.getWorldPosition(camPos);
+    this.camera.getWorldDirection(camDir);
+
+    let fwdX = camDir.x;
+    let fwdZ = camDir.z;
+    const len = Math.hypot(fwdX, fwdZ);
+    if (len < 0.05) {
+      fwdX = 0;
+      fwdZ = -1;
+    } else {
+      fwdX /= len;
+      fwdZ /= len;
+    }
+
+    const isMR = this.activeXRMode === 'mr';
+    const dist = isMR ? 0.96 : 2.15;
+    const scale = isMR ? 0.48 : 1;
+    const targetY = Math.max(isMR ? 0.72 : 0.98, camPos.y - 0.38);
+
+    this.vrLecternGroup.scale.setScalar(scale);
+    this.vrLecternGroup.position.set(camPos.x + fwdX * dist, targetY, camPos.z + fwdZ * dist);
+    this.vrLecternGroup.lookAt(camPos.x, camPos.y - 0.12, camPos.z);
+    this.vrLecternGroup.visible = true;
   }
 
   private initControls() {
@@ -798,6 +847,7 @@ export class AstrologyScene {
     for (let i = 0; i < 2; i++) {
       const controller = this.renderer.xr.getController(i);
       controller.addEventListener('selectstart', () => this.onXRSelectStart(controller));
+      controller.addEventListener('squeezestart', () => this.bringMenuInFrontOfViewer());
       this.userRig.add(controller);
       this.controllers.push(controller);
 
@@ -840,12 +890,19 @@ export class AstrologyScene {
       if (this.activeXRMode === 'mr') {
         this.holoRoot.scale.setScalar(this.mrScale);
         this.holoRoot.position.set(0, 0.92, -1.75);
-        this.vrLecternGroup.position.set(0, 0.72, -0.82);
-        this.vrLecternGroup.scale.setScalar(0.55);
+        this.vrLecternGroup.position.set(0, 0.72, -0.88);
+        this.vrLecternGroup.rotation.set(-0.28, 0, 0);
+        this.vrLecternGroup.scale.setScalar(0.48);
       } else {
         this.holoRoot.scale.setScalar(1);
         this.holoRoot.position.set(0, 0, 0);
-        this.vrLecternGroup.position.set(0, 1.15, 4.9);
+        if (this.currentCameraPreset === 'center' || (this.activeXRMode === 'vr' && this.vrCenterView)) {
+          this.vrLecternGroup.position.set(0, 1.18, -2.15);
+          this.vrLecternGroup.rotation.set(-0.22, 0, 0);
+        } else {
+          this.vrLecternGroup.position.set(0, 1.15, 4.9);
+          this.vrLecternGroup.rotation.set(-0.35, 0, 0);
+        }
         this.vrLecternGroup.scale.setScalar(1);
       }
     } else {
@@ -856,7 +913,13 @@ export class AstrologyScene {
       this.starDomeGroup.visible = this.showConstellations;
       this.holoRoot.scale.setScalar(1);
       this.holoRoot.position.set(0, 0, 0);
-      this.vrLecternGroup.position.set(0, 1.15, 4.9);
+      if (this.currentCameraPreset === 'center' || (this.activeXRMode === 'vr' && this.vrCenterView)) {
+        this.vrLecternGroup.position.set(0, 1.18, -2.15);
+        this.vrLecternGroup.rotation.set(-0.22, 0, 0);
+      } else {
+        this.vrLecternGroup.position.set(0, 1.15, 4.9);
+        this.vrLecternGroup.rotation.set(-0.35, 0, 0);
+      }
       this.vrLecternGroup.scale.setScalar(1);
     }
   }
@@ -885,22 +948,32 @@ export class AstrologyScene {
       });
       this.vrSession = session;
       this.activeXRMode = 'vr';
+      this.vrCenterView = this.currentCameraPreset === 'center';
       session.addEventListener('end', () => {
         this.vrSession = null;
         this.activeXRMode = 'none';
+        this.vrCenterView = false;
         this.userRig.position.set(0, 0, 0);
-        this.camera.position.set(0, 11.5, 16.5);
+        this.setCameraPreset(this.currentCameraPreset);
         this.controls.enabled = true;
         this.applyVisualBackdropState();
+        this.vrLecternGroup.visible = this.showVRPlaque || this.currentCameraPreset === 'center';
         this.callbacks.onVRSessionChange(false);
         this.callbacks.onXRModeChange('none');
+        this.updatePlaque();
       });
       this.controls.enabled = false;
-      this.userRig.position.set(0, 0, 7.6);
+      this.vrLecternGroup.visible = true;
+      if (this.vrCenterView) {
+        this.userRig.position.set(0, 0, 0);
+      } else {
+        this.userRig.position.set(0, 0, 7.6);
+      }
       this.applyVisualBackdropState();
       await this.renderer.xr.setSession(session);
       this.callbacks.onVRSessionChange(true);
       this.callbacks.onXRModeChange('vr');
+      this.updatePlaque();
       return true;
     } catch {
       return false;
@@ -1449,25 +1522,81 @@ export class AstrologyScene {
     skyMat.needsUpdate = true;
   }
 
+  public refreshTypography() {
+    this.zodiacTextureCache.forEach((pair) => {
+      pair.bandTexture.dispose();
+      pair.collarTexture.dispose();
+    });
+    this.zodiacTextureCache.clear();
+    this.applyZodiacTextures();
+    this.updatePlaque();
+  }
+
+  public setMenuStatus(status: {
+    isPlaying?: boolean;
+    showHouses?: boolean;
+    skyAnimsOn?: boolean;
+    voiceListening?: boolean;
+    voiceStatus?: string;
+  }) {
+    let changed = false;
+    if (typeof status.isPlaying === 'boolean' && status.isPlaying !== this.isPlaying) {
+      this.isPlaying = status.isPlaying;
+      changed = true;
+    }
+    if (typeof status.showHouses === 'boolean' && status.showHouses !== this.showHouses) {
+      this.showHouses = status.showHouses;
+      changed = true;
+    }
+    if (typeof status.skyAnimsOn === 'boolean' && status.skyAnimsOn !== this.skyAnimsOn) {
+      this.skyAnimsOn = status.skyAnimsOn;
+      changed = true;
+    }
+    if (typeof status.voiceListening === 'boolean' && status.voiceListening !== this.voiceListening) {
+      this.voiceListening = status.voiceListening;
+      changed = true;
+    }
+    if (typeof status.voiceStatus === 'string' && status.voiceStatus !== this.voiceStatus) {
+      this.voiceStatus = status.voiceStatus;
+      changed = true;
+    }
+    if (changed) this.updatePlaque();
+  }
+
   public setSkyAnimations(config: SkyAnimationsConfig) {
     this.skyAnimations?.setConfig(config);
+    this.skyAnimsOn = Boolean(config.shootingStars || config.nebulae || config.aurora);
+    this.updatePlaque();
   }
 
   public setCameraPreset(preset: CameraPreset) {
+    this.currentCameraPreset = preset;
     this.cameraTransitionActive = true;
     if (preset === 'overview') {
       this.targetCamPos.set(0, 11.5, 16.5);
       this.targetLookAt.set(0, 1.4, 0);
+      this.controls.minDistance = 0.4;
+      this.controls.maxPolarAngle = Math.PI * 0.56;
     } else if (preset === 'center') {
-      this.targetCamPos.set(0, 2.1, 0.4);
-      this.targetLookAt.set(0, 1.85, -8.5);
+      // Orbit tightly around the center of the sphere so mouse drag looks 360° everywhere!
+      this.targetCamPos.set(0, 2.1, 0.01);
+      this.targetLookAt.set(0, 2.02, -0.45);
+      this.controls.minDistance = 0.05;
+      this.controls.maxPolarAngle = Math.PI * 0.92;
+      this.vrLecternGroup.visible = true;
     } else if (preset === 'ecliptic') {
       this.targetCamPos.set(0, 22.0, 0.6);
       this.targetLookAt.set(0, 1.5, 0);
+      this.controls.minDistance = 0.4;
+      this.controls.maxPolarAngle = Math.PI * 0.56;
     } else if (preset === 'horizon') {
       this.targetCamPos.set(0, 2.35, 13.6);
       this.targetLookAt.set(0, 1.75, 0);
+      this.controls.minDistance = 0.4;
+      this.controls.maxPolarAngle = Math.PI * 0.56;
     }
+    this.applyVisualBackdropState();
+    this.updatePlaque();
   }
 
   public selectPlanet(planetId: PlanetId | null, layer: 'base' | 'outer' = 'base') {
@@ -1549,6 +1678,7 @@ export class AstrologyScene {
     const outerRoleLabel = outerRoleMap[this.chartMode] ?? 'Transit';
 
     this.plaqueRenderer.render({
+      chartMode: this.chartMode,
       tradition: this.tradition,
       baseChart: this.baseChart,
       outerChart: this.outerChart,
@@ -1558,10 +1688,106 @@ export class AstrologyScene {
       selectedPlanetLayer: this.selectedPlanetLayer,
       selectedHouse: h,
       comparisonAspects: this.comparisonAspects,
+      isPlaying: this.isPlaying,
+      showHouses: this.showHouses,
+      skyAnimsOn: this.skyAnimsOn,
+      inVR: Boolean(this.vrSession),
+      vrCenterView: this.vrCenterView,
+      hoveredButtonId: this.hoveredVrButtonId,
+      voiceListening: this.voiceListening,
+      voiceStatus: this.voiceStatus,
     });
   }
 
-  private handleSelectObject(obj: THREE.Object3D) {
+  private handleVrMenuButton(btnId: VRMenuButtonId) {
+    celestialAudio.playSoftTick();
+    switch (btnId) {
+      case 'mode:natal':
+        this.callbacks.onVRSelectMode?.('natal');
+        break;
+      case 'mode:transits':
+        this.callbacks.onVRSelectMode?.('transits');
+        break;
+      case 'mode:solarReturn':
+        this.callbacks.onVRSelectMode?.('solarReturn');
+        break;
+      case 'mode:comparative':
+        this.callbacks.onVRSelectMode?.('comparative');
+        break;
+      case 'mode:live':
+        this.callbacks.onVRSelectMode?.('live');
+        break;
+      case 'time:-1440':
+        this.callbacks.onVRTimeStep?.(-1440);
+        break;
+      case 'time:-60':
+        this.callbacks.onVRTimeStep?.(-60);
+        break;
+      case 'time:togglePlay':
+        this.callbacks.onVRTogglePlay?.();
+        break;
+      case 'time:+60':
+        this.callbacks.onVRTimeStep?.(60);
+        break;
+      case 'time:+1440':
+        this.callbacks.onVRTimeStep?.(1440);
+        break;
+      case 'toggle:tradition':
+        this.callbacks.onVRToggleTradition?.();
+        break;
+      case 'toggle:houses':
+        this.callbacks.onVRToggleHouses?.();
+        break;
+      case 'toggle:skyAnims':
+        this.callbacks.onVRToggleSkyAnims?.();
+        break;
+      case 'voice:toggle':
+        this.callbacks.onVRToggleVoice?.();
+        break;
+      case 'vr:toggleView':
+        if (this.vrSession) {
+          this.vrCenterView = !this.vrCenterView;
+          if (this.activeXRMode === 'vr') {
+            this.userRig.position.set(0, 0, this.vrCenterView ? 0 : 7.6);
+          }
+          this.bringMenuInFrontOfViewer();
+          this.updatePlaque();
+        } else {
+          this.bringMenuInFrontOfViewer();
+        }
+        break;
+      case 'app:exitVR':
+        if (this.vrSession) {
+          void this.vrSession.end();
+        } else {
+          this.setCameraPreset('overview');
+          this.callbacks.onCameraPresetChange?.('overview');
+        }
+        break;
+      case 'app:quitApp':
+        if (this.vrSession) {
+          void this.vrSession.end().finally(() => this.callbacks.onVRQuitApp?.());
+        } else {
+          this.callbacks.onVRQuitApp?.();
+        }
+        break;
+    }
+  }
+
+  public async exitXRSession(): Promise<void> {
+    if (this.vrSession) {
+      await this.vrSession.end();
+    }
+  }
+
+  private handleSelectObject(obj: THREE.Object3D, uv?: THREE.Vector2) {
+    if (obj.userData.kind === 'vr-menu' && uv) {
+      const btnId = this.plaqueRenderer.hitTestUv(uv.x, uv.y);
+      if (btnId) {
+        this.handleVrMenuButton(btnId);
+      }
+      return;
+    }
     if (obj.userData.kind === 'planet') {
       const id = obj.userData.planetId as PlanetId;
       const layer = (obj.userData.layer as 'base' | 'outer') ?? 'base';
@@ -1585,7 +1811,7 @@ export class AstrologyScene {
     this.raycaster.set(_vec3B, _vec3A);
     const hits = this.raycaster.intersectObjects(this.interactables, false);
     if (hits.length > 0) {
-      this.handleSelectObject(hits[0].object);
+      this.handleSelectObject(hits[0].object, hits[0].uv);
     }
   }
 
@@ -1609,7 +1835,20 @@ export class AstrologyScene {
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const hits = this.raycaster.intersectObjects(this.interactables, false);
     this.hoveredObject = hits.length > 0 ? hits[0].object : null;
-    this.renderer.domElement.style.cursor = this.hoveredObject ? 'pointer' : 'grab';
+
+    let nextVrBtn: VRMenuButtonId | null = null;
+    if (hits.length > 0 && hits[0].object.userData.kind === 'vr-menu' && hits[0].uv) {
+      nextVrBtn = this.plaqueRenderer.hitTestUv(hits[0].uv.x, hits[0].uv.y);
+    }
+    if (nextVrBtn !== this.hoveredVrButtonId) {
+      this.hoveredVrButtonId = nextVrBtn;
+      this.updatePlaque();
+    }
+
+    this.renderer.domElement.style.cursor =
+      hits.length > 0 && (hits[0].object.userData.kind !== 'vr-menu' || nextVrBtn !== null)
+        ? 'pointer'
+        : 'grab';
   };
 
   private pointerDownPos = { x: 0, y: 0 };
@@ -1632,7 +1871,7 @@ export class AstrologyScene {
       this.raycaster.setFromCamera(this.pointer, this.camera);
       const hits = this.raycaster.intersectObjects(this.interactables, false);
       if (hits.length > 0) {
-        this.handleSelectObject(hits[0].object);
+        this.handleSelectObject(hits[0].object, hits[0].uv);
       }
     };
     window.addEventListener('pointerup', onUp);
@@ -1709,6 +1948,7 @@ export class AstrologyScene {
       }
       this.controls.update();
     } else {
+      let xrHoverBtn: VRMenuButtonId | null = null;
       for (let i = 0; i < this.controllers.length; i++) {
         const ctrl = this.controllers[i];
         const reticle = this.controllerReticles[i];
@@ -1721,24 +1961,50 @@ export class AstrologyScene {
         if (hits.length > 0) {
           reticle.position.copy(hits[0].point);
           reticle.visible = true;
+          if (hits[0].object.userData.kind === 'vr-menu' && hits[0].uv) {
+            xrHoverBtn = this.plaqueRenderer.hitTestUv(hits[0].uv.x, hits[0].uv.y);
+          }
         } else {
           reticle.visible = false;
         }
       }
+      if (xrHoverBtn !== this.hoveredVrButtonId) {
+        this.hoveredVrButtonId = xrHoverBtn;
+        this.updatePlaque();
+      }
 
-      if (this.callbacks.onVRTimeStep) {
-        const nowMs = performance.now();
-        if (nowMs - this.lastVrTimeStepMs >= 180) {
-          for (const src of this.vrSession.inputSources) {
-            const axes = src.gamepad?.axes;
-            if (!axes || axes.length === 0) continue;
-            const axisX = axes.length >= 3 ? axes[2] : axes[0];
-            if (Math.abs(axisX) > 0.55) {
-              const stepMins = Math.abs(axisX) > 0.88 ? 60 : 15;
-              this.lastVrTimeStepMs = nowMs;
-              this.callbacks.onVRTimeStep(axisX > 0 ? stepMins : -stepMins);
-              break;
-            }
+      const nowMs = performance.now();
+      for (const src of this.vrSession.inputSources) {
+        const axes = src.gamepad?.axes;
+        if (!axes || axes.length === 0) continue;
+        const axisX = axes.length >= 3 ? axes[2] : axes[0];
+        const axisY = axes.length >= 4 ? axes[3] : axes.length >= 2 ? axes[1] : 0;
+
+        // Smooth locomotion forward/backward in 360° VR using thumbstick Y
+        if (Math.abs(axisY) > 0.25 && this.activeXRMode === 'vr') {
+          this.camera.getWorldDirection(_vec3A);
+          const fLen = Math.hypot(_vec3A.x, _vec3A.z);
+          if (fLen > 0.05) {
+            const speed = 4.2 * delta * -axisY;
+            this.userRig.position.x = THREE.MathUtils.clamp(
+              this.userRig.position.x + (_vec3A.x / fLen) * speed,
+              -14,
+              14
+            );
+            this.userRig.position.z = THREE.MathUtils.clamp(
+              this.userRig.position.z + (_vec3A.z / fLen) * speed,
+              -14,
+              14
+            );
+          }
+        }
+
+        if (this.callbacks.onVRTimeStep && nowMs - this.lastVrTimeStepMs >= 180) {
+          if (Math.abs(axisX) > 0.55) {
+            const stepMins = Math.abs(axisX) > 0.88 ? 60 : 15;
+            this.lastVrTimeStepMs = nowMs;
+            this.callbacks.onVRTimeStep(axisX > 0 ? stepMins : -stepMins);
+            break;
           }
         }
       }

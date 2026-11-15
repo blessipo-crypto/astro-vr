@@ -1,5 +1,6 @@
 import { ElementType } from './astroEngine';
 import { ChineseSign } from './chineseAstrology';
+import { getActiveFontStacks } from '../vr/typography';
 
 export type ZodiacSignStyle = 'figurative' | 'calligraphic' | 'jewel' | 'minimal';
 
@@ -590,12 +591,13 @@ export function drawChineseSignArtworkOnCanvas(options: {
   ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
   ctx.shadowBlur = 8;
   ctx.fillStyle = style === 'minimal' ? '#f8fafc' : '#fef3c7';
-  ctx.font = `600 ${Math.round(radius * 0.82)}px "Cormorant Garamond", Georgia, serif`;
+  const fonts = getActiveFontStacks();
+  ctx.font = `600 ${Math.round(radius * 0.82)}px ${fonts.display}`;
   ctx.fillText(ch.hanzi, 0, -radius * 0.04);
 
   ctx.shadowBlur = 0;
   ctx.fillStyle = ch.color;
-  ctx.font = `600 ${Math.round(radius * 0.34)}px "Cormorant Garamond", serif`;
+  ctx.font = `600 ${Math.round(radius * 0.34)}px ${fonts.display}`;
   ctx.fillText(ch.branchHanzi, 0, radius * 0.56);
 
   ctx.restore();

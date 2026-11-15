@@ -9,12 +9,14 @@ import {
 } from '../astro/astroEngine';
 import { getAscendantDeepInterpretation } from '../astro/astroKnowledge';
 import { transposeLongitudeToChinese } from '../astro/chineseAstrology';
+import { VoiceDictationButton } from './VoiceDictationButton';
 
 interface AscendantCalculatorModalProps {
   open: boolean;
   onClose: () => void;
   initialProfile: NatalProfile;
   onApplyToProfile: (patch: Partial<NatalProfile>) => void;
+  showVoiceDictation?: boolean;
 }
 
 const MONTHS_FR = [
@@ -60,6 +62,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
   onClose,
   initialProfile,
   onApplyToProfile,
+  showVoiceDictation = true,
 }) => {
   const [dateIso, setDateIso] = useState<string>(initialProfile.birthDateIso);
   const [cityId, setCityId] = useState<string>(initialProfile.cityId);
@@ -154,12 +157,14 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
 
   if (!open) return null;
 
-  const handleSearchPlace = async () => {
-    if (!placeQuery.trim()) return;
+  const handleSearchPlace = async (overrideQuery?: string) => {
+    const q = (overrideQuery ?? placeQuery).trim();
+    if (!q) return;
+    if (overrideQuery !== undefined) setPlaceQuery(q);
     setBusy(true);
     setLookupError(null);
     setCandidates([]);
-    const found = await searchPlacesByQuery(placeQuery);
+    const found = await searchPlacesByQuery(q);
     setBusy(false);
     if (found.length === 0) {
       setLookupError('Lieu introuvable. Essayez un autre code postal, une ville ou saisissez Lat/Lon.');
@@ -363,23 +368,32 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                   className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 text-xs text-[#f3efe6] cursor-pointer"
                 >
                   {customLoc && <option value="__custom__">{customLoc.name}</option>}
-                  {CITY_PRESETS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.country})
-                    </option>
-                  ))}
+                  <optgroup label="France (Villes & Préfectures)">
+                    {CITY_PRESETS.filter((c) => c.country === 'France').map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.department ? `${c.department} · ` : ''}France)
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Francophonie & Monde">
+                    {CITY_PRESETS.filter((c) => c.country !== 'France').map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.country})
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
               <div>
                 <label htmlFor="asc-place-search" className="block text-[11px] text-slate-400 mb-1">
-                  Code postal (FR), ville ou pays
+                  Toutes communes FR (nom, code postal, dép.) ou Monde
                 </label>
                 <div className="flex items-center gap-1.5">
                   <input
                     id="asc-place-search"
                     type="text"
-                    placeholder="Ex: 75008, Marseille, Montréal..."
+                    placeholder="Ex: Saint-Malo, 75008, Valence 26..."
                     value={placeQuery}
                     onChange={(e) => setPlaceQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -387,6 +401,14 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                     }}
                     className="flex-1 rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
                   />
+                  {showVoiceDictation && (
+                    <VoiceDictationButton
+                      accent="gold"
+                      title="Dicter une ville ou un code postal"
+                      onTranscript={(spoken) => void handleSearchPlace(spoken)}
+                      onErrorMessage={(msg) => setLookupError(msg)}
+                    />
+                  )}
                   <button
                     type="button"
                     disabled={busy}
@@ -452,13 +474,17 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
 
           {candidates.length > 1 && (
             <div className="flex flex-wrap items-center gap-1">
-              <span className="text-[10px] text-slate-400">Communes :</span>
-              {candidates.slice(0, 5).map((cand) => (
+              <span className="text-[10px] text-slate-400">Communes trouvées :</span>
+              {candidates.slice(0, 8).map((cand) => (
                 <button
-                  key={cand.name}
+                  key={`${cand.name}-${cand.latitude}-${cand.longitude}`}
                   type="button"
                   onClick={() => setCustomLoc(cand)}
-                  className="rounded border border-white/15 bg-[#080d1b] px-2 py-0.5 text-[11px] text-slate-200 hover:border-[#d4af37] cursor-pointer"
+                  className={`rounded border px-2 py-0.5 text-[11px] transition-colors cursor-pointer ${
+                    customLoc?.name === cand.name
+                      ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#f3d67a]'
+                      : 'border-white/15 bg-[#080d1b] text-slate-200 hover:border-[#d4af37]'
+                  }`}
                 >
                   {cand.name}
                 </button>

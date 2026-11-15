@@ -2,8 +2,9 @@
 
 @layer base {
   :root {
-    --font-display: 'Cormorant Garamond', Georgia, serif;
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'Cinzel', 'Cormorant Garamond', 'Playfair Display', Cochin, Georgia, serif;
+    --font-sans: 'Montserrat', 'Lato', system-ui, -apple-system, sans-serif;
+    --font-glyph: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   }
 
@@ -17,7 +18,8 @@
     overflow: hidden;
     background-color: #05070e;
     color: #f3efe6;
-    font-family: var(--font-sans);
+    font-family: var(--font-sans), var(--font-glyph);
+    font-variant-emoji: text;
   }
 }
 
@@ -25,9 +27,20 @@
   font-family: var(--font-display);
 }
 
+.font-glyph {
+  font-family: var(--font-glyph);
+  font-variant-emoji: text;
+  font-style: normal;
+}
+
 .font-mono-tabular {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), var(--font-glyph);
   font-variant-numeric: tabular-nums;
+  font-variant-emoji: text;
+}
+
+svg text {
+  font-variant-emoji: text;
 }
 
 /* Custom subtle scrollbars for inspection drawer */

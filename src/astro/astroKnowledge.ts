@@ -91,18 +91,18 @@ export function getPlanetDignity(planetId: PlanetId, signIndex: number): PlanetD
 }
 
 const SIGN_RULER_LIST: Array<{ name: string; symbol: string; ruler: string }> = [
-  { name: 'Bélier', symbol: '♈', ruler: 'Mars' },
-  { name: 'Taureau', symbol: '♉', ruler: 'Vénus' },
-  { name: 'Gémeaux', symbol: '♊', ruler: 'Mercure' },
-  { name: 'Cancer', symbol: '♋', ruler: 'Lune' },
-  { name: 'Lion', symbol: '♌', ruler: 'Soleil' },
-  { name: 'Vierge', symbol: '♍', ruler: 'Mercure' },
-  { name: 'Balance', symbol: '♎', ruler: 'Vénus' },
-  { name: 'Scorpion', symbol: '♏', ruler: 'Pluton' },
-  { name: 'Sagittaire', symbol: '♐', ruler: 'Jupiter' },
-  { name: 'Capricorne', symbol: '♑', ruler: 'Saturne' },
-  { name: 'Verseau', symbol: '♒', ruler: 'Uranus' },
-  { name: 'Poissons', symbol: '♓', ruler: 'Neptune' },
+  { name: 'Bélier', symbol: '♈\uFE0E', ruler: 'Mars' },
+  { name: 'Taureau', symbol: '♉\uFE0E', ruler: 'Vénus' },
+  { name: 'Gémeaux', symbol: '♊\uFE0E', ruler: 'Mercure' },
+  { name: 'Cancer', symbol: '♋\uFE0E', ruler: 'Lune' },
+  { name: 'Lion', symbol: '♌\uFE0E', ruler: 'Soleil' },
+  { name: 'Vierge', symbol: '♍\uFE0E', ruler: 'Mercure' },
+  { name: 'Balance', symbol: '♎\uFE0E', ruler: 'Vénus' },
+  { name: 'Scorpion', symbol: '♏\uFE0E', ruler: 'Pluton' },
+  { name: 'Sagittaire', symbol: '♐\uFE0E', ruler: 'Jupiter' },
+  { name: 'Capricorne', symbol: '♑\uFE0E', ruler: 'Saturne' },
+  { name: 'Verseau', symbol: '♒\uFE0E', ruler: 'Uranus' },
+  { name: 'Poissons', symbol: '♓\uFE0E', ruler: 'Neptune' },
 ];
 
 export interface DecanInfo {

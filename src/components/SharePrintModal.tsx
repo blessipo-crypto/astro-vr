@@ -53,10 +53,15 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Uranie VR — ${reportProps.profile.name} (${reportProps.modeLabel})</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Symbols+2&family=Noto+Sans+Symbols:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   @page { size: A4 portrait; margin: 12mm 14mm; }
-  body { background: #ffffff; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; padding: 24px; max-width: 900px; margin: 0 auto; }
+  body { background: #ffffff; color: #0f172a; font-family: 'Montserrat', 'Lato', 'Noto Sans Symbols', sans-serif; font-variant-emoji: text; padding: 24px; max-width: 900px; margin: 0 auto; }
+  .font-display, h1, h2, h3 { font-family: 'Cinzel', 'Cormorant Garamond', 'Playfair Display', Cochin, Georgia, serif; }
+  .font-glyph { font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', sans-serif; font-variant-emoji: text; }
   @media print { .print-toolbar { display: none !important; } body { padding: 0; } }
 </style>
 </head>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Glasses, HelpCircle, Info, ScanEye, Share2 } from 'lucide-react';
+import { Clock, Glasses, HelpCircle, Info, Mic, MicOff, Power, RotateCcw, ScanEye, Share2 } from 'lucide-react';
 import {
   analyzeComparison,
   analyzeSolarReturn,
@@ -18,6 +18,7 @@ import {
   NatalProfile,
   PlanetId,
   PlanetPosition,
+  searchPlacesByQuery,
   SolarReturnAnalysis,
 } from './astro/astroEngine';
 import { transposeLongitudeToChinese, ZodiacTradition } from './astro/chineseAstrology';
@@ -45,13 +46,28 @@ import {
   SkyAnimationsConfig,
   XRSessionModeKind,
 } from './vr/AstrologyScene';
-import { celestialAudio } from './vr/audio';
+import {
+  celestialAudio,
+  esotericIntroMusic,
+  speakSingleFrenchUtterance,
+  stopFrenchSpeech,
+} from './vr/audio';
+import {
+  ContinuousVoiceListener,
+  isSpeechRecognitionSupported,
+  parseVoiceCommand,
+} from './vr/voiceEngine';
 import {
   ZODIAC_WHEEL_STYLES,
   type StarfieldBackdropStyle,
   type ZodiacSignStyle,
   type ZodiacWheelStyle,
 } from './vr/textures';
+import {
+  applyTypographyToDocument,
+  DEFAULT_TYPOGRAPHY,
+  TypographyPreferences,
+} from './vr/typography';
 
 const REAL_TIME_DAYS_PER_SEC = 1 / 86400;
 
@@ -60,6 +76,9 @@ const SKY_ANIMS_STORAGE_KEY = 'uranie_vr_sky_anims_v1';
 const VIEW_DIM_STORAGE_KEY = 'uranie_vr_view_dim_v1';
 const WHEEL_2D_STYLE_STORAGE_KEY = 'uranie_vr_wheel2d_v1';
 const WHEEL_2D_ORIENT_STORAGE_KEY = 'uranie_vr_orient2d_v1';
+const VOICE_FEEDBACK_STORAGE_KEY = 'uranie_vr_voice_feedback_v1';
+const VOICE_SEARCH_BTN_STORAGE_KEY = 'uranie_vr_voice_search_btns_v1';
+const TYPOGRAPHY_STORAGE_KEY = 'uranie_vr_typography_v1';
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -285,6 +304,61 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+  const [quitConfirmOpen, setQuitConfirmOpen] = useState<boolean>(false);
+  const [appExited, setAppExited] = useState<boolean>(false);
+  const [voiceModeEnabled, setVoiceModeEnabled] = useState<boolean>(false);
+  const [voiceListening, setVoiceListening] = useState<boolean>(false);
+  const [voiceFeedbackEnabled, setVoiceFeedbackEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(VOICE_FEEDBACK_STORAGE_KEY);
+      return saved === null ? true : saved === '1';
+    } catch {
+      return true;
+    }
+  });
+  const [voiceSearchButtonsEnabled, setVoiceSearchButtonsEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(VOICE_SEARCH_BTN_STORAGE_KEY);
+      return saved === null ? true : saved === '1';
+    } catch {
+      return true;
+    }
+  });
+  const [typography, setTypography] = useState<TypographyPreferences>(() => {
+    try {
+      const raw = localStorage.getItem(TYPOGRAPHY_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<TypographyPreferences>;
+        return {
+          titleFont: parsed.titleFont ?? DEFAULT_TYPOGRAPHY.titleFont,
+          bodyFont: parsed.bodyFont ?? DEFAULT_TYPOGRAPHY.bodyFont,
+          glyphFont: parsed.glyphFont ?? DEFAULT_TYPOGRAPHY.glyphFont,
+        };
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return DEFAULT_TYPOGRAPHY;
+  });
+
+  useEffect(() => {
+    applyTypographyToDocument(typography);
+    try {
+      localStorage.setItem(TYPOGRAPHY_STORAGE_KEY, JSON.stringify(typography));
+    } catch {
+      // Ignore storage errors
+    }
+    sceneRef.current?.refreshTypography();
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      void document.fonts.ready.then(() => {
+        sceneRef.current?.refreshTypography();
+      });
+    }
+  }, [typography]);
+  const [voiceInterimText, setVoiceInterimText] = useState<string>('');
+  const [voiceStatusText, setVoiceStatusText] = useState<string>('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const voiceListenerRef = useRef<ContinuousVoiceListener | null>(null);
 
   // Persist saved natal profiles
   useEffect(() => {
@@ -570,6 +644,42 @@ export default function App() {
         setTimeSpeedDaysPerSec(0);
         setTransitDate((prev) => new Date(prev.getTime() + deltaMinutes * 60_000));
       },
+      onVRSelectMode: (nextMode) => {
+        setMode(nextMode);
+        if (nextMode === 'live') {
+          setTransitDate(new Date());
+          setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
+        }
+      },
+      onVRTogglePlay: () => {
+        setTimeSpeedDaysPerSec((prev) => (prev > 0 ? 0 : REAL_TIME_DAYS_PER_SEC));
+      },
+      onVRToggleTradition: () => {
+        setTradition((prev) => (prev === 'western' ? 'chinese' : 'western'));
+      },
+      onVRToggleHouses: () => {
+        setShowHouses((prev) => {
+          const next = !prev;
+          sceneRef.current?.setShowHouses(next);
+          return next;
+        });
+      },
+      onVRToggleSkyAnims: () => {
+        setSkyAnimations((prev) => {
+          const anyOn = prev.shootingStars || prev.nebulae || prev.aurora;
+          const nextVal = !anyOn;
+          return { shootingStars: nextVal, nebulae: nextVal, aurora: nextVal };
+        });
+      },
+      onVRToggleVoice: () => {
+        toggleVoiceModeRef.current();
+      },
+      onVRQuitApp: () => {
+        void executeQuitAppRef.current();
+      },
+      onCameraPresetChange: (preset) => {
+        setCameraPreset(preset);
+      },
     });
     sceneRef.current = scene;
 
@@ -628,14 +738,28 @@ export default function App() {
     }
   }, [skyAnimations]);
 
+  const isAnimPlaying = srAnimSpeed > 0 || timeSpeedDaysPerSec > 0;
+  const skyAnimsOn =
+    skyAnimations.shootingStars || skyAnimations.nebulae || skyAnimations.aurora;
+
   useEffect(() => {
-    sceneRef.current?.setPaused(viewDimension === '2d' && !inVR);
+    sceneRef.current?.setMenuStatus({
+      isPlaying: isAnimPlaying,
+      showHouses,
+      skyAnimsOn,
+      voiceListening: voiceModeEnabled && voiceListening,
+      voiceStatus: voiceInterimText || voiceStatusText || '',
+    });
+  }, [isAnimPlaying, showHouses, skyAnimsOn, voiceModeEnabled, voiceListening, voiceInterimText, voiceStatusText]);
+
+  useEffect(() => {
+    sceneRef.current?.setPaused((viewDimension === '2d' && !inVR) || appExited);
     try {
       localStorage.setItem(VIEW_DIM_STORAGE_KEY, viewDimension);
     } catch {
       // Ignore storage quota errors
     }
-  }, [viewDimension, inVR]);
+  }, [viewDimension, inVR, appExited]);
 
   useEffect(() => {
     try {
@@ -920,6 +1044,376 @@ export default function App() {
     setCameraActive(false);
   }, []);
 
+  const executeQuitApp = useCallback(async () => {
+    setQuitConfirmOpen(false);
+    setVoiceModeEnabled(false);
+    voiceListenerRef.current?.stop();
+    esotericIntroMusic.stop();
+    stopFrenchSpeech();
+    stopWebcamFeed();
+    setAudioEnabled(false);
+    celestialAudio.enabled = false;
+    setTimeSpeedDaysPerSec(0);
+    setSrAnimSpeed(0);
+    try {
+      await sceneRef.current?.exitXRSession();
+    } catch {
+      // Ignore XR end errors
+    }
+    sceneRef.current?.setPaused(true);
+
+    try {
+      const win = window as unknown as {
+        Capacitor?: { Plugins?: { App?: { exitApp?: () => void } } };
+      };
+      win.Capacitor?.Plugins?.App?.exitApp?.();
+      const nav = navigator as unknown as { app?: { exitApp?: () => void } };
+      nav.app?.exitApp?.();
+    } catch {
+      // Ignore non-native environments
+    }
+
+    try {
+      window.close();
+    } catch {
+      // Ignore browser close restrictions
+    }
+
+    setAppExited(true);
+  }, [stopWebcamFeed]);
+
+  const executeQuitAppRef = useRef(executeQuitApp);
+  useEffect(() => {
+    executeQuitAppRef.current = executeQuitApp;
+  }, [executeQuitApp]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VOICE_FEEDBACK_STORAGE_KEY, voiceFeedbackEnabled ? '1' : '0');
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [voiceFeedbackEnabled]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VOICE_SEARCH_BTN_STORAGE_KEY, voiceSearchButtonsEnabled ? '1' : '0');
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [voiceSearchButtonsEnabled]);
+
+  const executeVoiceCommandText = useCallback(
+    async (transcript: string) => {
+      const parsed = parseVoiceCommand(transcript, profiles);
+      let finalFeedback = parsed.feedback;
+
+      if (!parsed.recognized) {
+        setVoiceStatusText(finalFeedback);
+        return;
+      }
+
+      for (const action of parsed.actions) {
+        switch (action.type) {
+          case 'setMode':
+            setMode(action.mode);
+            if (action.mode === 'live') {
+              setTransitDate(new Date());
+              setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
+            }
+            if (action.mode === 'natal') {
+              setDockCollapsed(false);
+              setRequestedDockTab((prev) => ({ tab: 'natal', nonce: (prev?.nonce ?? 0) + 1 }));
+            } else if (action.mode === 'solarReturn' || action.mode === 'comparative') {
+              setDockCollapsed(false);
+              setRequestedDockTab((prev) => ({ tab: 'derived', nonce: (prev?.nonce ?? 0) + 1 }));
+            }
+            break;
+
+          case 'updateBirthProfile': {
+            const p = action.patch;
+            setDraftProfile((prev) => {
+              const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(prev.birthDateIso);
+              const baseY = m ? Number(m[1]) : new Date().getFullYear();
+              const baseMo = m ? Number(m[2]) : new Date().getMonth() + 1;
+              const baseD = m ? Number(m[3]) : new Date().getDate();
+              const baseH = m ? Number(m[4]) : 12;
+              const baseMin = m ? Number(m[5]) : 0;
+
+              const y = Math.min(2100, Math.max(1900, p.year ?? baseY));
+              const mo = Math.min(12, Math.max(1, p.month ?? baseMo));
+              const maxDay = new Date(y, mo, 0).getDate();
+              const d = Math.min(maxDay, Math.max(1, p.day ?? baseD));
+              const h = Math.min(23, Math.max(0, p.hour ?? baseH));
+              const min = Math.min(59, Math.max(0, p.minute ?? baseMin));
+              const pad = (n: number) => String(n).padStart(2, '0');
+              return {
+                ...prev,
+                ...(p.name ? { name: p.name } : {}),
+                birthDateIso: `${String(y).padStart(4, '0')}-${pad(mo)}-${pad(d)}T${pad(h)}:${pad(min)}`,
+              };
+            });
+            break;
+          }
+
+          case 'searchBirthPlace': {
+            const places = await searchPlacesByQuery(action.query);
+            if (places.length > 0) {
+              const top = places[0];
+              setDraftProfile((prev) => ({
+                ...prev,
+                customCityName: top.name,
+                customLat: top.latitude,
+                customLon: top.longitude,
+              }));
+              finalFeedback = `Lieu appliqué : ${top.name}`;
+            } else {
+              finalFeedback = `Lieu introuvable pour « ${action.query} ».`;
+            }
+            break;
+          }
+
+          case 'searchSrPlace': {
+            const places = await searchPlacesByQuery(action.query);
+            if (places.length > 0) {
+              setSolarReturnCustomLoc(places[0]);
+              finalFeedback = `Lieu anniversaire appliqué : ${places[0].name}`;
+            } else {
+              finalFeedback = `Lieu anniversaire introuvable pour « ${action.query} ».`;
+            }
+            break;
+          }
+
+          case 'setSrYear':
+            setSolarReturnYear(action.year);
+            break;
+
+          case 'saveProfile':
+            handleSaveProfile();
+            break;
+
+          case 'newProfile':
+            handleCreateNewProfile();
+            break;
+
+          case 'selectProfile':
+            handleSelectProfile(action.profileId);
+            break;
+
+          case 'selectPlanet':
+            handleSelectPlanet(action.planetId, 'base');
+            break;
+
+          case 'selectHouse':
+            handleSelectHouse2D(action.house);
+            break;
+
+          case 'clearSelection':
+            setShowFullSummary(false);
+            setSelectedPlanet(null);
+            setSelectedHouse(null);
+            setHighlightedAspectId(null);
+            sceneRef.current?.selectPlanet(null, 'base');
+            sceneRef.current?.selectHouse(null);
+            sceneRef.current?.highlightAspect(null);
+            break;
+
+          case 'setViewDimension':
+            setViewDimension(action.dim);
+            break;
+
+          case 'setCameraPreset':
+            handleCameraPresetChange(action.preset);
+            break;
+
+          case 'bringMenuHere':
+            sceneRef.current?.bringMenuInFrontOfViewer();
+            break;
+
+          case 'setTradition':
+            setTradition(action.tradition);
+            break;
+
+          case 'setHousesVisible':
+            setShowHouses(action.visible);
+            sceneRef.current?.setShowHouses(action.visible);
+            break;
+
+          case 'setConstellationsVisible':
+            setShowConstellations(action.visible);
+            sceneRef.current?.setShowConstellations(action.visible);
+            break;
+
+          case 'setVRPlaqueVisible':
+            setShowVRPlaque(action.visible);
+            sceneRef.current?.setShowVRPlaque(action.visible);
+            break;
+
+          case 'setSkyAnimations':
+            setSkyAnimations((prev) => ({ ...prev, ...action.patch }));
+            break;
+
+          case 'setTimePlayback':
+            if (action.action === 'pause') {
+              setTimeSpeedDaysPerSec(0);
+              setSrAnimSpeed(0);
+            } else if (action.action === 'realtime') {
+              handleResetTransitNow();
+            } else {
+              setTimeSpeedDaysPerSec(mode === 'live' ? REAL_TIME_DAYS_PER_SEC : 1);
+            }
+            break;
+
+          case 'stepTime':
+            setTimeSpeedDaysPerSec(0);
+            setTransitDate((prev) => new Date(prev.getTime() + action.deltaMinutes * 60_000));
+            break;
+
+          case 'setTransitDate':
+            setTimeSpeedDaysPerSec(0);
+            setTransitDate(action.date);
+            break;
+
+          case 'setAudioEnabled':
+            setAudioEnabled(action.enabled);
+            celestialAudio.enabled = action.enabled;
+            break;
+
+          case 'setVoiceFeedback':
+            setVoiceFeedbackEnabled(action.enabled);
+            break;
+
+          case 'openTab':
+            setDockCollapsed(false);
+            setRequestedDockTab((prev) => ({ tab: action.tab, nonce: (prev?.nonce ?? 0) + 1 }));
+            break;
+
+          case 'toggleDockCollapsed':
+            setDockCollapsed(action.collapsed);
+            break;
+
+          case 'openSummary':
+            setSelectedPlanet(null);
+            setSelectedHouse(null);
+            setShowFullSummary(action.open);
+            break;
+
+          case 'openAscendant':
+            setAscendantModalOpen(true);
+            break;
+
+          case 'openQuestGuide':
+            setQuestModalOpen(true);
+            break;
+
+          case 'openIntro':
+            setAutoStartIntroAudio(true);
+            setAboutOpen(true);
+            break;
+
+          case 'openPdfShare':
+            handleOpenSharePrint();
+            break;
+
+          case 'enterVR':
+            handleEnterVR();
+            break;
+
+          case 'enterMR':
+            handleEnterMR();
+            break;
+
+          case 'stopVoiceListening':
+            setVoiceModeEnabled(false);
+            break;
+
+          case 'quitApp':
+            setQuitConfirmOpen(true);
+            break;
+        }
+      }
+
+      setVoiceStatusText(`« ${parsed.transcript} » → ${finalFeedback}`);
+      if (voiceFeedbackEnabled && !inVR) {
+        speakSingleFrenchUtterance(finalFeedback, { rate: 1.02 });
+      }
+    },
+    [
+      profiles,
+      mode,
+      voiceFeedbackEnabled,
+      inVR,
+      handleSaveProfile,
+      handleCreateNewProfile,
+      handleSelectProfile,
+      handleSelectPlanet,
+      handleSelectHouse2D,
+      handleCameraPresetChange,
+      handleResetTransitNow,
+    ]
+  );
+
+  const executeVoiceCommandRef = useRef(executeVoiceCommandText);
+  useEffect(() => {
+    executeVoiceCommandRef.current = executeVoiceCommandText;
+  }, [executeVoiceCommandText]);
+
+  const handleToggleVoiceMode = useCallback(() => {
+    setVoiceError(null);
+    setVoiceModeEnabled((prev) => {
+      const next = !prev;
+      if (next && !isSpeechRecognitionSupported()) {
+        setVoiceError(
+          'Reconnaissance vocale indisponible sur ce navigateur. Essayez Chrome, Edge, Android ou Quest Browser.'
+        );
+        return false;
+      }
+      if (!next) {
+        setVoiceInterimText('');
+      } else {
+        setVoiceStatusText('Écoute vocale active : parlez librement…');
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleVoiceModeRef = useRef(handleToggleVoiceMode);
+  useEffect(() => {
+    toggleVoiceModeRef.current = handleToggleVoiceMode;
+  }, [handleToggleVoiceMode]);
+
+  useEffect(() => {
+    if (!voiceModeEnabled || appExited) {
+      voiceListenerRef.current?.stop();
+      setVoiceListening(false);
+      return;
+    }
+
+    if (!voiceListenerRef.current) {
+      voiceListenerRef.current = new ContinuousVoiceListener();
+    }
+
+    const started = voiceListenerRef.current.start({
+      lang: 'fr-FR',
+      onListeningChange: (listening) => setVoiceListening(listening),
+      onInterim: (interim) => setVoiceInterimText(interim),
+      onCommand: (finalText) => {
+        void executeVoiceCommandRef.current(finalText);
+      },
+      onError: (msg) => {
+        setVoiceError(msg);
+      },
+    });
+
+    if (!started) {
+      setVoiceModeEnabled(false);
+    }
+
+    return () => {
+      voiceListenerRef.current?.stop();
+    };
+  }, [voiceModeEnabled, appExited]);
+
   const handleToggleDesktopMR = useCallback(() => {
     setDesktopMR((prev) => {
       const next = !prev;
@@ -1175,6 +1669,25 @@ export default function App() {
               3D
             </button>
           </div>
+          <button
+            type="button"
+            onClick={handleToggleVoiceMode}
+            title="Activer ou couper la commande vocale mains-libres (en option)"
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              voiceModeEnabled
+                ? 'border-rose-400/70 bg-rose-500/20 text-rose-100'
+                : 'border-[#38bdf8]/35 bg-[#0d1428]/90 text-[#bae6fd] hover:border-[#38bdf8] hover:text-white'
+            }`}
+          >
+            {voiceListening ? (
+              <Mic className="w-3.5 h-3.5 animate-pulse text-rose-300" />
+            ) : voiceModeEnabled ? (
+              <Mic className="w-3.5 h-3.5 text-rose-300" />
+            ) : (
+              <MicOff className="w-3.5 h-3.5 text-[#38bdf8]" />
+            )}
+            <span>{voiceModeEnabled ? 'Voix ON' : 'Voix'}</span>
+          </button>
         </div>
 
         <div className="hidden lg:flex items-center gap-2.5 text-xs text-slate-300 font-mono-tabular whitespace-nowrap">
@@ -1275,8 +1788,69 @@ export default function App() {
             <Glasses className="w-4 h-4" />
             <span>{inVR && xrMode === 'vr' ? 'Quitter VR' : webXRSupported ? 'Entrer en VR' : 'VR · Quest 3'}</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setQuitConfirmOpen(true)}
+            title="Quitter Uranie VR"
+            className="flex items-center gap-1.5 rounded-lg border border-rose-500/45 bg-rose-950/55 px-2.5 py-2 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 hover:border-rose-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Power className="w-3.5 h-3.5 text-rose-300" />
+            <span className="hidden sm:inline">Quitter</span>
+          </button>
         </div>
       </header>
+
+      {cameraPreset === 'center' && viewDimension === '3d' && !inVR && !appExited && (
+        <div className="no-print fixed top-16 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-[#38bdf8]/40 bg-[#080e1f]/90 px-3 py-1.5 text-xs text-slate-200 backdrop-blur-md">
+          <span className="text-[#7dd3fc] font-medium whitespace-nowrap">
+            Mode 360° · Glissez pour regarder tout autour · Cliquez sur les astres ou le pupitre 3D
+          </span>
+          <button
+            type="button"
+            onClick={() => sceneRef.current?.bringMenuInFrontOfViewer()}
+            className="rounded-md border border-[#d4af37]/50 bg-[#d4af37]/15 px-2 py-0.5 font-medium text-[#f8f3e6] hover:bg-[#d4af37]/30 transition-colors whitespace-nowrap cursor-pointer"
+          >
+            Menu 3D ici
+          </button>
+          <button
+            type="button"
+            onClick={() => handleCameraPresetChange('overview')}
+            className="rounded-md border border-white/15 bg-white/5 px-2 py-0.5 font-medium text-slate-200 hover:bg-white/15 transition-colors whitespace-nowrap cursor-pointer"
+          >
+            Quitter 360°
+          </button>
+        </div>
+      )}
+
+      {(voiceModeEnabled || voiceError) && !appExited && (
+        <div
+          className={`no-print fixed ${
+            cameraPreset === 'center' && viewDimension === '3d' && !inVR ? 'top-28' : 'top-16'
+          } left-1/2 z-20 flex -translate-x-1/2 max-w-[92vw] items-center gap-2 rounded-xl border ${
+            voiceError
+              ? 'border-rose-400/50 bg-[#1a0b12]/95 text-rose-200'
+              : 'border-[#38bdf8]/45 bg-[#080e1f]/95 text-[#e0f2fe]'
+          } px-3.5 py-1.5 text-xs shadow-lg backdrop-blur-md`}
+        >
+          <Mic className={`w-3.5 h-3.5 shrink-0 ${voiceListening ? 'text-rose-400 animate-pulse' : 'text-[#38bdf8]'}`} />
+          <span className="truncate">
+            {voiceError
+              ? voiceError
+              : voiceInterimText
+                ? `… ${voiceInterimText}`
+                : voiceStatusText || 'Écoute vocale active : dites par exemple « Thème natal de Marie née le 15 mai 1988 à Lyon »'}
+          </span>
+          {voiceModeEnabled && (
+            <button
+              type="button"
+              onClick={handleToggleVoiceMode}
+              className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-white/15 cursor-pointer shrink-0"
+            >
+              Couper
+            </button>
+          )}
+        </div>
+      )}
 
       {!isOnline && (
         <div className="no-print fixed top-16 left-5 z-20 rounded-lg border border-amber-400/30 bg-[#0b101f]/95 px-3 py-1.5 text-xs text-amber-200">
@@ -1414,6 +1988,17 @@ export default function App() {
           setAutoStartIntroAudio(true);
           setAboutOpen(true);
         }}
+        onQuitApp={() => setQuitConfirmOpen(true)}
+        voiceEnabled={voiceModeEnabled}
+        voiceListening={voiceListening}
+        voiceFeedbackEnabled={voiceFeedbackEnabled}
+        voiceSearchButtonsEnabled={voiceSearchButtonsEnabled}
+        onToggleVoiceMode={handleToggleVoiceMode}
+        onToggleVoiceFeedback={() => setVoiceFeedbackEnabled((v) => !v)}
+        onToggleVoiceSearchButtons={() => setVoiceSearchButtonsEnabled((v) => !v)}
+        onRunVoiceCommandText={(txt) => void executeVoiceCommandText(txt)}
+        typography={typography}
+        onTypographyChange={setTypography}
         requestedTab={requestedDockTab}
       />
 
@@ -1424,6 +2009,7 @@ export default function App() {
         onApplyToProfile={(patch) => {
           handleDraftProfileChange(patch);
         }}
+        showVoiceDictation={voiceSearchButtonsEnabled}
       />
 
       <QuestGuideModal
@@ -1495,6 +2081,68 @@ export default function App() {
           shareUrl={shareUrl}
         />
       </div>
+
+      {/* Confirmation dialog before quitting Uranie VR */}
+      {quitConfirmOpen && !appExited && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/35 bg-[#090e1f] p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-300">
+              <Power className="h-5 w-5 shrink-0" />
+              <h2 className="font-display text-xl font-semibold text-[#f8f3e6]">
+                Quitter Uranie VR ?
+              </h2>
+            </div>
+            <p className="mt-2.5 text-sm leading-relaxed text-slate-300">
+              La session 3D/VR, la voix et la musique ésotérique seront arrêtées. Sur Android ou
+              Meta Quest, l’application se fermera ; sur navigateur PC, vous pourrez fermer l’onglet
+              ou relancer à tout moment.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setQuitConfirmOpen(false)}
+                className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => void executeQuitApp()}
+                className="flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-500 transition-colors cursor-pointer"
+              >
+                <Power className="h-3.5 w-3.5" />
+                <span>Quitter l’application</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen peaceful exit screen (fallback when browser blocks window.close) */}
+      {appExited && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-[#05070e] p-6 text-center">
+          <div className="max-w-md rounded-2xl border border-[#d4af37]/30 bg-[#0a1022] p-8 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]">
+              <Power className="h-6 w-6" />
+            </div>
+            <h1 className="font-display text-2xl font-semibold text-[#f8f3e6]">
+              Session Uranie VR terminée
+            </h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-slate-300">
+              Le moteur 3D, l’audio céleste et les capteurs sont arrêtés. Vous pouvez fermer cet
+              onglet ou cette fenêtre en toute sécurité, ou relancer votre thème astral.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAppExited(false)}
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#d4af37] px-5 py-2.5 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>Relancer Uranie VR</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

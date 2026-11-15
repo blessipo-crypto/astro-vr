@@ -18,18 +18,18 @@ export interface ZodiacSign {
 }
 
 export const ZODIAC_SIGNS: ZodiacSign[] = [
-  { index: 0, name: 'Bélier', symbol: '♈', element: 'Feu', modality: 'Cardinal', ruler: 'Mars', color: '#e0533c', accentHex: 0xe0533c, keywords: 'Élan vital, initiative, courage, commencement' },
-  { index: 1, name: 'Taureau', symbol: '♉', element: 'Terre', modality: 'Fixe', ruler: 'Vénus', color: '#4d9e6a', accentHex: 0x4d9e6a, keywords: 'Ancrage, sensualité, patience, pérennité' },
-  { index: 2, name: 'Gémeaux', symbol: '♊', element: 'Air', modality: 'Mutable', ruler: 'Mercure', color: '#eab308', accentHex: 0xeab308, keywords: 'Curiosité, dialogue, dualité, vivacité d’esprit' },
-  { index: 3, name: 'Cancer', symbol: '♋', element: 'Eau', modality: 'Cardinal', ruler: 'Lune', color: '#60a5fa', accentHex: 0x60a5fa, keywords: 'Mémoire, foyer, intuition protectrice, profondeur' },
-  { index: 4, name: 'Lion', symbol: '♌', element: 'Feu', modality: 'Fixe', ruler: 'Soleil', color: '#f59e0b', accentHex: 0xf59e0b, keywords: 'Rayonnement, créativité, noblesse de cœur' },
-  { index: 5, name: 'Vierge', symbol: '♍', element: 'Terre', modality: 'Mutable', ruler: 'Mercure', color: '#65a30d', accentHex: 0x65a30d, keywords: 'Discernement, précision, soin, synthèse utile' },
-  { index: 6, name: 'Balance', symbol: '♎', element: 'Air', modality: 'Cardinal', ruler: 'Vénus', color: '#ec4899', accentHex: 0xec4899, keywords: 'Harmonie, altérité, justice, équilibre esthétique' },
-  { index: 7, name: 'Scorpion', symbol: '♏', element: 'Eau', modality: 'Fixe', ruler: 'Pluton', color: '#dc2626', accentHex: 0xdc2626, keywords: 'Métamorphose, intensité, vérité cachée, régénération' },
-  { index: 8, name: 'Sagittaire', symbol: '♐', element: 'Feu', modality: 'Mutable', ruler: 'Jupiter', color: '#a855f7', accentHex: 0xa855f7, keywords: 'Quête de sens, horizon lointain, sagesse, expansion' },
-  { index: 9, name: 'Capricorne', symbol: '♑', element: 'Terre', modality: 'Cardinal', ruler: 'Saturne', color: '#78716c', accentHex: 0x78716c, keywords: 'Maîtrise, élévation, rigueur, temps long' },
-  { index: 10, name: 'Verseau', symbol: '♒', element: 'Air', modality: 'Fixe', ruler: 'Uranus', color: '#06b6d4', accentHex: 0x06b6d4, keywords: 'Invention, fraternité, liberté, vision future' },
-  { index: 11, name: 'Poissons', symbol: '♓', element: 'Eau', modality: 'Mutable', ruler: 'Neptune', color: '#6366f1', accentHex: 0x6366f1, keywords: 'Compassion, rêve, unité cosmique, inspiration' },
+  { index: 0, name: 'Bélier', symbol: '♈\uFE0E', element: 'Feu', modality: 'Cardinal', ruler: 'Mars', color: '#e0533c', accentHex: 0xe0533c, keywords: 'Élan vital, initiative, courage, commencement' },
+  { index: 1, name: 'Taureau', symbol: '♉\uFE0E', element: 'Terre', modality: 'Fixe', ruler: 'Vénus', color: '#4d9e6a', accentHex: 0x4d9e6a, keywords: 'Ancrage, sensualité, patience, pérennité' },
+  { index: 2, name: 'Gémeaux', symbol: '♊\uFE0E', element: 'Air', modality: 'Mutable', ruler: 'Mercure', color: '#eab308', accentHex: 0xeab308, keywords: 'Curiosité, dialogue, dualité, vivacité d’esprit' },
+  { index: 3, name: 'Cancer', symbol: '♋\uFE0E', element: 'Eau', modality: 'Cardinal', ruler: 'Lune', color: '#60a5fa', accentHex: 0x60a5fa, keywords: 'Mémoire, foyer, intuition protectrice, profondeur' },
+  { index: 4, name: 'Lion', symbol: '♌\uFE0E', element: 'Feu', modality: 'Fixe', ruler: 'Soleil', color: '#f59e0b', accentHex: 0xf59e0b, keywords: 'Rayonnement, créativité, noblesse de cœur' },
+  { index: 5, name: 'Vierge', symbol: '♍\uFE0E', element: 'Terre', modality: 'Mutable', ruler: 'Mercure', color: '#65a30d', accentHex: 0x65a30d, keywords: 'Discernement, précision, soin, synthèse utile' },
+  { index: 6, name: 'Balance', symbol: '♎\uFE0E', element: 'Air', modality: 'Cardinal', ruler: 'Vénus', color: '#ec4899', accentHex: 0xec4899, keywords: 'Harmonie, altérité, justice, équilibre esthétique' },
+  { index: 7, name: 'Scorpion', symbol: '♏\uFE0E', element: 'Eau', modality: 'Fixe', ruler: 'Pluton', color: '#dc2626', accentHex: 0xdc2626, keywords: 'Métamorphose, intensité, vérité cachée, régénération' },
+  { index: 8, name: 'Sagittaire', symbol: '♐\uFE0E', element: 'Feu', modality: 'Mutable', ruler: 'Jupiter', color: '#a855f7', accentHex: 0xa855f7, keywords: 'Quête de sens, horizon lointain, sagesse, expansion' },
+  { index: 9, name: 'Capricorne', symbol: '♑\uFE0E', element: 'Terre', modality: 'Cardinal', ruler: 'Saturne', color: '#78716c', accentHex: 0x78716c, keywords: 'Maîtrise, élévation, rigueur, temps long' },
+  { index: 10, name: 'Verseau', symbol: '♒\uFE0E', element: 'Air', modality: 'Fixe', ruler: 'Uranus', color: '#06b6d4', accentHex: 0x06b6d4, keywords: 'Invention, fraternité, liberté, vision future' },
+  { index: 11, name: 'Poissons', symbol: '♓\uFE0E', element: 'Eau', modality: 'Mutable', ruler: 'Neptune', color: '#6366f1', accentHex: 0x6366f1, keywords: 'Compassion, rêve, unité cosmique, inspiration' },
 ];
 
 export interface CityPreset {
@@ -38,30 +38,167 @@ export interface CityPreset {
   country: string;
   latitude: number;
   longitude: number;
+  department?: string;
 }
 
 export const CITY_PRESETS: CityPreset[] = [
-  { id: 'paris', name: 'Paris', country: 'France', latitude: 48.8566, longitude: 2.3522 },
-  { id: 'lyon', name: 'Lyon', country: 'France', latitude: 45.764, longitude: 4.8357 },
-  { id: 'marseille', name: 'Marseille', country: 'France', latitude: 43.2965, longitude: 5.3698 },
-  { id: 'toulouse', name: 'Toulouse', country: 'France', latitude: 43.6047, longitude: 1.4442 },
-  { id: 'nice', name: 'Nice', country: 'France', latitude: 43.7102, longitude: 7.262 },
-  { id: 'nantes', name: 'Nantes', country: 'France', latitude: 47.2184, longitude: -1.5536 },
-  { id: 'bordeaux', name: 'Bordeaux', country: 'France', latitude: 44.8378, longitude: -0.5792 },
-  { id: 'lille', name: 'Lille', country: 'France', latitude: 50.6292, longitude: 3.0573 },
-  { id: 'strasbourg', name: 'Strasbourg', country: 'France', latitude: 48.5734, longitude: 7.7521 },
+  // Grandes métropoles & préfectures / grandes villes françaises (DOM-TOM inclus)
+  { id: 'paris', name: 'Paris', country: 'France', department: '75', latitude: 48.8566, longitude: 2.3522 },
+  { id: 'marseille', name: 'Marseille', country: 'France', department: '13', latitude: 43.2965, longitude: 5.3698 },
+  { id: 'lyon', name: 'Lyon', country: 'France', department: '69', latitude: 45.764, longitude: 4.8357 },
+  { id: 'toulouse', name: 'Toulouse', country: 'France', department: '31', latitude: 43.6047, longitude: 1.4442 },
+  { id: 'nice', name: 'Nice', country: 'France', department: '06', latitude: 43.7102, longitude: 7.262 },
+  { id: 'nantes', name: 'Nantes', country: 'France', department: '44', latitude: 47.2184, longitude: -1.5536 },
+  { id: 'montpellier', name: 'Montpellier', country: 'France', department: '34', latitude: 43.6108, longitude: 3.8767 },
+  { id: 'strasbourg', name: 'Strasbourg', country: 'France', department: '67', latitude: 48.5734, longitude: 7.7521 },
+  { id: 'bordeaux', name: 'Bordeaux', country: 'France', department: '33', latitude: 44.8378, longitude: -0.5792 },
+  { id: 'lille', name: 'Lille', country: 'France', department: '59', latitude: 50.6292, longitude: 3.0573 },
+  { id: 'rennes', name: 'Rennes', country: 'France', department: '35', latitude: 48.1173, longitude: -1.6778 },
+  { id: 'reims', name: 'Reims', country: 'France', department: '51', latitude: 49.2583, longitude: 4.0317 },
+  { id: 'toulon', name: 'Toulon', country: 'France', department: '83', latitude: 43.1242, longitude: 5.928 },
+  { id: 'saint-etienne', name: 'Saint-Étienne', country: 'France', department: '42', latitude: 45.4397, longitude: 4.3872 },
+  { id: 'le-havre', name: 'Le Havre', country: 'France', department: '76', latitude: 49.4944, longitude: 0.1079 },
+  { id: 'grenoble', name: 'Grenoble', country: 'France', department: '38', latitude: 45.1885, longitude: 5.7245 },
+  { id: 'dijon', name: 'Dijon', country: 'France', department: '21', latitude: 47.322, longitude: 5.0415 },
+  { id: 'angers', name: 'Angers', country: 'France', department: '49', latitude: 47.4784, longitude: -0.5632 },
+  { id: 'nimes', name: 'Nîmes', country: 'France', department: '30', latitude: 43.8367, longitude: 4.3601 },
+  { id: 'villeurbanne', name: 'Villeurbanne', country: 'France', department: '69', latitude: 45.766, longitude: 4.8795 },
+  { id: 'clermont-ferrand', name: 'Clermont-Ferrand', country: 'France', department: '63', latitude: 45.7772, longitude: 3.087 },
+  { id: 'le-mans', name: 'Le Mans', country: 'France', department: '72', latitude: 48.0061, longitude: 0.1996 },
+  { id: 'aix-en-provence', name: 'Aix-en-Provence', country: 'France', department: '13', latitude: 43.5297, longitude: 5.4474 },
+  { id: 'brest', name: 'Brest', country: 'France', department: '29', latitude: 48.3904, longitude: -4.4861 },
+  { id: 'tours', name: 'Tours', country: 'France', department: '37', latitude: 47.3941, longitude: 0.6848 },
+  { id: 'amiens', name: 'Amiens', country: 'France', department: '80', latitude: 49.8941, longitude: 2.2958 },
+  { id: 'limoges', name: 'Limoges', country: 'France', department: '87', latitude: 45.8336, longitude: 1.2611 },
+  { id: 'annecy', name: 'Annecy', country: 'France', department: '74', latitude: 45.8992, longitude: 6.1294 },
+  { id: 'perpignan', name: 'Perpignan', country: 'France', department: '66', latitude: 42.6887, longitude: 2.8948 },
+  { id: 'boulogne-billancourt', name: 'Boulogne-Billancourt', country: 'France', department: '92', latitude: 48.8397, longitude: 2.2399 },
+  { id: 'metz', name: 'Metz', country: 'France', department: '57', latitude: 49.1193, longitude: 6.1757 },
+  { id: 'besancon', name: 'Besançon', country: 'France', department: '25', latitude: 47.2378, longitude: 6.0241 },
+  { id: 'orleans', name: 'Orléans', country: 'France', department: '45', latitude: 47.903, longitude: 1.9093 },
+  { id: 'rouen', name: 'Rouen', country: 'France', department: '76', latitude: 49.4432, longitude: 1.0999 },
+  { id: 'mulhouse', name: 'Mulhouse', country: 'France', department: '68', latitude: 47.7508, longitude: 7.3359 },
+  { id: 'caen', name: 'Caen', country: 'France', department: '14', latitude: 49.1829, longitude: -0.3707 },
+  { id: 'nancy', name: 'Nancy', country: 'France', department: '54', latitude: 48.6921, longitude: 6.1844 },
+  { id: 'saint-denis-93', name: 'Saint-Denis', country: 'France', department: '93', latitude: 48.9362, longitude: 2.3574 },
+  { id: 'argenteuil', name: 'Argenteuil', country: 'France', department: '95', latitude: 48.9472, longitude: 2.2467 },
+  { id: 'montreuil', name: 'Montreuil', country: 'France', department: '93', latitude: 48.8638, longitude: 2.4485 },
+  { id: 'roubaix', name: 'Roubaix', country: 'France', department: '59', latitude: 50.6927, longitude: 3.1778 },
+  { id: 'tourcoing', name: 'Tourcoing', country: 'France', department: '59', latitude: 50.7239, longitude: 3.1612 },
+  { id: 'nanterre', name: 'Nanterre', country: 'France', department: '92', latitude: 48.8924, longitude: 2.2153 },
+  { id: 'avignon', name: 'Avignon', country: 'France', department: '84', latitude: 43.9493, longitude: 4.8055 },
+  { id: 'creteil', name: 'Créteil', country: 'France', department: '94', latitude: 48.7904, longitude: 2.4556 },
+  { id: 'poitiers', name: 'Poitiers', country: 'France', department: '86', latitude: 46.5802, longitude: 0.3404 },
+  { id: 'dunkerque', name: 'Dunkerque', country: 'France', department: '59', latitude: 51.0344, longitude: 2.3768 },
+  { id: 'versailles', name: 'Versailles', country: 'France', department: '78', latitude: 48.8049, longitude: 2.1204 },
+  { id: 'pau', name: 'Pau', country: 'France', department: '64', latitude: 43.2951, longitude: -0.3708 },
+  { id: 'la-rochelle', name: 'La Rochelle', country: 'France', department: '17', latitude: 46.1603, longitude: -1.1511 },
+  { id: 'calais', name: 'Calais', country: 'France', department: '62', latitude: 50.9513, longitude: 1.8587 },
+  { id: 'cannes', name: 'Cannes', country: 'France', department: '06', latitude: 43.5528, longitude: 7.0174 },
+  { id: 'antibes', name: 'Antibes', country: 'France', department: '06', latitude: 43.5804, longitude: 7.1251 },
+  { id: 'beziers', name: 'Béziers', country: 'France', department: '34', latitude: 43.3442, longitude: 3.2158 },
+  { id: 'colmar', name: 'Colmar', country: 'France', department: '68', latitude: 48.0794, longitude: 7.3585 },
+  { id: 'quimper', name: 'Quimper', country: 'France', department: '29', latitude: 47.9975, longitude: -4.0979 },
+  { id: 'valence', name: 'Valence', country: 'France', department: '26', latitude: 44.9334, longitude: 4.8924 },
+  { id: 'bourges', name: 'Bourges', country: 'France', department: '18', latitude: 47.081, longitude: 2.3988 },
+  { id: 'ajaccio', name: 'Ajaccio', country: 'France', department: '2A', latitude: 41.9192, longitude: 8.7386 },
+  { id: 'bastia', name: 'Bastia', country: 'France', department: '2B', latitude: 42.6973, longitude: 9.4509 },
+  { id: 'troyes', name: 'Troyes', country: 'France', department: '10', latitude: 48.2973, longitude: 4.0744 },
+  { id: 'saint-nazaire', name: 'Saint-Nazaire', country: 'France', department: '44', latitude: 47.2735, longitude: -2.2137 },
+  { id: 'lorient', name: 'Lorient', country: 'France', department: '56', latitude: 47.7483, longitude: -3.3702 },
+  { id: 'chambery', name: 'Chambéry', country: 'France', department: '73', latitude: 45.5646, longitude: 5.9178 },
+  { id: 'niort', name: 'Niort', country: 'France', department: '79', latitude: 46.3237, longitude: -0.4648 },
+  { id: 'vannes', name: 'Vannes', country: 'France', department: '56', latitude: 47.6582, longitude: -2.7608 },
+  { id: 'bayonne', name: 'Bayonne', country: 'France', department: '64', latitude: 43.4929, longitude: -1.4748 },
+  { id: 'biarritz', name: 'Biarritz', country: 'France', department: '64', latitude: 43.4832, longitude: -1.5586 },
+  { id: 'saint-malo', name: 'Saint-Malo', country: 'France', department: '35', latitude: 48.6493, longitude: -2.0257 },
+  { id: 'cherbourg', name: 'Cherbourg-en-Cotentin', country: 'France', department: '50', latitude: 49.6337, longitude: -1.6221 },
+  { id: 'arras', name: 'Arras', country: 'France', department: '62', latitude: 50.291, longitude: 2.7775 },
+  { id: 'beauvais', name: 'Beauvais', country: 'France', department: '60', latitude: 49.4295, longitude: 2.0807 },
+  { id: 'compiegne', name: 'Compiègne', country: 'France', department: '60', latitude: 49.4179, longitude: 2.8261 },
+  { id: 'chartres', name: 'Chartres', country: 'France', department: '28', latitude: 48.4439, longitude: 1.489 },
+  { id: 'blois', name: 'Blois', country: 'France', department: '41', latitude: 47.5861, longitude: 1.3359 },
+  { id: 'chateauroux', name: 'Châteauroux', country: 'France', department: '36', latitude: 46.8114, longitude: 1.6868 },
+  { id: 'angouleme', name: 'Angoulême', country: 'France', department: '16', latitude: 45.6484, longitude: 0.1562 },
+  { id: 'perigueux', name: 'Périgueux', country: 'France', department: '24', latitude: 45.1844, longitude: 0.7214 },
+  { id: 'agen', name: 'Agen', country: 'France', department: '47', latitude: 44.2031, longitude: 0.6164 },
+  { id: 'montauban', name: 'Montauban', country: 'France', department: '82', latitude: 44.0176, longitude: 1.355 },
+  { id: 'albi', name: 'Albi', country: 'France', department: '81', latitude: 43.9251, longitude: 2.148 },
+  { id: 'carcassonne', name: 'Carcassonne', country: 'France', department: '11', latitude: 43.213, longitude: 2.3491 },
+  { id: 'narbonne', name: 'Narbonne', country: 'France', department: '11', latitude: 43.1838, longitude: 3.0031 },
+  { id: 'tarbes', name: 'Tarbes', country: 'France', department: '65', latitude: 43.2329, longitude: 0.0781 },
+  { id: 'mont-de-marsan', name: 'Mont-de-Marsan', country: 'France', department: '40', latitude: 43.8906, longitude: -0.5008 },
+  { id: 'auch', name: 'Auch', country: 'France', department: '32', latitude: 43.6464, longitude: 0.5867 },
+  { id: 'foix', name: 'Foix', country: 'France', department: '09', latitude: 42.965, longitude: 1.6069 },
+  { id: 'cahors', name: 'Cahors', country: 'France', department: '46', latitude: 44.4475, longitude: 1.4419 },
+  { id: 'rodez', name: 'Rodez', country: 'France', department: '12', latitude: 44.3494, longitude: 2.5759 },
+  { id: 'mende', name: 'Mende', country: 'France', department: '48', latitude: 44.5186, longitude: 3.5019 },
+  { id: 'aurillac', name: 'Aurillac', country: 'France', department: '15', latitude: 44.9261, longitude: 2.4447 },
+  { id: 'le-puy-en-velay', name: 'Le Puy-en-Velay', country: 'France', department: '43', latitude: 45.0428, longitude: 3.8829 },
+  { id: 'privas', name: 'Privas', country: 'France', department: '07', latitude: 44.7353, longitude: 4.5994 },
+  { id: 'gap', name: 'Gap', country: 'France', department: '05', latitude: 44.5594, longitude: 6.0786 },
+  { id: 'digne-les-bains', name: 'Digne-les-Bains', country: 'France', department: '04', latitude: 44.0922, longitude: 6.2356 },
+  { id: 'frejus', name: 'Fréjus', country: 'France', department: '83', latitude: 43.4332, longitude: 6.737 },
+  { id: 'bourg-en-bresse', name: 'Bourg-en-Bresse', country: 'France', department: '01', latitude: 46.2052, longitude: 5.2255 },
+  { id: 'macon', name: 'Mâcon', country: 'France', department: '71', latitude: 46.3069, longitude: 4.8287 },
+  { id: 'chalon-sur-saone', name: 'Chalon-sur-Saône', country: 'France', department: '71', latitude: 46.7808, longitude: 4.853 },
+  { id: 'auxerre', name: 'Auxerre', country: 'France', department: '89', latitude: 47.7982, longitude: 3.5738 },
+  { id: 'nevers', name: 'Nevers', country: 'France', department: '58', latitude: 46.9896, longitude: 3.159 },
+  { id: 'moulins', name: 'Moulins', country: 'France', department: '03', latitude: 46.5681, longitude: 3.3344 },
+  { id: 'vichy', name: 'Vichy', country: 'France', department: '03', latitude: 46.1278, longitude: 3.4268 },
+  { id: 'gueret', name: 'Guéret', country: 'France', department: '23', latitude: 46.1714, longitude: 1.8711 },
+  { id: 'tulle', name: 'Tulle', country: 'France', department: '19', latitude: 45.2657, longitude: 1.7717 },
+  { id: 'brive-la-gaillarde', name: 'Brive-la-Gaillarde', country: 'France', department: '19', latitude: 45.1589, longitude: 1.5333 },
+  { id: 'lons-le-saunier', name: 'Lons-le-Saunier', country: 'France', department: '39', latitude: 46.6746, longitude: 5.5546 },
+  { id: 'vesoul', name: 'Vesoul', country: 'France', department: '70', latitude: 47.6197, longitude: 6.1544 },
+  { id: 'belfort', name: 'Belfort', country: 'France', department: '90', latitude: 47.64, longitude: 6.8628 },
+  { id: 'epinal', name: 'Épinal', country: 'France', department: '88', latitude: 48.1724, longitude: 6.4494 },
+  { id: 'bar-le-duc', name: 'Bar-le-Duc', country: 'France', department: '55', latitude: 48.7736, longitude: 5.1611 },
+  { id: 'chaumont', name: 'Chaumont', country: 'France', department: '52', latitude: 48.1117, longitude: 5.1394 },
+  { id: 'chalons-en-champagne', name: 'Châlons-en-Champagne', country: 'France', department: '51', latitude: 48.9567, longitude: 4.3631 },
+  { id: 'charleville-mezieres', name: 'Charleville-Mézières', country: 'France', department: '08', latitude: 49.7621, longitude: 4.7261 },
+  { id: 'laon', name: 'Laon', country: 'France', department: '02', latitude: 49.5641, longitude: 3.6203 },
+  { id: 'saint-quentin', name: 'Saint-Quentin', country: 'France', department: '02', latitude: 49.8471, longitude: 3.2874 },
+  { id: 'evreux', name: 'Évreux', country: 'France', department: '27', latitude: 49.027, longitude: 1.1514 },
+  { id: 'alencon', name: 'Alençon', country: 'France', department: '61', latitude: 48.4328, longitude: 0.0912 },
+  { id: 'saint-lo', name: 'Saint-Lô', country: 'France', department: '50', latitude: 49.1149, longitude: -1.0906 },
+  { id: 'saint-brieuc', name: 'Saint-Brieuc', country: 'France', department: '22', latitude: 48.5141, longitude: -2.7658 },
+  { id: 'laval', name: 'Laval', country: 'France', department: '53', latitude: 48.07, longitude: -0.77 },
+  { id: 'la-roche-sur-yon', name: 'La Roche-sur-Yon', country: 'France', department: '85', latitude: 46.6705, longitude: -1.4264 },
+  { id: 'cholet', name: 'Cholet', country: 'France', department: '49', latitude: 47.06, longitude: -0.8783 },
+  { id: 'melun', name: 'Melun', country: 'France', department: '77', latitude: 48.5396, longitude: 2.6608 },
+  { id: 'evry', name: 'Évry-Courcouronnes', country: 'France', department: '91', latitude: 48.6298, longitude: 2.4418 },
+  { id: 'bobigny', name: 'Bobigny', country: 'France', department: '93', latitude: 48.9086, longitude: 2.4397 },
+  { id: 'cergy', name: 'Cergy', country: 'France', department: '95', latitude: 49.0365, longitude: 2.063 },
+  { id: 'pointe-a-pitre', name: 'Pointe-à-Pitre', country: 'France', department: '971', latitude: 16.2413, longitude: -61.5361 },
+  { id: 'fort-de-france', name: 'Fort-de-France', country: 'France', department: '972', latitude: 14.6161, longitude: -61.0588 },
+  { id: 'cayenne', name: 'Cayenne', country: 'France', department: '973', latitude: 4.9224, longitude: -52.3135 },
+  { id: 'saint-denis-reunion', name: 'Saint-Denis (La Réunion)', country: 'France', department: '974', latitude: -20.8823, longitude: 55.4504 },
+  { id: 'saint-pierre-reunion', name: 'Saint-Pierre (La Réunion)', country: 'France', department: '974', latitude: -21.3393, longitude: 55.4781 },
+  { id: 'mamoudzou', name: 'Mamoudzou', country: 'France', department: '976', latitude: -12.7806, longitude: 45.2279 },
+  { id: 'noumea', name: 'Nouméa', country: 'France', department: '988', latitude: -22.2758, longitude: 166.458 },
+  { id: 'papeete', name: 'Papeete', country: 'France', department: '987', latitude: -17.5516, longitude: -149.5585 },
+
+  // Francophonie & Monde
   { id: 'bruxelles', name: 'Bruxelles', country: 'Belgique', latitude: 50.8503, longitude: 4.3517 },
+  { id: 'liege', name: 'Liège', country: 'Belgique', latitude: 50.6326, longitude: 5.5797 },
   { id: 'geneve', name: 'Genève', country: 'Suisse', latitude: 46.2044, longitude: 6.1432 },
   { id: 'lausanne', name: 'Lausanne', country: 'Suisse', latitude: 46.5197, longitude: 6.6323 },
+  { id: 'zurich', name: 'Zurich', country: 'Suisse', latitude: 47.3769, longitude: 8.5417 },
   { id: 'luxembourg', name: 'Luxembourg', country: 'Luxembourg', latitude: 49.6116, longitude: 6.1319 },
+  { id: 'monaco', name: 'Monaco', country: 'Monaco', latitude: 43.7384, longitude: 7.4246 },
   { id: 'montreal', name: 'Montréal', country: 'Canada', latitude: 45.5017, longitude: -73.5673 },
   { id: 'quebec', name: 'Québec', country: 'Canada', latitude: 46.8139, longitude: -71.208 },
   { id: 'londres', name: 'Londres', country: 'Royaume-Uni', latitude: 51.5072, longitude: -0.1276 },
   { id: 'madrid', name: 'Madrid', country: 'Espagne', latitude: 40.4168, longitude: -3.7038 },
+  { id: 'barcelone', name: 'Barcelone', country: 'Espagne', latitude: 41.3874, longitude: 2.1686 },
   { id: 'rome', name: 'Rome', country: 'Italie', latitude: 41.9028, longitude: 12.4964 },
+  { id: 'milan', name: 'Milan', country: 'Italie', latitude: 45.4642, longitude: 9.19 },
   { id: 'lisbonne', name: 'Lisbonne', country: 'Portugal', latitude: 38.7223, longitude: -9.1393 },
   { id: 'berlin', name: 'Berlin', country: 'Allemagne', latitude: 52.52, longitude: 13.405 },
   { id: 'casablanca', name: 'Casablanca', country: 'Maroc', latitude: 33.5731, longitude: -7.5898 },
+  { id: 'rabat', name: 'Rabat', country: 'Maroc', latitude: 34.0209, longitude: -6.8416 },
+  { id: 'marrakech', name: 'Marrakech', country: 'Maroc', latitude: 31.6295, longitude: -7.9811 },
   { id: 'alger', name: 'Alger', country: 'Algérie', latitude: 36.7538, longitude: 3.0588 },
   { id: 'tunis', name: 'Tunis', country: 'Tunisie', latitude: 36.8065, longitude: 10.1815 },
   { id: 'dakar', name: 'Dakar', country: 'Sénégal', latitude: 14.7167, longitude: -17.4677 },
@@ -102,6 +239,8 @@ const FRENCH_DEPT_CAPITALS: Record<string, { city: string; lat: number; lon: num
   '18': { city: 'Bourges', lat: 47.081, lon: 2.3988 },
   '19': { city: 'Tulle', lat: 45.2657, lon: 1.7717 },
   '20': { city: 'Ajaccio', lat: 41.9192, lon: 8.7386 },
+  '2A': { city: 'Ajaccio', lat: 41.9192, lon: 8.7386 },
+  '2B': { city: 'Bastia', lat: 42.6973, lon: 9.4509 },
   '21': { city: 'Dijon', lat: 47.322, lon: 5.0415 },
   '22': { city: 'Saint-Brieuc', lat: 48.5141, lon: -2.7658 },
   '23': { city: 'Guéret', lat: 46.1714, lon: 1.8711 },
@@ -182,49 +321,143 @@ const FRENCH_DEPT_CAPITALS: Record<string, { city: string; lat: number; lon: num
   '973': { city: 'Cayenne', lat: 4.9224, lon: -52.3135 },
   '974': { city: 'Saint-Denis (La Réunion)', lat: -20.8823, lon: 55.4504 },
   '976': { city: 'Mamoudzou', lat: -12.7806, lon: 45.2279 },
+  '987': { city: 'Papeete', lat: -17.5516, lon: -149.5585 },
+  '988': { city: 'Nouméa', lat: -22.2758, lon: 166.458 },
 };
 
-export async function searchPlacesByQuery(query: string): Promise<GeocodedPlace[]> {
-  const trimmed = query.trim();
-  if (!trimmed) return [];
-  const lower = trimmed.toLowerCase();
+function normalizePlaceKey(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[-’']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  // 1. Detect French 5-digit postal code (e.g., 75008, 69002, 33000, 97400)
+interface GeoApiCommune {
+  nom?: string;
+  population?: number;
+  codesPostaux?: string[];
+  codeDepartement?: string;
+  departement?: { code?: string; nom?: string };
+  centre?: { coordinates?: [number, number] };
+}
+
+function mapGeoApiCommune(c: GeoApiCommune, preferredCp?: string): GeocodedPlace | null {
+  if (!c.nom || !Array.isArray(c.centre?.coordinates)) return null;
+  const lon = Number(c.centre.coordinates[0]);
+  const lat = Number(c.centre.coordinates[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  const cp = preferredCp || (Array.isArray(c.codesPostaux) && c.codesPostaux[0]) || '';
+  const deptName = c.departement?.nom || '';
+  const deptCode = c.departement?.code || c.codeDepartement || '';
+  const detailParts: string[] = [];
+  if (cp) detailParts.push(cp);
+  if (deptName) detailParts.push(deptName);
+  else if (deptCode) detailParts.push(`Dép. ${deptCode}`);
+
+  const label =
+    detailParts.length > 0 ? `${c.nom} (${detailParts.join(' · ')})` : `${c.nom} (France)`;
+  return {
+    name: label,
+    latitude: Number(lat.toFixed(4)),
+    longitude: Number(lon.toFixed(4)),
+  };
+}
+
+function dedupePlaces(list: GeocodedPlace[]): GeocodedPlace[] {
+  const seen = new Set<string>();
+  const out: GeocodedPlace[] = [];
+  for (const item of list) {
+    const key = `${normalizePlaceKey(item.name.split('(')[0])}|${item.latitude.toFixed(2)}|${item.longitude.toFixed(2)}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+export async function searchPlacesByQuery(query: string): Promise<GeocodedPlace[]> {
+  let trimmed = query
+    .trim()
+    .replace(/^(?:a|à|ville\s+de|commune\s+de)\s+/i, '')
+    .trim();
+  if (!trimmed) return [];
+
+  // Normalize dictated "saint ..." / "st ..." variants for better matching
+  const expandedName = trimmed
+    .replace(/\bst\b\.?/gi, 'Saint')
+    .replace(/\bste\b\.?/gi, 'Sainte');
+  const normQuery = normalizePlaceKey(expandedName);
+
+  // 1. Detect French 5-digit postal code (e.g., 75008, 69002, 35400, 20000, 97400)
   const cpMatch = trimmed.match(/\b(\d{5})\b/);
   if (cpMatch) {
     const postalCode = cpMatch[1];
-    // Official French Government Communes API (geo.api.gouv.fr)
+
+    // Paris / Lyon / Marseille arrondissements: try Nominatim first for exact arrondissement coords + geo.api.gouv.fr
+    const isArrondissement =
+      /^750(?:0[1-9]|1[0-9]|20)$/.test(postalCode) ||
+      /^6900[1-9]$/.test(postalCode) ||
+      /^130(?:0[1-9]|1[0-6])$/.test(postalCode);
+
+    const results: GeocodedPlace[] = [];
+
+    if (isArrondissement) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=4&accept-language=fr&postalcode=${encodeURIComponent(postalCode)}&countrycodes=fr`
+        );
+        if (res.ok) {
+          const data = (await res.json()) as Array<{
+            display_name?: string;
+            lat?: string;
+            lon?: string;
+          }>;
+          for (const d of data) {
+            const lat = Number(d.lat);
+            const lon = Number(d.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+            const cityLabel = (d.display_name ?? postalCode).split(',')[0].trim();
+            results.push({
+              name: `${cityLabel} (${postalCode}, France)`,
+              latitude: Number(lat.toFixed(4)),
+              longitude: Number(lon.toFixed(4)),
+            });
+          }
+        }
+      } catch {
+        // Fallback below
+      }
+    }
+
     try {
       const res = await fetch(
-        `https://geo.api.gouv.fr/communes?codePostal=${encodeURIComponent(postalCode)}&fields=nom,centre,population&format=json`
+        `https://geo.api.gouv.fr/communes?codePostal=${encodeURIComponent(postalCode)}&fields=nom,codesPostaux,departement,centre,population&format=json`
       );
       if (res.ok) {
-        const communes = (await res.json()) as Array<{
-          nom?: string;
-          population?: number;
-          centre?: { coordinates?: [number, number] };
-        }>;
+        const communes = (await res.json()) as GeoApiCommune[];
         if (Array.isArray(communes) && communes.length > 0) {
           const sorted = [...communes].sort((a, b) => (b.population ?? 0) - (a.population ?? 0));
-          const mapped = sorted
-            .filter((c) => c.nom && Array.isArray(c.centre?.coordinates))
-            .slice(0, 8)
-            .map((c) => ({
-              name: `${c.nom} (${postalCode}, France)`,
-              latitude: Number(c.centre!.coordinates![1].toFixed(4)),
-              longitude: Number(c.centre!.coordinates![0].toFixed(4)),
-            }));
-          if (mapped.length > 0) return mapped;
+          for (const c of sorted.slice(0, 10)) {
+            const mapped = mapGeoApiCommune(c, postalCode);
+            if (mapped) results.push(mapped);
+          }
         }
       }
     } catch {
-      // Fallback to Nominatim or offline map
+      // Fallback below
     }
+
+    if (results.length > 0) return dedupePlaces(results).slice(0, 10);
 
     // Secondary online lookup via OpenStreetMap Nominatim restricted to France postal code
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=fr&postalcode=${encodeURIComponent(postalCode)}&countrycodes=fr`
+        `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=fr&postalcode=${encodeURIComponent(postalCode)}&countrycodes=fr`
       );
       if (res.ok) {
         const data = (await res.json()) as Array<{
@@ -232,30 +465,34 @@ export async function searchPlacesByQuery(query: string): Promise<GeocodedPlace[
           lat?: string;
           lon?: string;
         }>;
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data
-            .map((d) => {
-              const lat = Number(d.lat);
-              const lon = Number(d.lon);
-              if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-              const cityLabel = (d.display_name ?? postalCode).split(',')[0].trim();
-              return {
-                name: `${cityLabel} (${postalCode}, France)`,
-                latitude: Number(lat.toFixed(4)),
-                longitude: Number(lon.toFixed(4)),
-              };
-            })
-            .filter((x): x is GeocodedPlace => x !== null);
-          if (mapped.length > 0) return mapped;
-        }
+        const mapped = data
+          .map((d) => {
+            const lat = Number(d.lat);
+            const lon = Number(d.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+            const cityLabel = (d.display_name ?? postalCode).split(',')[0].trim();
+            return {
+              name: `${cityLabel} (${postalCode}, France)`,
+              latitude: Number(lat.toFixed(4)),
+              longitude: Number(lon.toFixed(4)),
+            };
+          })
+          .filter((x): x is GeocodedPlace => x !== null);
+        if (mapped.length > 0) return dedupePlaces(mapped);
       }
     } catch {
       // Fallback to offline department coordinates
     }
 
-    // Offline French department fallback for all 01-95 & 971-976 postal codes
-    const domPrefix = postalCode.startsWith('97') ? postalCode.slice(0, 3) : postalCode.slice(0, 2);
-    const dept = FRENCH_DEPT_CAPITALS[domPrefix];
+    // Offline French department fallback for all 01-95, 20/2A/2B & 971-988 postal codes
+    const domPrefix =
+      postalCode.startsWith('97') || postalCode.startsWith('98')
+        ? postalCode.slice(0, 3)
+        : postalCode.slice(0, 2);
+    const dept =
+      domPrefix === '20' && Number(postalCode) >= 20200
+        ? FRENCH_DEPT_CAPITALS['2B']
+        : FRENCH_DEPT_CAPITALS[domPrefix];
     if (dept) {
       return [
         {
@@ -267,50 +504,132 @@ export async function searchPlacesByQuery(query: string): Promise<GeocodedPlace[
     }
   }
 
-  // 2. Local City / Country Presets match
-  const localMatches = CITY_PRESETS.filter(
-    (c) =>
-      c.name.toLowerCase() === lower ||
-      c.country.toLowerCase() === lower ||
-      `${c.name}, ${c.country}`.toLowerCase() === lower ||
-      c.name.toLowerCase().includes(lower)
-  );
-  if (localMatches.length > 0) {
-    return localMatches.slice(0, 5).map((local) => ({
-      name: `${local.name} (${local.country})`,
-      latitude: local.latitude,
-      longitude: local.longitude,
-    }));
+  // 2. Detect French department number alone (e.g. "35", "2A", "74", "974")
+  const deptMatch = /^(0[1-9]|[1-8]\d|9[0-5]|2[aAbB]|97[1-6])$/.exec(trimmed);
+  if (deptMatch) {
+    const deptCode = deptMatch[1].toUpperCase();
+    try {
+      const res = await fetch(
+        `https://geo.api.gouv.fr/departements/${encodeURIComponent(deptCode)}/communes?fields=nom,codesPostaux,codeDepartement,centre,population&format=json`
+      );
+      if (res.ok) {
+        const communes = (await res.json()) as GeoApiCommune[];
+        if (Array.isArray(communes) && communes.length > 0) {
+          const sorted = [...communes].sort((a, b) => (b.population ?? 0) - (a.population ?? 0));
+          const mapped = sorted
+            .slice(0, 10)
+            .map((c) => mapGeoApiCommune(c))
+            .filter((x): x is GeocodedPlace => x !== null);
+          if (mapped.length > 0) return dedupePlaces(mapped);
+        }
+      }
+    } catch {
+      // Fallback to offline capital
+    }
+    const offline = FRENCH_DEPT_CAPITALS[deptCode];
+    if (offline) {
+      return [
+        {
+          name: `${offline.city} (Dép. ${deptCode}, France)`,
+          latitude: offline.lat,
+          longitude: offline.lon,
+        },
+      ];
+    }
   }
 
-  // 3. Worldwide search via Nominatim
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=fr&q=${encodeURIComponent(trimmed)}`
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as Array<{
-      display_name?: string;
-      lat?: string;
-      lon?: string;
-    }>;
-    if (!Array.isArray(data) || data.length === 0) return [];
-    return data
-      .map((item) => {
-        const lat = Number(item.lat);
-        const lon = Number(item.lon);
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-        const shortName = (item.display_name ?? trimmed).split(',').slice(0, 2).join(',').trim();
-        return {
-          name: shortName || trimmed,
-          latitude: Number(lat.toFixed(4)),
-          longitude: Number(lon.toFixed(4)),
-        };
-      })
-      .filter((x): x is GeocodedPlace => x !== null);
-  } catch {
-    return [];
+  // 3. Support optional department suffix on city name (e.g. "Valence 26" or "Saint-Malo (35)")
+  let cityOnly = expandedName;
+  let deptHint: string | null = null;
+  const trailingDeptMatch = /^(.+?)\s*\(?\b(0[1-9]|[1-8]\d|9[0-5]|2[aAbB]|97[1-6])\b\)?\s*$/.exec(
+    expandedName
+  );
+  if (trailingDeptMatch && trailingDeptMatch[1].trim().length >= 2) {
+    cityOnly = trailingDeptMatch[1].trim();
+    deptHint = trailingDeptMatch[2].toUpperCase();
   }
+
+  const collected: GeocodedPlace[] = [];
+
+  // 3a. Query Official French Government API for ALL ~35,000 communes in France!
+  try {
+    const deptParam = deptHint ? `&codeDepartement=${encodeURIComponent(deptHint)}` : '';
+    const res = await fetch(
+      `https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(cityOnly)}${deptParam}&fields=nom,codesPostaux,departement,centre,population&boost=population&limit=10&format=json`
+    );
+    if (res.ok) {
+      const communes = (await res.json()) as GeoApiCommune[];
+      if (Array.isArray(communes)) {
+        for (const c of communes) {
+          const mapped = mapGeoApiCommune(c);
+          if (mapped) collected.push(mapped);
+        }
+      }
+    }
+  } catch {
+    // Offline or network error: continue with local & Nominatim
+  }
+
+  // 3b. Local expanded presets (exact / accent-insensitive match) so offline & major world cities rank cleanly
+  const normCityOnly = normalizePlaceKey(cityOnly);
+  const localExact = CITY_PRESETS.filter(
+    (c) =>
+      normalizePlaceKey(c.name) === normCityOnly ||
+      normalizePlaceKey(`${c.name} ${c.country}`) === normQuery
+  );
+  const localPartial = CITY_PRESETS.filter(
+    (c) =>
+      normalizePlaceKey(c.name).includes(normCityOnly) ||
+      normalizePlaceKey(c.country) === normCityOnly
+  );
+  for (const c of [...localExact, ...localPartial].slice(0, 8)) {
+    const suffix = c.department ? `${c.department} · ${c.country}` : c.country;
+    collected.push({
+      name: `${c.name} (${suffix})`,
+      latitude: c.latitude,
+      longitude: c.longitude,
+    });
+  }
+
+  // 3c. If not enough strong matches (e.g., foreign city, hamlet, lieu-dit), also query OpenStreetMap Nominatim worldwide
+  const hasStrongExactMatch =
+    collected.some((p) => normalizePlaceKey(p.name.split('(')[0]) === normCityOnly) ||
+    collected.length >= 4;
+  if (!hasStrongExactMatch) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=fr&q=${encodeURIComponent(expandedName)}`
+      );
+      if (res.ok) {
+        const data = (await res.json()) as Array<{
+          display_name?: string;
+          lat?: string;
+          lon?: string;
+        }>;
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            const lat = Number(item.lat);
+            const lon = Number(item.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+            const shortName = (item.display_name ?? expandedName)
+              .split(',')
+              .slice(0, 3)
+              .join(',')
+              .trim();
+            collected.push({
+              name: shortName || expandedName,
+              latitude: Number(lat.toFixed(4)),
+              longitude: Number(lon.toFixed(4)),
+            });
+          }
+        }
+      }
+    } catch {
+      // Ignore network errors
+    }
+  }
+
+  return dedupePlaces(collected).slice(0, 10);
 }
 
 export async function geocodeCityOrCountry(
@@ -474,14 +793,14 @@ const PLANET_META: Array<{
   { id: 'sun', body: Astronomy.Body.Sun, name: 'Soleil', symbol: '☉', orbitRadius: 2.35, visualRadius: 0.44, colorHex: 0xffc857, role: 'Identité consciente, élan créateur, cœur de la vitalité' },
   { id: 'moon', body: Astronomy.Body.Moon, name: 'Lune', symbol: '☽', orbitRadius: 3.15, visualRadius: 0.24, colorHex: 0xe2e8f0, role: 'Sensibilité instinctive, mémoire émotionnelle, besoins intimes' },
   { id: 'mercury', body: Astronomy.Body.Mercury, name: 'Mercure', symbol: '☿', orbitRadius: 3.85, visualRadius: 0.18, colorHex: 0xcbd5e1, role: 'Intellect, langage, perception analytique et liens rapides' },
-  { id: 'venus', body: Astronomy.Body.Venus, name: 'Vénus', symbol: '♀', orbitRadius: 4.55, visualRadius: 0.26, colorHex: 0xf4b6c2, role: 'Désir d’harmonie, sens esthétique, attraction et valeurs' },
-  { id: 'mars', body: Astronomy.Body.Mars, name: 'Mars', symbol: '♂', orbitRadius: 5.25, visualRadius: 0.23, colorHex: 0xe05d44, role: 'Volonté d’action, courage, affirmation et énergie motrice' },
-  { id: 'jupiter', body: Astronomy.Body.Jupiter, name: 'Jupiter', symbol: '♃', orbitRadius: 6.1, visualRadius: 0.38, colorHex: 0xd9a066, role: 'Expansion, confiance, sens moral et ouverture aux horizons' },
-  { id: 'saturn', body: Astronomy.Body.Saturn, name: 'Saturne', symbol: '♄', orbitRadius: 7.05, visualRadius: 0.34, colorHex: 0xd4be8d, role: 'Structure, maturité, patience, limites et persévérance' },
-  { id: 'uranus', body: Astronomy.Body.Uranus, name: 'Uranus', symbol: '♅', orbitRadius: 7.9, visualRadius: 0.27, colorHex: 0x67e8f9, role: 'Éveil soudain, originalité, rupture féconde et liberté' },
-  { id: 'neptune', body: Astronomy.Body.Neptune, name: 'Neptune', symbol: '♆', orbitRadius: 8.65, visualRadius: 0.27, colorHex: 0x60a5fa, role: 'Imaginaire, spiritualité, empathie et dissolution des frontières' },
-  { id: 'pluto', body: Astronomy.Body.Pluto, name: 'Pluton', symbol: '♇', orbitRadius: 9.35, visualRadius: 0.20, colorHex: 0xb991c7, role: 'Puissance souterraine, crise initiatique et régénération' },
-  { id: 'northNode', name: 'Nœud Nord', symbol: '☊', orbitRadius: 9.95, visualRadius: 0.17, colorHex: 0xa78bfa, role: 'Direction évolutive, appel de croissance et territoire à explorer' },
+  { id: 'venus', body: Astronomy.Body.Venus, name: 'Vénus', symbol: '♀\uFE0E', orbitRadius: 4.55, visualRadius: 0.26, colorHex: 0xf4b6c2, role: 'Désir d’harmonie, sens esthétique, attraction et valeurs' },
+  { id: 'mars', body: Astronomy.Body.Mars, name: 'Mars', symbol: '♂\uFE0E', orbitRadius: 5.25, visualRadius: 0.23, colorHex: 0xe05d44, role: 'Volonté d’action, courage, affirmation et énergie motrice' },
+  { id: 'jupiter', body: Astronomy.Body.Jupiter, name: 'Jupiter', symbol: '♃\uFE0E', orbitRadius: 6.1, visualRadius: 0.38, colorHex: 0xd9a066, role: 'Expansion, confiance, sens moral et ouverture aux horizons' },
+  { id: 'saturn', body: Astronomy.Body.Saturn, name: 'Saturne', symbol: '♄\uFE0E', orbitRadius: 7.05, visualRadius: 0.34, colorHex: 0xd4be8d, role: 'Structure, maturité, patience, limites et persévérance' },
+  { id: 'uranus', body: Astronomy.Body.Uranus, name: 'Uranus', symbol: '♅\uFE0E', orbitRadius: 7.9, visualRadius: 0.27, colorHex: 0x67e8f9, role: 'Éveil soudain, originalité, rupture féconde et liberté' },
+  { id: 'neptune', body: Astronomy.Body.Neptune, name: 'Neptune', symbol: '♆\uFE0E', orbitRadius: 8.65, visualRadius: 0.27, colorHex: 0x60a5fa, role: 'Imaginaire, spiritualité, empathie et dissolution des frontières' },
+  { id: 'pluto', body: Astronomy.Body.Pluto, name: 'Pluton', symbol: '♇\uFE0E', orbitRadius: 9.35, visualRadius: 0.20, colorHex: 0xb991c7, role: 'Puissance souterraine, crise initiatique et régénération' },
+  { id: 'northNode', name: 'Nœud Nord', symbol: '☊\uFE0E', orbitRadius: 9.95, visualRadius: 0.17, colorHex: 0xa78bfa, role: 'Direction évolutive, appel de croissance et territoire à explorer' },
 ];
 
 const ASPECT_DEFINITIONS: Array<{
@@ -495,11 +814,11 @@ const ASPECT_DEFINITIONS: Array<{
   cssColor: string;
   desc: string;
 }> = [
-  { type: 'conjunction', angle: 0, maxOrb: 8, label: 'Conjonction', symbol: '☌', harmony: 'fusion', colorHex: 0xfbbf24, cssColor: '#fbbf24', desc: 'Fusion directe des deux principes planétaires en un même foyer.' },
-  { type: 'sextile', angle: 60, maxOrb: 5, label: 'Sextile', symbol: '⚹', harmony: 'harmonious', colorHex: 0x38bdf8, cssColor: '#38bdf8', desc: 'Opportunité créative et dialogue fluide demandant une mise en mouvement.' },
-  { type: 'square', angle: 90, maxOrb: 7, label: 'Carré', symbol: '□', harmony: 'tense', colorHex: 0xf43f5e, cssColor: '#f43f5e', desc: 'Friction dynamique qui pousse à l’action, au dépassement et au choix.' },
-  { type: 'trine', angle: 120, maxOrb: 7, label: 'Trigone', symbol: '△', harmony: 'harmonious', colorHex: 0x34d399, cssColor: '#34d399', desc: 'Circulation naturelle, talent inné et résonance élémentaire harmonieuse.' },
-  { type: 'opposition', angle: 180, maxOrb: 8, label: 'Opposition', symbol: '☍', harmony: 'tense', colorHex: 0xf97316, cssColor: '#f97316', desc: 'Polarité consciente invitant à concilier deux forces complémentaires.' },
+  { type: 'conjunction', angle: 0, maxOrb: 8, label: 'Conjonction', symbol: '☌\uFE0E', harmony: 'fusion', colorHex: 0xfbbf24, cssColor: '#fbbf24', desc: 'Fusion directe des deux principes planétaires en un même foyer.' },
+  { type: 'sextile', angle: 60, maxOrb: 5, label: 'Sextile', symbol: '⚹\uFE0E', harmony: 'harmonious', colorHex: 0x38bdf8, cssColor: '#38bdf8', desc: 'Opportunité créative et dialogue fluide demandant une mise en mouvement.' },
+  { type: 'square', angle: 90, maxOrb: 7, label: 'Carré', symbol: '□\uFE0E', harmony: 'tense', colorHex: 0xf43f5e, cssColor: '#f43f5e', desc: 'Friction dynamique qui pousse à l’action, au dépassement et au choix.' },
+  { type: 'trine', angle: 120, maxOrb: 7, label: 'Trigone', symbol: '△\uFE0E', harmony: 'harmonious', colorHex: 0x34d399, cssColor: '#34d399', desc: 'Circulation naturelle, talent inné et résonance élémentaire harmonieuse.' },
+  { type: 'opposition', angle: 180, maxOrb: 8, label: 'Opposition', symbol: '☍\uFE0E', harmony: 'tense', colorHex: 0xf97316, cssColor: '#f97316', desc: 'Polarité consciente invitant à concilier deux forces complémentaires.' },
 ];
 
 export function normalizeDeg(deg: number): number {

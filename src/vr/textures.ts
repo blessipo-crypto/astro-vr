@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { AstroChart, HouseCusp, PlanetId, PlanetPosition, ZODIAC_SIGNS } from '../astro/astroEngine';
+import { AstroChart, ChartMode, HouseCusp, PlanetId, PlanetPosition, ZODIAC_SIGNS } from '../astro/astroEngine';
 import {
   calculateBaziSummary,
   CHINESE_SIGNS_BY_WESTERN_INDEX,
@@ -12,6 +12,7 @@ import {
   ZODIAC_SIGN_STYLES,
   ZodiacSignStyle,
 } from '../astro/zodiacSignArt';
+import { getActiveFontStacks } from './typography';
 
 export { ZODIAC_SIGN_STYLES };
 export type { ZodiacSignStyle };
@@ -111,13 +112,13 @@ const PLANET_RULER_SYMBOLS: Record<string, string> = {
   Soleil: '☉',
   Lune: '☽',
   Mercure: '☿',
-  Vénus: '♀',
-  Mars: '♂',
-  Jupiter: '♃',
-  Saturne: '♄',
-  Uranus: '♅',
-  Neptune: '♆',
-  Pluton: '♇',
+  Vénus: '♀\uFE0E',
+  Mars: '♂\uFE0E',
+  Jupiter: '♃\uFE0E',
+  Saturne: '♄\uFE0E',
+  Uranus: '♅\uFE0E',
+  Neptune: '♆\uFE0E',
+  Pluton: '♇\uFE0E',
 };
 
 // Authentic miniature asterism points (normalized x in [0..1], y in [0..1] inside each sign panel)
@@ -367,8 +368,9 @@ export function createZodiacWheelTextures(options: {
 
       // Roman decan numerals along top
       const decans = ['I', 'II', 'III'];
+      const wheelFonts = getActiveFontStacks();
       ctx.fillStyle = 'rgba(231, 207, 160, 0.72)';
-      ctx.font = '600 18px "Cormorant Garamond", Georgia, serif';
+      ctx.font = `600 18px ${wheelFonts.display}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       decans.forEach((rom, dIdx) => {
@@ -434,8 +436,9 @@ export function createZodiacWheelTextures(options: {
       ctx.stroke();
 
       if (deg === 10 || deg === 20) {
+        const wheelFonts = getActiveFontStacks();
         ctx.fillStyle = style === 'celestial' ? '#bae6fd' : '#e7cfa0';
-        ctx.font = '600 15px "JetBrains Mono", monospace';
+        ctx.font = `600 15px ${wheelFonts.mono}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(`${deg}°`, tx, bandHeight - 66);
@@ -446,6 +449,7 @@ export function createZodiacWheelTextures(options: {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
+    const wheelFonts = getActiveFontStacks();
     const emblemPrimary =
       style === 'celestial' ? '#bae6fd' : style === 'horology' ? '#f8f3e6' : '#f5d076';
     const emblemAccent = style === 'celestial' ? '#38bdf8' : primaryRim;
@@ -462,11 +466,11 @@ export function createZodiacWheelTextures(options: {
       });
 
       ctx.fillStyle = style === 'celestial' ? '#7dd3fc' : '#fbbf24';
-      ctx.font = '700 32px "Plus Jakarta Sans", sans-serif';
+      ctx.font = `700 30px ${wheelFonts.display}`;
       ctx.fillText(ch.name.toUpperCase(), cx, bandHeight * 0.61);
 
       ctx.fillStyle = ch.color;
-      ctx.font = '600 20px "JetBrains Mono", monospace';
+      ctx.font = `600 19px ${wheelFonts.mono}`;
       ctx.fillText(`${ch.wuXing.toUpperCase()} · ${ch.polarity.toUpperCase()}`, cx, bandHeight * 0.72);
     } else {
       drawWesternSignArtworkOnCanvas({
@@ -482,7 +486,7 @@ export function createZodiacWheelTextures(options: {
       });
 
       ctx.fillStyle = style === 'celestial' ? '#e0f2fe' : '#f3d67a';
-      ctx.font = '700 31px "Plus Jakarta Sans", sans-serif';
+      ctx.font = `700 29px ${wheelFonts.display}`;
       ctx.fillText(sign.name.toUpperCase(), cx, bandHeight * 0.61);
 
       const rulerGlyph = PLANET_RULER_SYMBOLS[sign.ruler] ?? '';
@@ -492,7 +496,7 @@ export function createZodiacWheelTextures(options: {
           : style === 'celestial'
             ? '#7dd3fc'
             : hexToRgba(sign.color, 0.92);
-      ctx.font = '600 20px "JetBrains Mono", monospace';
+      ctx.font = `600 20px ${wheelFonts.mono}`;
       ctx.fillText(`${sign.element.toUpperCase()} · ${sign.modality.toUpperCase()} · ${rulerGlyph}`, cx, bandHeight * 0.72);
     }
   }
@@ -594,10 +598,11 @@ export function createZodiacWheelTextures(options: {
       });
     }
 
+    const collarFonts = getActiveFontStacks();
     cctx.textAlign = 'center';
     cctx.textBaseline = 'middle';
     cctx.fillStyle = primaryRim;
-    cctx.font = '700 22px "Plus Jakarta Sans", sans-serif';
+    cctx.font = `700 21px ${collarFonts.display}`;
     cctx.fillText((isChinese ? ch.name : sign.name).toUpperCase(), cx, collarHeight * 0.64);
   }
 
@@ -1036,12 +1041,13 @@ export function createGlyphBadgeTexture(symbol: string, label: string, accentCol
   ctx.shadowColor = 'rgba(5, 7, 14, 0.95)';
   ctx.shadowBlur = 10;
 
+  const fonts = getActiveFontStacks();
   ctx.fillStyle = accentColor;
-  ctx.font = '600 50px "Cormorant Garamond", Georgia, serif';
+  ctx.font = `600 50px ${fonts.glyph}`;
   ctx.fillText(symbol, 128, 46);
 
   ctx.fillStyle = '#f3efe6';
-  ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
+  ctx.font = `600 21px ${fonts.body}`;
   ctx.fillText(label, 128, 94);
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -1067,20 +1073,118 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   if (line.trim()) ctx.fillText(line.trim(), x, curY);
 }
 
+export type VRMenuButtonId =
+  | 'mode:natal'
+  | 'mode:transits'
+  | 'mode:solarReturn'
+  | 'mode:comparative'
+  | 'mode:live'
+  | 'time:-1440'
+  | 'time:-60'
+  | 'time:togglePlay'
+  | 'time:+60'
+  | 'time:+1440'
+  | 'toggle:tradition'
+  | 'toggle:houses'
+  | 'toggle:skyAnims'
+  | 'voice:toggle'
+  | 'vr:toggleView'
+  | 'app:exitVR'
+  | 'app:quitApp';
+
+interface VRMenuButtonRect {
+  id: VRMenuButtonId;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+  active?: boolean;
+  tone?: 'gold' | 'cyan' | 'danger' | 'neutral';
+}
+
 export class DiegeticPlaqueRenderer {
   public readonly canvas: HTMLCanvasElement;
   public readonly texture: THREE.CanvasTexture;
   private ctx: CanvasRenderingContext2D;
+  private buttons: VRMenuButtonRect[] = [];
 
   constructor(maxAniso: number) {
     this.canvas = document.createElement('canvas');
     this.canvas.width = 1024;
-    this.canvas.height = 512;
+    this.canvas.height = 680;
     this.ctx = this.canvas.getContext('2d')!;
     this.texture = configureColorTexture(this.canvas, maxAniso);
   }
 
+  public hitTestUv(u: number, v: number): VRMenuButtonId | null {
+    const px = u * this.canvas.width;
+    const py = (1 - v) * this.canvas.height;
+    for (const btn of this.buttons) {
+      if (px >= btn.x && px <= btn.x + btn.w && py >= btn.y && py <= btn.y + btn.h) {
+        return btn.id;
+      }
+    }
+    return null;
+  }
+
+  private drawRoundedButton(btn: VRMenuButtonRect, isHovered: boolean) {
+    const ctx = this.ctx;
+    const { x, y, w, h, label, active, tone = 'neutral' } = btn;
+    const r = 10;
+
+    let fill = '#101830';
+    let stroke = 'rgba(148, 163, 184, 0.35)';
+    let textColor = '#e2e8f0';
+
+    if (tone === 'danger') {
+      fill = isHovered ? '#7f1d1d' : '#3a1019';
+      stroke = isHovered ? '#fca5a5' : 'rgba(248, 113, 113, 0.55)';
+      textColor = '#fee2e2';
+    } else if (active) {
+      if (tone === 'cyan') {
+        fill = '#0ea5e9';
+        stroke = '#bae6fd';
+        textColor = '#04101f';
+      } else {
+        fill = '#d4af37';
+        stroke = '#fef08a';
+        textColor = '#05070e';
+      }
+    } else if (isHovered) {
+      fill = tone === 'cyan' ? '#163554' : '#262135';
+      stroke = tone === 'cyan' ? '#38bdf8' : '#fbbf24';
+      textColor = '#ffffff';
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = isHovered ? 3 : 2;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+
+    const fonts = getActiveFontStacks();
+    ctx.fillStyle = textColor;
+    ctx.font = active || isHovered ? `700 17px ${fonts.body}` : `600 16px ${fonts.body}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x + w / 2, y + h / 2);
+  }
+
   public render(options: {
+    chartMode: ChartMode;
     tradition: ZodiacTradition;
     baseChart: AstroChart;
     outerChart: AstroChart | null;
@@ -1097,8 +1201,17 @@ export class DiegeticPlaqueRenderer {
       symbol: string;
       orb: number;
     }>;
+    isPlaying: boolean;
+    showHouses: boolean;
+    skyAnimsOn: boolean;
+    inVR: boolean;
+    vrCenterView: boolean;
+    hoveredButtonId: VRMenuButtonId | null;
+    voiceListening?: boolean;
+    voiceStatus?: string;
   }) {
     const {
+      chartMode,
       tradition,
       baseChart,
       outerChart,
@@ -1108,19 +1221,28 @@ export class DiegeticPlaqueRenderer {
       selectedPlanetLayer,
       selectedHouse,
       comparisonAspects,
+      isPlaying,
+      showHouses,
+      skyAnimsOn,
+      inVR,
+      vrCenterView,
+      hoveredButtonId,
+      voiceListening = false,
+      voiceStatus = '',
     } = options;
     const ctx = this.ctx;
     const w = this.canvas.width;
     const h = this.canvas.height;
     const isChinese = tradition === 'chinese';
 
+    const fonts = getActiveFontStacks();
     ctx.fillStyle = '#090e1c';
     ctx.fillRect(0, 0, w, h);
 
     ctx.strokeStyle =
-      selectedPlanetLayer === 'outer' ? 'rgba(56, 189, 248, 0.6)' : 'rgba(212, 175, 55, 0.5)';
+      selectedPlanetLayer === 'outer' ? 'rgba(56, 189, 248, 0.65)' : 'rgba(212, 175, 55, 0.55)';
     ctx.lineWidth = 4;
-    ctx.strokeRect(18, 18, w - 36, h - 36);
+    ctx.strokeRect(16, 16, w - 32, h - 32);
 
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
@@ -1131,44 +1253,44 @@ export class DiegeticPlaqueRenderer {
       const activeChart = isOuter && outerChart ? outerChart : baseChart;
       const ch = transposeLongitudeToChinese(p.longitude);
       ctx.fillStyle = isOuter ? '#38bdf8' : '#d4af37';
-      ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
+      ctx.font = `600 19px ${fonts.body}`;
       ctx.fillText(
         `${isOuter ? outerRoleLabel.toUpperCase() : 'ASTRE BASE'} · MAISON ${activeChart.houses[p.house - 1].roman}`,
-        48,
-        46
+        44,
+        36
       );
 
       ctx.fillStyle = '#f8f3e6';
-      ctx.font = '600 62px "Cormorant Garamond", Georgia, serif';
-      ctx.fillText(`${p.symbol}  ${p.name}`, 48, 82);
+      ctx.font = `600 48px ${fonts.display}, ${fonts.glyph}`;
+      ctx.fillText(`${p.symbol}  ${p.name}`, 44, 66);
 
       ctx.fillStyle = isChinese ? ch.sign.color : p.sign.color;
-      ctx.font = '500 28px "JetBrains Mono", monospace';
+      ctx.font = `500 23px ${fonts.mono}`;
       ctx.fillText(
         isChinese
           ? `${ch.formattedDeg} ${ch.sign.branchHanzi}${ch.sign.hanzi} ${ch.sign.name} (${ch.sign.wuXing} ${ch.sign.polarity}) · ${p.sign.symbol}`
           : `${p.formattedDeg} ${p.sign.symbol} ${p.sign.name} · ${ch.sign.name} (${ch.sign.hanzi})${p.retrograde ? ' ℞' : ''}`,
-        48,
-        164
+        44,
+        134
       );
 
       ctx.fillStyle = '#cbd5e1';
-      ctx.font = '400 24px "Plus Jakarta Sans", sans-serif';
-      wrapText(ctx, isChinese ? `${ch.sign.keywords} — ${p.role}` : p.role, 48, 226, w - 96, 32);
+      ctx.font = `400 21px ${fonts.body}`;
+      wrapText(ctx, isChinese ? `${ch.sign.keywords} — ${p.role}` : p.role, 44, 180, w - 88, 28);
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '400 22px "Plus Jakarta Sans", sans-serif';
-      wrapText(ctx, p.signMeaning, 48, 308, w - 96, 30);
+      ctx.font = `400 19px ${fonts.body}`;
+      wrapText(ctx, p.signMeaning, 44, 248, w - 88, 26);
 
       if (isOuter && comparisonAspects.length > 0) {
         const rel = comparisonAspects.filter((a) => a.outerPlanet === p.id).slice(0, 3);
         if (rel.length > 0) {
           ctx.fillStyle = '#7dd3fc';
-          ctx.font = '500 21px "JetBrains Mono", monospace';
+          ctx.font = `500 19px ${fonts.mono}`;
           const line = rel
             .map((a) => `${a.outerSymbol} ${a.symbol} ${a.natalSymbol} (${a.orb}°)`)
             .join('   ·   ');
-          ctx.fillText(`Aspects comparés : ${line}`, 48, 434);
+          ctx.fillText(`Aspects comparés : ${line}`, 44, 344);
         }
       } else {
         const relAspects = activeChart.aspects
@@ -1176,37 +1298,37 @@ export class DiegeticPlaqueRenderer {
           .slice(0, 3);
         if (relAspects.length > 0) {
           ctx.fillStyle = '#e7cfa0';
-          ctx.font = '500 21px "JetBrains Mono", monospace';
+          ctx.font = `500 19px ${fonts.mono}`;
           const line = relAspects
             .map((a) => `${a.planetASymbol} ${a.symbol} ${a.planetBSymbol} (${a.orb}°)`)
             .join('   ·   ');
-          ctx.fillText(`Aspects : ${line}`, 48, 434);
+          ctx.fillText(`Aspects : ${line}`, 44, 344);
         }
       }
     } else if (selectedHouse) {
       const hs = selectedHouse;
       const ch = transposeLongitudeToChinese(hs.longitude);
       ctx.fillStyle = '#d4af37';
-      ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(`SECTEUR DU CIEL · MAISON ${hs.roman}`, 48, 46);
+      ctx.font = `600 19px ${fonts.body}`;
+      ctx.fillText(`SECTEUR DU CIEL · MAISON ${hs.roman}`, 44, 36);
 
       ctx.fillStyle = '#f8f3e6';
-      ctx.font = '600 58px "Cormorant Garamond", Georgia, serif';
-      ctx.fillText(hs.title, 48, 84);
+      ctx.font = `600 44px ${fonts.display}`;
+      ctx.fillText(hs.title, 44, 68);
 
       ctx.fillStyle = isChinese ? ch.sign.color : hs.sign.color;
-      ctx.font = '500 28px "JetBrains Mono", monospace';
+      ctx.font = `500 23px ${fonts.mono}`;
       ctx.fillText(
         isChinese
           ? `Cuspide : ${ch.formattedDeg} ${ch.sign.name} (${ch.sign.hanzi} · ${ch.sign.wuXing})`
           : `Cuspide : ${hs.formattedDeg} ${hs.sign.symbol} ${hs.sign.name} (${ch.sign.name})`,
-        48,
-        164
+        44,
+        134
       );
 
       ctx.fillStyle = '#cbd5e1';
-      ctx.font = '400 26px "Plus Jakarta Sans", sans-serif';
-      wrapText(ctx, hs.meaning, 48, 232, w - 96, 36);
+      ctx.font = `400 21px ${fonts.body}`;
+      wrapText(ctx, hs.meaning, 44, 186, w - 88, 30);
     } else {
       const ascCh = transposeLongitudeToChinese(baseChart.ascendant).sign;
       const sun = baseChart.planets.find((p) => p.id === 'sun');
@@ -1214,77 +1336,198 @@ export class DiegeticPlaqueRenderer {
       const bazi = calculateBaziSummary(baseChart);
 
       ctx.fillStyle = outerChart ? '#38bdf8' : '#d4af37';
-      ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
+      ctx.font = `600 19px ${fonts.body}`;
       ctx.fillText(
         `${modeLabel.toUpperCase()} · ${isChinese ? 'ZODIAQUE CHINOIS' : baseChart.cityName.toUpperCase()}`,
-        48,
-        46
+        44,
+        36
       );
 
       ctx.fillStyle = '#f8f3e6';
-      ctx.font = '600 52px "Cormorant Garamond", Georgia, serif';
+      ctx.font = `600 40px ${fonts.display}`;
       ctx.fillText(
-        isChinese ? 'Sphère Sino-Astrologique (12 Rameaux)' : 'Sphère Armillaire Astrologique',
-        48,
-        84
+        isChinese ? 'Menu 360° · Zodiaque Chinois' : 'Menu 360° · Observatoire Uranie VR',
+        44,
+        68
       );
 
       ctx.fillStyle = '#e2e8f0';
-      ctx.font = '500 24px "JetBrains Mono", monospace';
+      ctx.font = `500 21px ${fonts.mono}`;
       ctx.fillText(
         isChinese
-          ? `Pilier Annuel : ${bazi.yearPillar.label}  ·  ASC ${ascCh.name} (${ascCh.hanzi})`
+          ? `Pilier : ${bazi.yearPillar.label}  ·  ASC ${ascCh.name} (${ascCh.hanzi})`
           : `ASC ${baseChart.ascSign.symbol} ${baseChart.ascSign.name}   ·   MC ${baseChart.mcSign.symbol} ${baseChart.mcSign.name}`,
-        48,
-        168
+        44,
+        134
       );
       if (sun && moon) {
         const sunCh = transposeLongitudeToChinese(sun.longitude).sign;
         const moonCh = transposeLongitudeToChinese(moon.longitude).sign;
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '500 22px "JetBrains Mono", monospace';
+        ctx.font = `500 19px ${fonts.mono}`;
         ctx.fillText(
           isChinese
             ? `☉ ${sunCh.name} (${sunCh.wuXing})   ·   ☽ ${moonCh.name} (${moonCh.wuXing})`
             : `☉ ${sun.formattedDeg} ${sun.sign.name}   ·   ☽ ${moon.formattedDeg} ${moon.sign.name}`,
-          48,
-          216
+          44,
+          174
         );
       }
       if (outerChart) {
         const outAscCh = transposeLongitudeToChinese(outerChart.ascendant).sign;
         ctx.fillStyle = '#7dd3fc';
-        ctx.font = '500 22px "JetBrains Mono", monospace';
+        ctx.font = `500 19px ${fonts.mono}`;
         ctx.fillText(
           isChinese
             ? `${outerRoleLabel} : ASC ${outAscCh.name} (${outAscCh.wuXing}) · ${comparisonAspects.length} aspects`
             : `${outerRoleLabel} : ASC ${outerChart.ascSign.symbol} ${outerChart.ascSign.name} · ${comparisonAspects.length} aspects actifs`,
-          48,
-          266
+          44,
+          212
         );
       }
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '400 22px "Plus Jakarta Sans", sans-serif';
+      ctx.font = `400 18px ${fonts.body}`;
       wrapText(
         ctx,
-        'Pointez un astre avec le contrôleur Meta Quest ou cliquez pour lire son interprétation occidentale et sa transposition chinoise.',
-        48,
-        326,
-        w - 96,
-        32
+        inVR
+          ? 'Pointez les boutons ci-dessous (gâchette) ou les astres. Poignée latérale : ramener ce menu devant vous.'
+          : 'Cliquez les astres, les maisons ou directement les boutons du pupitre 3D ci-dessous.',
+        44,
+        262,
+        w - 88,
+        26
       );
 
-      ctx.fillStyle = '#e7cfa0';
-      ctx.font = '500 20px "JetBrains Mono", monospace';
-      ctx.fillText(
-        isChinese
-          ? `Wu Xing — Bois ${bazi.wuXingBalance.Bois} · Feu ${bazi.wuXingBalance.Feu} · Terre ${bazi.wuXingBalance.Terre} · Métal ${bazi.wuXingBalance.Métal} · Eau ${bazi.wuXingBalance.Eau}`
-          : `Éléments — Feu ${baseChart.elements.Feu} · Terre ${baseChart.elements.Terre} · Air ${baseChart.elements.Air} · Eau ${baseChart.elements.Eau}`,
-        48,
-        434
-      );
+      if (voiceListening || voiceStatus) {
+        ctx.fillStyle = voiceListening ? '#38bdf8' : '#e7cfa0';
+        ctx.font = `600 17px ${fonts.body}`;
+        ctx.fillText(
+          voiceStatus || 'Écoute vocale active : dites « Thème natal », « Transits », « Cherche Lyon »…',
+          44,
+          344
+        );
+      } else {
+        ctx.fillStyle = '#e7cfa0';
+        ctx.font = `500 19px ${fonts.mono}`;
+        ctx.fillText(
+          isChinese
+            ? `Wu Xing — Bois ${bazi.wuXingBalance.Bois} · Feu ${bazi.wuXingBalance.Feu} · Terre ${bazi.wuXingBalance.Terre} · Métal ${bazi.wuXingBalance.Métal} · Eau ${bazi.wuXingBalance.Eau}`
+            : `Éléments — Feu ${baseChart.elements.Feu} · Terre ${baseChart.elements.Terre} · Air ${baseChart.elements.Air} · Eau ${baseChart.elements.Eau}`,
+          44,
+          344
+        );
+      }
     }
+
+    // Divider line above interactive 3D menu buttons
+    ctx.fillStyle = 'rgba(13, 20, 40, 0.92)';
+    ctx.fillRect(28, 388, w - 56, 266);
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(28, 388);
+    ctx.lineTo(w - 28, 388);
+    ctx.stroke();
+
+    // Build 3 interactive rows of clickable buttons
+    const marginX = 40;
+    const gap = 12;
+    const fullW = w - marginX * 2;
+
+    const row1Defs: Array<{ id: VRMenuButtonId; label: string; active: boolean }> = [
+      { id: 'mode:natal', label: 'Thème Natal', active: chartMode === 'natal' },
+      { id: 'mode:transits', label: 'Transits', active: chartMode === 'transits' },
+      { id: 'mode:solarReturn', label: 'Rév. Solaire', active: chartMode === 'solarReturn' },
+      { id: 'mode:comparative', label: 'Comparatifs', active: chartMode === 'comparative' },
+      { id: 'mode:live', label: 'En direct', active: chartMode === 'live' },
+    ];
+    const w5 = (fullW - gap * 4) / 5;
+    const row1Btns: VRMenuButtonRect[] = row1Defs.map((b, i) => ({
+      ...b,
+      x: marginX + i * (w5 + gap),
+      y: 404,
+      w: w5,
+      h: 70,
+      tone: 'cyan',
+    }));
+
+    const row2Defs: Array<{ id: VRMenuButtonId; label: string; active?: boolean }> = [
+      { id: 'time:-1440', label: '- 1 jour' },
+      { id: 'time:-60', label: '- 1 heure' },
+      { id: 'time:togglePlay', label: isPlaying ? 'Pause' : 'Animer', active: isPlaying },
+      { id: 'time:+60', label: '+ 1 heure' },
+      { id: 'time:+1440', label: '+ 1 jour' },
+    ];
+    const row2Btns: VRMenuButtonRect[] = row2Defs.map((b, i) => ({
+      ...b,
+      x: marginX + i * (w5 + gap),
+      y: 486,
+      w: w5,
+      h: 70,
+      tone: 'gold',
+    }));
+
+    const row3Defs: Array<{
+      id: VRMenuButtonId;
+      label: string;
+      active?: boolean;
+      tone?: 'gold' | 'cyan' | 'danger' | 'neutral';
+    }> = [
+      {
+        id: 'toggle:tradition',
+        label: isChinese ? 'Chinois 龍' : 'Occidental',
+        active: isChinese,
+        tone: 'gold',
+      },
+      {
+        id: 'toggle:houses',
+        label: showHouses ? 'Maisons ON' : 'Maisons OFF',
+        active: showHouses,
+        tone: 'gold',
+      },
+      {
+        id: 'toggle:skyAnims',
+        label: skyAnimsOn ? 'Ciel ON' : 'Ciel OFF',
+        active: skyAnimsOn,
+        tone: 'cyan',
+      },
+      {
+        id: 'voice:toggle',
+        label: voiceListening ? 'Voix ON' : 'Voix OFF',
+        active: voiceListening,
+        tone: 'cyan',
+      },
+      {
+        id: 'vr:toggleView',
+        label: inVR ? (vrCenterView ? 'Vue Ext.' : 'Centre 360°') : 'Menu ici',
+        active: inVR && vrCenterView,
+        tone: 'cyan',
+      },
+      {
+        id: 'app:exitVR',
+        label: inVR ? 'Quitter VR' : 'Vue Obs.',
+        tone: 'neutral',
+      },
+      {
+        id: 'app:quitApp',
+        label: 'Quitter',
+        tone: 'danger',
+      },
+    ];
+    const w7 = (fullW - gap * 6) / 7;
+    const row3Btns: VRMenuButtonRect[] = row3Defs.map((b, i) => ({
+      ...b,
+      x: marginX + i * (w7 + gap),
+      y: 568,
+      w: w7,
+      h: 70,
+    }));
+
+    this.buttons = [...row1Btns, ...row2Btns, ...row3Btns];
+    this.buttons.forEach((btn) => {
+      this.drawRoundedButton(btn, hoveredButtonId === btn.id);
+    });
 
     this.texture.needsUpdate = true;
   }

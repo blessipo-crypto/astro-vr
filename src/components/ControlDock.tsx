@@ -7,9 +7,12 @@ import {
   HelpCircle,
   Layers,
   ListTree,
+  Mic,
+  MicOff,
   Pause,
   Play,
   Plus,
+  Power,
   RotateCcw,
   Save,
   SlidersHorizontal,
@@ -52,6 +55,14 @@ import {
   Wheel2DStyle,
 } from './Chart2DCanvas';
 import { InteractiveHelpTab } from './InteractiveHelpTab';
+import { VoiceDictationButton } from './VoiceDictationButton';
+import { isSpeechRecognitionSupported } from '../vr/voiceEngine';
+import {
+  BODY_FONT_OPTIONS,
+  GLYPH_FONT_OPTIONS,
+  TITLE_FONT_OPTIONS,
+  TypographyPreferences,
+} from '../vr/typography';
 
 export type DockTab = 'natal' | 'derived' | 'aspects' | 'settings' | 'help';
 
@@ -152,6 +163,17 @@ interface ControlDockProps {
   onOpenQuestGuide: () => void;
   onOpenSharePrint: () => void;
   onOpenAudioIntro: () => void;
+  onQuitApp: () => void;
+  voiceEnabled: boolean;
+  voiceListening: boolean;
+  voiceFeedbackEnabled: boolean;
+  voiceSearchButtonsEnabled: boolean;
+  onToggleVoiceMode: () => void;
+  onToggleVoiceFeedback: () => void;
+  onToggleVoiceSearchButtons: () => void;
+  onRunVoiceCommandText: (text: string) => void;
+  typography: TypographyPreferences;
+  onTypographyChange: (next: TypographyPreferences) => void;
   requestedTab?: { tab: DockTab; nonce: number } | null;
 }
 
@@ -453,6 +475,17 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onOpenQuestGuide,
   onOpenSharePrint,
   onOpenAudioIntro,
+  onQuitApp,
+  voiceEnabled,
+  voiceListening,
+  voiceFeedbackEnabled,
+  voiceSearchButtonsEnabled,
+  onToggleVoiceMode,
+  onToggleVoiceFeedback,
+  onToggleVoiceSearchButtons,
+  onRunVoiceCommandText,
+  typography,
+  onTypographyChange,
   requestedTab,
 }) => {
   const [activeTab, setActiveTab] = useState<DockTab>('natal');
@@ -511,12 +544,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
     setUseCustomCoords(true);
   };
 
-  const handleNatalPlaceSearch = async () => {
-    if (!natalPlaceQuery.trim()) return;
+  const handleNatalPlaceSearch = async (overrideQuery?: string) => {
+    const q = (overrideQuery ?? natalPlaceQuery).trim();
+    if (!q) return;
+    if (overrideQuery !== undefined) setNatalPlaceQuery(q);
     setPlaceLookupBusy(true);
     setPlaceLookupError(null);
     setNatalCandidates([]);
-    const results = await searchPlacesByQuery(natalPlaceQuery);
+    const results = await searchPlacesByQuery(q);
     setPlaceLookupBusy(false);
     if (results.length === 0) {
       setPlaceLookupError('Lieu ou code postal introuvable. Saisissez Lat/Lon manuellement.');
@@ -528,12 +563,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
     }
   };
 
-  const handleSrPlaceSearch = async () => {
-    if (!srPlaceQuery.trim()) return;
+  const handleSrPlaceSearch = async (overrideQuery?: string) => {
+    const q = (overrideQuery ?? srPlaceQuery).trim();
+    if (!q) return;
+    if (overrideQuery !== undefined) setSrPlaceQuery(q);
     setPlaceLookupBusy(true);
     setPlaceLookupError(null);
     setSrCandidates([]);
-    const results = await searchPlacesByQuery(srPlaceQuery);
+    const results = await searchPlacesByQuery(q);
     setPlaceLookupBusy(false);
     if (results.length === 0) {
       setPlaceLookupError('Lieu ou code postal anniversaire introuvable.');
@@ -869,14 +906,24 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                 <label htmlFor="natal-name" className="block text-[11px] text-slate-400 mb-1">
                   Prénom
                 </label>
-                <input
-                  id="natal-name"
-                  type="text"
-                  placeholder="Saisir un prénom..."
-                  value={draftProfile.name}
-                  onChange={(e) => onDraftProfileChange({ name: e.target.value })}
-                  className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] placeholder:text-slate-500 focus:border-[#d4af37] focus:outline-none"
-                />
+                <div className="flex items-center gap-1">
+                  <input
+                    id="natal-name"
+                    type="text"
+                    placeholder="Saisir un prénom..."
+                    value={draftProfile.name}
+                    onChange={(e) => onDraftProfileChange({ name: e.target.value })}
+                    className="flex-1 min-w-0 rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] placeholder:text-slate-500 focus:border-[#d4af37] focus:outline-none"
+                  />
+                  {voiceSearchButtonsEnabled && (
+                    <VoiceDictationButton
+                      size="xs"
+                      accent="gold"
+                      title="Dicter le prénom"
+                      onTranscript={(spoken) => onDraftProfileChange({ name: spoken })}
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="col-span-1 md:col-span-1">
@@ -1047,27 +1094,47 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                     }
                     className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none cursor-pointer"
                   >
-                    {CITY_PRESETS.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.country})
-                      </option>
-                    ))}
+                    <optgroup label="France (Villes & Préfectures)">
+                      {CITY_PRESETS.filter((c) => c.country === 'France').map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.department ? `${c.department} · ` : ''}France)
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Francophonie & Monde">
+                      {CITY_PRESETS.filter((c) => c.country !== 'France').map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.country})
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
               ) : (
                 <>
                   <div className="md:col-span-4">
                     <label htmlFor="natal-custom-city" className="block text-[11px] text-slate-400 mb-1">
-                      Ville / Pays personnalisé
+                      Ville / Commune personnalisée
                     </label>
-                    <input
-                      id="natal-custom-city"
-                      type="text"
-                      placeholder="Ex: Bordeaux, France"
-                      value={draftProfile.customCityName ?? ''}
-                      onChange={(e) => onDraftProfileChange({ customCityName: e.target.value })}
-                      className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        id="natal-custom-city"
+                        type="text"
+                        placeholder="Ex: Bordeaux, Saint-Malo..."
+                        value={draftProfile.customCityName ?? ''}
+                        onChange={(e) => onDraftProfileChange({ customCityName: e.target.value })}
+                        className="flex-1 min-w-0 rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                      />
+                      {voiceSearchButtonsEnabled && (
+                        <VoiceDictationButton
+                          size="xs"
+                          accent="gold"
+                          title="Dicter et chercher une commune"
+                          onTranscript={(spoken) => void handleNatalPlaceSearch(spoken)}
+                          onErrorMessage={(msg) => setPlaceLookupError(msg)}
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="md:col-span-1">
                     <label htmlFor="natal-lat" className="block text-[11px] text-slate-400 mb-1">
@@ -1104,13 +1171,13 @@ export const ControlDock: React.FC<ControlDockProps> = ({
 
               <div className="md:col-span-6">
                 <label htmlFor="natal-place-search" className="block text-[11px] text-slate-400 mb-1">
-                  Code postal (France), Ville ou Pays de naissance
+                  Toutes communes de France (nom, code postal, dép.) ou Monde
                 </label>
                 <div className="flex items-center gap-1.5">
                   <input
                     id="natal-place-search"
                     type="text"
-                    placeholder="Ex: 75008, 69002, Toulouse, Casablanca..."
+                    placeholder="Ex: 75008, Saint-Malo, Valence 26, Dakar..."
                     value={natalPlaceQuery}
                     onChange={(e) => setNatalPlaceQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -1118,6 +1185,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                     }}
                     className="flex-1 rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
                   />
+                  {voiceSearchButtonsEnabled && (
+                    <VoiceDictationButton
+                      accent="gold"
+                      title="Dicter une ville, commune ou code postal"
+                      onTranscript={(spoken) => void handleNatalPlaceSearch(spoken)}
+                      onErrorMessage={(msg) => setPlaceLookupError(msg)}
+                    />
+                  )}
                   <button
                     type="button"
                     disabled={placeLookupBusy}
@@ -1128,11 +1203,11 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                   </button>
                 </div>
                 {natalCandidates.length > 1 && (
-                  <div className="mt-1 flex items-center gap-1 flex-wrap">
-                    <span className="text-[10px] text-slate-400">Communes :</span>
-                    {natalCandidates.slice(0, 5).map((cand) => (
+                  <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                    <span className="text-[10px] text-slate-400">Communes trouvées :</span>
+                    {natalCandidates.slice(0, 8).map((cand) => (
                       <button
-                        key={cand.name}
+                        key={`${cand.name}-${cand.latitude}-${cand.longitude}`}
                         type="button"
                         onClick={() => applyNatalCandidate(cand)}
                         className={`rounded border px-1.5 py-0.5 text-[10px] transition-colors cursor-pointer ${
@@ -1141,7 +1216,7 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                             : 'border-white/15 bg-[#0d1428] text-slate-300 hover:border-[#d4af37]/50'
                         }`}
                       >
-                        {cand.name.replace(/\s*\(\d{5},\s*France\)/, '')}
+                        {cand.name}
                       </button>
                     ))}
                   </div>
@@ -1463,23 +1538,32 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                       {solarReturnCustomLoc && (
                         <option value="__custom__">{solarReturnCustomLoc.name}</option>
                       )}
-                      {CITY_PRESETS.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.country})
-                        </option>
-                      ))}
+                      <optgroup label="France (Villes & Préfectures)">
+                        {CITY_PRESETS.filter((c) => c.country === 'France').map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.department ? `${c.department} · ` : ''}France)
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Francophonie & Monde">
+                        {CITY_PRESETS.filter((c) => c.country !== 'France').map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.country})
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
 
                   <div>
                     <label htmlFor="sr-place-search" className="block text-[11px] text-slate-400 mb-1">
-                      Code postal (FR), ville ou pays anniversaire
+                      Commune FR (nom, CP, dép.) ou Monde
                     </label>
                     <div className="flex items-center gap-1">
                       <input
                         id="sr-place-search"
                         type="text"
-                        placeholder="Ex: 06000, Nice, Lisbonne..."
+                        placeholder="Ex: 06000, Saint-Malo, Lisbonne..."
                         value={srPlaceQuery}
                         onChange={(e) => setSrPlaceQuery(e.target.value)}
                         onKeyDown={(e) => {
@@ -1487,6 +1571,15 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                         }}
                         className="w-40 rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 text-xs text-[#f3efe6] focus:border-[#38bdf8] focus:outline-none"
                       />
+                      {voiceSearchButtonsEnabled && (
+                        <VoiceDictationButton
+                          size="xs"
+                          accent="cyan"
+                          title="Dicter une ville anniversaire"
+                          onTranscript={(spoken) => void handleSrPlaceSearch(spoken)}
+                          onErrorMessage={(msg) => setPlaceLookupError(msg)}
+                        />
+                      )}
                       <button
                         type="button"
                         disabled={placeLookupBusy}
@@ -1498,9 +1591,9 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                     </div>
                     {srCandidates.length > 1 && (
                       <div className="mt-1 flex items-center gap-1 flex-wrap">
-                        {srCandidates.slice(0, 4).map((cand) => (
+                        {srCandidates.slice(0, 6).map((cand) => (
                           <button
-                            key={cand.name}
+                            key={`${cand.name}-${cand.latitude}-${cand.longitude}`}
                             type="button"
                             onClick={() => onSolarReturnCustomLocChange(cand)}
                             className={`rounded border px-1.5 py-0.5 text-[10px] transition-colors cursor-pointer ${
@@ -1509,7 +1602,7 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                                 : 'border-white/15 bg-[#0d1428] text-slate-300'
                             }`}
                           >
-                            {cand.name.replace(/\s*\(\d{5},\s*France\)/, '')}
+                            {cand.name}
                           </button>
                         ))}
                       </div>
@@ -1835,6 +1928,77 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               </div>
             </div>
 
+            {/* 2b. Commande & Saisie Vocale (En option) */}
+            <div className="rounded-lg border border-[#38bdf8]/25 bg-[#0d1428]/75 p-3 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-semibold text-[#bae6fd]">
+                    Commande vocale & Dictée de recherche (En option)
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {isSpeechRecognitionSupported()
+                      ? 'Pilotez toute l’application à la voix et dictez directement dans tous les champs de recherche.'
+                      : 'Votre navigateur actuel ne propose pas la reconnaissance vocale Web Speech (disponible sur Chrome, Edge, Android & Quest Browser).'}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={onToggleVoiceMode}
+                    className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                      voiceEnabled
+                        ? 'border-rose-400 bg-rose-500/20 text-rose-100'
+                        : 'border-[#38bdf8]/50 bg-[#080d1c] text-[#7dd3fc] hover:border-[#38bdf8]'
+                    }`}
+                  >
+                    {voiceListening ? <Mic className="w-3.5 h-3.5 animate-pulse" /> : voiceEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                    <span>{voiceEnabled ? 'Écoute vocale : ON' : 'Activer commande vocale'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onToggleVoiceSearchButtons}
+                    className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                      voiceSearchButtonsEnabled
+                        ? 'border-[#38bdf8]/60 bg-[#38bdf8]/20 text-[#e0f2fe]'
+                        : 'border-white/10 bg-[#080d1c] text-slate-400'
+                    }`}
+                  >
+                    {voiceSearchButtonsEnabled ? 'Micro recherches : ON' : 'Micro recherches : OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onToggleVoiceFeedback}
+                    className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                      voiceFeedbackEnabled
+                        ? 'border-[#d4af37]/60 bg-[#d4af37]/20 text-[#fde68a]'
+                        : 'border-white/10 bg-[#080d1c] text-slate-400'
+                    }`}
+                  >
+                    {voiceFeedbackEnabled ? 'Réponse vocale : ON' : 'Réponse vocale : OFF'}
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400">
+                <span>Exemples cliquables :</span>
+                {[
+                  'Thème natal de Marie née le 15 mai 1988 à 14h30 à Lyon',
+                  'Transits',
+                  'Montre Vénus',
+                  'Vue 2D',
+                  'Centre 360',
+                ].map((sample) => (
+                  <button
+                    key={sample}
+                    type="button"
+                    onClick={() => onRunVoiceCommandText(sample)}
+                    className="rounded border border-white/10 bg-[#070b18] px-2 py-0.5 text-slate-300 hover:border-[#38bdf8]/50 hover:text-white transition-colors cursor-pointer"
+                  >
+                    « {sample} »
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* 3. Tradition, Style des signes, Roue 3D & Fond étoilé */}
             <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1993,6 +2157,130 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               </div>
             </div>
 
+            {/* 3b. Typographie : Glyphes (sans émoji), Titres célestes & Corps lisible */}
+            <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-semibold text-[#f3efe6]">
+                    Polices & Glyphes astrologiques
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Affichage monochrome sans émoji coloré · Titres célestes · Lecture haute netteté
+                  </div>
+                </div>
+                <div className="font-glyph text-sm tracking-wider text-[#e7cfa0] bg-[#070b18] border border-white/10 rounded-md px-2.5 py-1">
+                  ♈︎ ♉︎ ♊︎ ♋︎ ♌︎ ♍︎ ♎︎ ♏︎ ♐︎ ♑︎ ♒︎ ♓︎ · ☉ ☽ ☿ ♀︎ ♂︎ ♃ ♄ · ☌ ⚹︎ □ △ ☍
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">
+                    Titres & Noms des signes
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {TITLE_FONT_OPTIONS.map((opt) => {
+                      const active = typography.titleFont === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          title={opt.description}
+                          onClick={() =>
+                            onTypographyChange({ ...typography, titleFont: opt.id })
+                          }
+                          className={`rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#fffbeb]'
+                              : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
+                          }`}
+                        >
+                          <div
+                            className="text-xs font-semibold truncate"
+                            style={{ fontFamily: opt.stack }}
+                          >
+                            {opt.label}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {opt.description}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">
+                    Corps du texte & Roue
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {BODY_FONT_OPTIONS.map((opt) => {
+                      const active = typography.bodyFont === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          title={opt.description}
+                          onClick={() =>
+                            onTypographyChange({ ...typography, bodyFont: opt.id })
+                          }
+                          className={`rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#38bdf8] bg-[#38bdf8]/20 text-[#e0f2fe]'
+                              : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
+                          }`}
+                        >
+                          <div
+                            className="text-xs font-semibold truncate"
+                            style={{ fontFamily: opt.stack }}
+                          >
+                            {opt.label}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {opt.description}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">
+                    Symboles (Glyphes sans émoji)
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {GLYPH_FONT_OPTIONS.map((opt) => {
+                      const active = typography.glyphFont === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          title={opt.description}
+                          onClick={() =>
+                            onTypographyChange({ ...typography, glyphFont: opt.id })
+                          }
+                          className={`rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#fffbeb]'
+                              : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
+                          }`}
+                        >
+                          <div className="text-xs font-semibold truncate">
+                            {opt.label}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {opt.description}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 4. Caméra 3D, Calques, Réalité Mixte, Audio & Quest 3 */}
             <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2132,6 +2420,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                   <Glasses className="w-3.5 h-3.5 text-[#d4af37]" />
                   <span>Quest 3 / Sideload APK</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={onQuitApp}
+                  className="flex items-center gap-1.5 rounded-lg border border-rose-500/45 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 hover:border-rose-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <Power className="w-3.5 h-3.5 text-rose-300" />
+                  <span>Quitter l’app</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2161,6 +2457,7 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               onOpenAudioIntro,
               viewDimension,
             }}
+            showVoiceDictation={voiceSearchButtonsEnabled}
           />
         )}
       </div>

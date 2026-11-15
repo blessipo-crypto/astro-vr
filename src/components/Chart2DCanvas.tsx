@@ -788,6 +788,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
           <svg
             viewBox={`0 0 ${size} ${size}`}
             className="max-h-full max-w-full w-auto h-full drop-shadow-[0_18px_45px_rgba(0,0,0,0.65)] select-none"
+            style={{ fontFamily: 'var(--font-sans), var(--font-glyph)' }}
             role="img"
             aria-label="Roue astrologique interactive en vue 2D"
           >
@@ -935,6 +936,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                           dominantBaseline="central"
                           fontSize={10}
                           fontWeight="600"
+                          style={{ fontFamily: 'var(--font-display)' }}
                           fill={palette.textMuted}
                         >
                           {roman}
@@ -1125,6 +1127,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                       dominantBaseline="central"
                       fontSize={isSelectedHouse ? 13 : 11}
                       fontWeight={isSelectedHouse || isAngular ? '700' : '600'}
+                      style={{ fontFamily: 'var(--font-display)' }}
                       fill={isSelectedHouse ? palette.angularLine : palette.textMuted}
                     >
                       {house.roman}
@@ -1337,7 +1340,8 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                     textAnchor="middle"
                     dominantBaseline="central"
                     fontSize={15}
-                    fontWeight="700"
+                    fontWeight="600"
+                    style={{ fontFamily: 'var(--font-glyph)', fontVariantEmoji: 'text' }}
                     fill={palette.isLight ? '#0f172a' : planetCssColor}
                   >
                     {planet.symbol}
@@ -1422,7 +1426,8 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={12.5}
-                      fontWeight="700"
+                      fontWeight="600"
+                      style={{ fontFamily: 'var(--font-glyph)', fontVariantEmoji: 'text' }}
                       fill={palette.isLight ? '#0369a1' : '#7dd3fc'}
                     >
                       {planet.symbol}
@@ -1447,7 +1452,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
 
           {/* Compact Corner Summary Card on Wide PC Screens */}
           <div className="hidden xl:flex flex-col gap-1.5 fixed left-5 top-20 z-10 w-60 rounded-xl border border-[#d4af37]/25 bg-[#080d1b]/90 p-3 text-xs text-slate-200 pointer-events-auto">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#e7cfa0]">
+            <div className="font-display text-sm font-semibold tracking-wide text-[#e7cfa0]">
               Carte 2D · {baseChart.cityName}
             </div>
             <div className="text-[11px] text-slate-400">
