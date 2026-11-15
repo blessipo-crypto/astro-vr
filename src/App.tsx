@@ -23,6 +23,12 @@ import {
 import { transposeLongitudeToChinese, ZodiacTradition } from './astro/chineseAstrology';
 import { buildShareThemeUrl, readSharedThemeFromUrl } from './astro/shareTheme';
 import { ComparativePairKind, ControlDock } from './components/ControlDock';
+import {
+  Chart2DCanvas,
+  WHEEL_2D_STYLES,
+  Wheel2DOrientation,
+  Wheel2DStyle,
+} from './components/Chart2DCanvas';
 import { InspectorPanel } from './components/InspectorPanel';
 import { PrintableChartReport } from './components/PrintableChartReport';
 import { PWAInstallButton } from './components/PWAInstallButton';
@@ -40,12 +46,20 @@ import {
   XRSessionModeKind,
 } from './vr/AstrologyScene';
 import { celestialAudio } from './vr/audio';
-import type { StarfieldBackdropStyle, ZodiacSignStyle, ZodiacWheelStyle } from './vr/textures';
+import {
+  ZODIAC_WHEEL_STYLES,
+  type StarfieldBackdropStyle,
+  type ZodiacSignStyle,
+  type ZodiacWheelStyle,
+} from './vr/textures';
 
 const REAL_TIME_DAYS_PER_SEC = 1 / 86400;
 
 const STORAGE_KEY = 'uranie_vr_natal_profiles_v1';
 const SKY_ANIMS_STORAGE_KEY = 'uranie_vr_sky_anims_v1';
+const VIEW_DIM_STORAGE_KEY = 'uranie_vr_view_dim_v1';
+const WHEEL_2D_STYLE_STORAGE_KEY = 'uranie_vr_wheel2d_v1';
+const WHEEL_2D_ORIENT_STORAGE_KEY = 'uranie_vr_orient2d_v1';
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -223,6 +237,34 @@ export default function App() {
     }
     return DEFAULT_SKY_ANIMATIONS;
   });
+  const [viewDimension, setViewDimension] = useState<'3d' | '2d'>(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_DIM_STORAGE_KEY);
+      if (saved === '2d' || saved === '3d') return saved;
+    } catch {
+      // Ignore storage errors
+    }
+    return '3d';
+  });
+  const [wheel2DStyle, setWheel2DStyle] = useState<Wheel2DStyle>(() => {
+    try {
+      const saved = localStorage.getItem(WHEEL_2D_STYLE_STORAGE_KEY) as Wheel2DStyle | null;
+      if (saved && WHEEL_2D_STYLES.some((s) => s.id === saved)) return saved;
+    } catch {
+      // Ignore storage errors
+    }
+    return 'astrolabe';
+  });
+  const [wheel2DOrientation, setWheel2DOrientation] = useState<Wheel2DOrientation>(() => {
+    try {
+      const saved = localStorage.getItem(WHEEL_2D_ORIENT_STORAGE_KEY);
+      if (saved === 'ascendant' || saved === 'aries0' || saved === 'mcTop') return saved;
+    } catch {
+      // Ignore storage errors
+    }
+    return 'ascendant';
+  });
+  const [highlightedAspectId, setHighlightedAspectId] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState<boolean>(() => {
     if (initialShared) return false;
     try {
@@ -582,6 +624,31 @@ export default function App() {
     }
   }, [skyAnimations]);
 
+  useEffect(() => {
+    sceneRef.current?.setPaused(viewDimension === '2d' && !inVR);
+    try {
+      localStorage.setItem(VIEW_DIM_STORAGE_KEY, viewDimension);
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [viewDimension, inVR]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WHEEL_2D_STYLE_STORAGE_KEY, wheel2DStyle);
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [wheel2DStyle]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WHEEL_2D_ORIENT_STORAGE_KEY, wheel2DOrientation);
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [wheel2DOrientation]);
+
   // Keep selected planet synced when date or mode changes
   useEffect(() => {
     if (selectedPlanet) {
@@ -767,6 +834,7 @@ export default function App() {
   }, []);
 
   const handleHighlightAspect = useCallback((aspectId: string | null) => {
+    setHighlightedAspectId(aspectId);
     sceneRef.current?.highlightAspect(aspectId);
   }, []);
 
@@ -808,8 +876,37 @@ export default function App() {
     });
   }, []);
 
-  const handleSelectPlanet = useCallback((id: PlanetId, layer: 'base' | 'outer' = 'base') => {
-    sceneRef.current?.selectPlanet(id, layer);
+  const handleSelectPlanet = useCallback(
+    (id: PlanetId, layer: 'base' | 'outer' = 'base') => {
+      if (viewDimension === '2d') {
+        const target = layer === 'outer' && outerChart ? outerChart : baseChart;
+        const found = target.planets.find((p) => p.id === id) ?? null;
+        setShowFullSummary(false);
+        setSelectedHouse(null);
+        setSelectedPlanetLayer(layer);
+        setSelectedPlanet(found);
+      }
+      sceneRef.current?.selectPlanet(id, layer);
+    },
+    [viewDimension, baseChart, outerChart]
+  );
+
+  const handleSelectHouse2D = useCallback(
+    (houseNum: number) => {
+      const found = baseChart.houses.find((h) => h.house === houseNum) ?? null;
+      setShowFullSummary(false);
+      setSelectedPlanet(null);
+      setSelectedHouse(found);
+      sceneRef.current?.selectHouse(houseNum);
+    },
+    [baseChart.houses]
+  );
+
+  const handleWheel2DStyleChange = useCallback((style: Wheel2DStyle) => {
+    setWheel2DStyle(style);
+    if (ZODIAC_WHEEL_STYLES.some((s) => s.id === style)) {
+      setWheelStyle(style as ZodiacWheelStyle);
+    }
   }, []);
 
   const stopWebcamFeed = useCallback(() => {
@@ -856,6 +953,7 @@ export default function App() {
   }, []);
 
   const handleEnterVR = useCallback(() => {
+    setViewDimension('3d');
     if (webXRSupported) {
       void sceneRef.current?.enterVR();
     } else {
@@ -864,6 +962,7 @@ export default function App() {
   }, [webXRSupported]);
 
   const handleEnterMR = useCallback(() => {
+    setViewDimension('3d');
     if (mrSupported) {
       void sceneRef.current?.enterMR();
     } else {
@@ -967,7 +1066,39 @@ export default function App() {
       )}
 
       {/* Isolated WebGL / WebXR Mount Container */}
-      <div ref={canvasMountRef} className="no-print relative z-10 h-full w-full" />
+      <div
+        ref={canvasMountRef}
+        className={viewDimension === '2d' ? 'hidden' : 'no-print relative z-10 h-full w-full'}
+      />
+
+      {/* Interactive PC 2D Astrological Wheel View */}
+      {viewDimension === '2d' && (
+        <Chart2DCanvas
+          baseChart={baseChart}
+          outerChart={outerChart}
+          comparisonAspects={comparisonAspects}
+          tradition={tradition}
+          wheel2DStyle={wheel2DStyle}
+          onWheel2DStyleChange={handleWheel2DStyleChange}
+          wheel2DOrientation={wheel2DOrientation}
+          onWheel2DOrientationChange={setWheel2DOrientation}
+          signStyle={signStyle}
+          onSignStyleChange={setSignStyle}
+          skyAnimations={skyAnimations}
+          aspectFilter={aspectFilter}
+          showHouses={showHouses}
+          selectedPlanetId={selectedPlanet?.id ?? null}
+          selectedPlanetLayer={selectedPlanetLayer}
+          selectedHouseNum={selectedHouse?.house ?? null}
+          highlightedAspectId={highlightedAspectId}
+          onSelectPlanet={handleSelectPlanet}
+          onSelectHouse={handleSelectHouse2D}
+          onHighlightAspect={handleHighlightAspect}
+          onSwitchTo3D={() => setViewDimension('3d')}
+          inspectorOpen={Boolean(showFullSummary || selectedPlanet || selectedHouse)}
+          dockCollapsed={dockCollapsed}
+        />
+      )}
 
       {contextLost && (
         <div className="no-print fixed inset-0 z-40 flex items-center justify-center bg-[#05070e]/95 p-6 text-center">
@@ -995,6 +1126,36 @@ export default function App() {
             <Info className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>Présentation</span>
           </button>
+          <div
+            role="group"
+            aria-label="Basculer entre vue 2D et 3D"
+            className="flex items-center rounded-lg border border-white/15 bg-[#0d1428]/90 p-0.5"
+          >
+            <button
+              type="button"
+              onClick={() => setViewDimension('2d')}
+              title="Vue 2D haute lisibilité sur PC"
+              className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewDimension === '2d'
+                  ? 'bg-[#38bdf8] text-[#05070e]'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              2D
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewDimension('3d')}
+              title="Observatoire 3D / VR"
+              className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                viewDimension === '3d'
+                  ? 'bg-[#d4af37] text-[#05070e]'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              3D
+            </button>
+          </div>
         </div>
 
         <div className="hidden lg:flex items-center gap-2.5 text-xs text-slate-300 font-mono-tabular whitespace-nowrap">
@@ -1120,6 +1281,9 @@ export default function App() {
         showFullSummary={showFullSummary}
         onClose={() => {
           setShowFullSummary(false);
+          setSelectedPlanet(null);
+          setSelectedHouse(null);
+          setHighlightedAspectId(null);
           sceneRef.current?.selectPlanet(null, 'base');
           sceneRef.current?.selectHouse(null);
           sceneRef.current?.highlightAspect(null);
@@ -1209,9 +1373,17 @@ export default function App() {
         onToggleAudio={handleToggleAudio}
         skyAnimations={skyAnimations}
         onSkyAnimationsChange={setSkyAnimations}
+        viewDimension={viewDimension}
+        onViewDimensionChange={setViewDimension}
+        wheel2DStyle={wheel2DStyle}
+        onWheel2DStyleChange={handleWheel2DStyleChange}
+        wheel2DOrientation={wheel2DOrientation}
+        onWheel2DOrientationChange={setWheel2DOrientation}
         selectedPlanetId={selectedPlanet?.id ?? null}
         onSelectPlanet={handleSelectPlanet}
         onOpenFullSummary={() => {
+          setSelectedPlanet(null);
+          setSelectedHouse(null);
           sceneRef.current?.selectPlanet(null, 'base');
           sceneRef.current?.selectHouse(null);
           setShowFullSummary((v) => !v);

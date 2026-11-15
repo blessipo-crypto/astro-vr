@@ -300,6 +300,23 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
             </div>
           </div>
 
+          <div className="rounded-lg border border-amber-400/30 bg-[#141008]/70 p-4">
+            <div className="text-[#fde68a] font-medium text-xs">
+              Si SideQuest affiche « pm install -r … exited with code 1 » :
+            </div>
+            <ol className="mt-1.5 list-decimal list-inside space-y-1 text-xs text-slate-300 leading-relaxed">
+              <li>
+                Dans SideQuest → <strong>Currently Installed</strong> (ou dans le casque : <strong>Bibliothèque → Sources inconnues</strong>), <strong>désinstallez d’abord</strong> toute ancienne version d’Uranie VR (erreur de signature Android entre anciennes compilations).
+              </li>
+              <li>
+                Installez ensuite le dernier APK signé depuis <strong>GitHub Releases</strong> (icône <strong>Install APK</strong> dans SideQuest ou <code className="text-[#e7cfa0]">adb install uranie-vr-autonome.apk</code>).
+              </li>
+              <li>
+                Ou encore plus simple : ouvrez directement <strong>https://blessipo-crypto.github.io/astro-vr/</strong> dans le <strong>Navigateur Meta Quest</strong> (aucun APK requis, VR 360° &amp; Passthrough complets).
+              </li>
+            </ol>
+          </div>
+
           <div className="rounded-lg border border-white/10 bg-[#0e1529] p-4">
             <div className="flex items-center gap-2 text-[#f8f3e6] font-medium">
               <Terminal className="w-4 h-4 text-[#d4af37]" />

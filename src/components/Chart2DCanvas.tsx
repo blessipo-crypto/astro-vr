@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Compass, RotateCcw } from 'lucide-react';
 import {
   AspectInfo,
@@ -21,7 +21,7 @@ import {
   ZODIAC_SIGN_STYLES,
   ZodiacSignStyle,
 } from '../astro/zodiacSignArt';
-import type { AspectFilter } from '../vr/AstrologyScene';
+import type { AspectFilter, SkyAnimationsConfig } from '../vr/AstrologyScene';
 import type { ZodiacWheelStyle } from '../vr/textures';
 
 export type Wheel2DStyle =
@@ -304,7 +304,6 @@ function angleForLongitude(
   } else if (orientation === 'mcTop') {
     deg = 270 - (lon - chart.midheaven);
   } else {
-    // Classic: Ascendant fixed at 9 o'clock (180 deg)
     deg = 180 - (lon - chart.ascendant);
   }
   return (deg * Math.PI) / 180;
@@ -330,7 +329,6 @@ function declusterPlanets(
     return { planet: p, exactRad, displayRad: exactRad, tier: 0 };
   });
 
-  // Sort along longitude ascending to spread tight conjunction clusters smoothly
   const sorted = [...items].sort((a, b) => a.planet.longitude - b.planet.longitude);
   for (let pass = 0; pass < 3; pass++) {
     for (let i = 0; i < sorted.length; i++) {
@@ -348,7 +346,6 @@ function declusterPlanets(
     }
   }
 
-  // Alternate subtle radial tier when pairs remain close
   for (let i = 1; i < sorted.length; i++) {
     let diff = sorted[i].displayRad - sorted[i - 1].displayRad;
     while (diff > Math.PI) diff -= Math.PI * 2;
@@ -361,6 +358,196 @@ function declusterPlanets(
   return items;
 }
 
+const Sky2DBackdrop: React.FC<{ skyAnimations: SkyAnimationsConfig }> = ({
+  skyAnimations,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const activeAny =
+      skyAnimations.shootingStars || skyAnimations.nebulae || skyAnimations.aurora;
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    if (!activeAny) {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      return () => window.removeEventListener('resize', resize);
+    }
+
+    const stars = Array.from({ length: 70 }, (_, i) => ({
+      x: ((i * 73 + 19) % 100) / 100,
+      y: ((i * 41 + 37) % 100) / 100,
+      r: 0.6 + ((i * 13) % 10) * 0.1,
+      phase: i * 0.9,
+    }));
+
+    const meteors = [
+      { active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0.9, cooldown: 0.5 },
+      { active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1.1, cooldown: 3.4 },
+    ];
+
+    let rafId = 0;
+    let lastTs = performance.now();
+
+    const draw = (now: number) => {
+      const dt = Math.min((now - lastTs) / 1000, 0.08);
+      lastTs = now;
+      const t = now * 0.001;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Subtle background stars
+      for (const s of stars) {
+        const alpha = 0.25 + 0.28 * Math.sin(t * 1.1 + s.phase);
+        ctx.fillStyle = `rgba(226, 232, 240, ${alpha.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 1. Subtle compact nebula glows
+      if (skyAnimations.nebulae) {
+        const clouds = [
+          {
+            cx: w * (0.17 + Math.sin(t * 0.08) * 0.02),
+            cy: h * (0.28 + Math.cos(t * 0.07) * 0.02),
+            rx: Math.min(w, h) * 0.18,
+            c1: 'rgba(99, 102, 241, 0.14)',
+            c2: 'rgba(168, 85, 247, 0.06)',
+          },
+          {
+            cx: w * (0.83 + Math.cos(t * 0.06) * 0.02),
+            cy: h * (0.34 + Math.sin(t * 0.09) * 0.02),
+            rx: Math.min(w, h) * 0.16,
+            c1: 'rgba(56, 189, 248, 0.13)',
+            c2: 'rgba(244, 63, 94, 0.05)',
+          },
+        ];
+        for (const c of clouds) {
+          const g = ctx.createRadialGradient(c.cx, c.cy, 0, c.cx, c.cy, c.rx);
+          g.addColorStop(0, c.c1);
+          g.addColorStop(0.55, c.c2);
+          g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(c.cx, c.cy, c.rx, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 2. Subtle northern aurora ribbon along top third
+      if (skyAnimations.aurora) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let b = 0; b < 2; b++) {
+          const grad = ctx.createLinearGradient(0, h * 0.08, 0, h * 0.34);
+          grad.addColorStop(0, 'rgba(52, 211, 153, 0)');
+          grad.addColorStop(0.45, b === 0 ? 'rgba(52, 211, 153, 0.085)' : 'rgba(129, 140, 248, 0.075)');
+          grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          const startX = w * (0.12 + b * 0.14);
+          const endX = w * (0.76 + b * 0.12);
+          const baseY = h * (0.16 + b * 0.05);
+          ctx.moveTo(startX, baseY + 60);
+          for (let x = startX; x <= endX; x += 24) {
+            const p = (x - startX) / (endX - startX);
+            const env = Math.sin(p * Math.PI);
+            const y =
+              baseY +
+              Math.sin(p * 6 + t * (0.45 + b * 0.15) + b) * 18 * env;
+            ctx.lineTo(x, y);
+          }
+          ctx.lineTo(endX, baseY + 80);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // 3. Occasional delicate shooting stars
+      if (skyAnimations.shootingStars) {
+        for (const m of meteors) {
+          if (!m.active) {
+            m.cooldown -= dt;
+            if (m.cooldown <= 0) {
+              m.active = true;
+              m.life = 0;
+              m.maxLife = 0.75 + Math.random() * 0.45;
+              const fromLeft = Math.random() > 0.4;
+              m.x = fromLeft ? w * (0.08 + Math.random() * 0.35) : w * (0.55 + Math.random() * 0.35);
+              m.y = h * (0.12 + Math.random() * 0.25);
+              const speed = 260 + Math.random() * 140;
+              const ang = fromLeft ? 0.35 + Math.random() * 0.3 : Math.PI - (0.35 + Math.random() * 0.3);
+              m.vx = Math.cos(ang) * speed;
+              m.vy = Math.sin(ang) * speed;
+            }
+            continue;
+          }
+
+          m.life += dt;
+          const p = m.life / m.maxLife;
+          if (p >= 1) {
+            m.active = false;
+            m.cooldown = 3.2 + Math.random() * 4.5;
+            continue;
+          }
+
+          const headX = m.x + m.vx * m.life;
+          const headY = m.y + m.vy * m.life;
+          const tailLen = 68;
+          const norm = Math.hypot(m.vx, m.vy) || 1;
+          const tailX = headX - (m.vx / norm) * tailLen;
+          const tailY = headY - (m.vy / norm) * tailLen;
+          const opacity = Math.sin(p * Math.PI) * 0.78;
+
+          const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
+          grad.addColorStop(0, 'rgba(125, 211, 252, 0)');
+          grad.addColorStop(0.75, `rgba(125, 211, 252, ${(opacity * 0.55).toFixed(3)})`);
+          grad.addColorStop(1, `rgba(255, 255, 255, ${opacity.toFixed(3)})`);
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.stroke();
+        }
+      }
+
+      rafId = requestAnimationFrame(draw);
+    };
+
+    rafId = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', resize);
+    };
+  }, [skyAnimations]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 z-0 h-full w-full"
+    />
+  );
+};
+
 export interface Chart2DCanvasProps {
   baseChart: AstroChart;
   outerChart: AstroChart | null;
@@ -372,6 +559,7 @@ export interface Chart2DCanvasProps {
   onWheel2DOrientationChange: (o: Wheel2DOrientation) => void;
   signStyle: ZodiacSignStyle;
   onSignStyleChange: (s: ZodiacSignStyle) => void;
+  skyAnimations: SkyAnimationsConfig;
   aspectFilter: AspectFilter;
   showHouses: boolean;
   selectedPlanetId: PlanetId | null;
@@ -397,6 +585,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
   onWheel2DOrientationChange,
   signStyle,
   onSignStyleChange,
+  skyAnimations,
   aspectFilter,
   showHouses,
   selectedPlanetId,
@@ -479,14 +668,15 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
         dockCollapsed ? 'pb-14' : 'pb-48'
       } ${inspectorOpen ? 'lg:pr-[465px]' : ''}`}
       style={{
-        background:
-          palette.isLight
-            ? 'radial-gradient(circle at center, #1e293b 0%, #0b1120 75%, #05070e 100%)'
-            : 'radial-gradient(circle at center, #0e1630 0%, #060a16 70%, #03050c 100%)',
+        background: palette.isLight
+          ? 'radial-gradient(circle at center, #1e293b 0%, #0b1120 75%, #05070e 100%)'
+          : 'radial-gradient(circle at center, #0e1630 0%, #060a16 70%, #03050c 100%)',
       }}
     >
+      <Sky2DBackdrop skyAnimations={skyAnimations} />
+
       {/* 2D Wheel Selector Bar (PC Study Mode) */}
-      <div className="mx-auto w-full max-w-5xl px-4 pt-1 pb-2 flex flex-wrap items-center justify-between gap-2">
+      <div className="relative z-10 mx-auto w-full max-w-5xl px-4 pt-1 pb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-medium text-[#e7cfa0] mr-1 flex items-center gap-1">
             <Compass className="w-3.5 h-3.5 text-[#d4af37]" />
@@ -1095,6 +1285,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
               const key = `base-${planet.id}`;
               const isSelected = selectedPlanetLayer === 'base' && selectedPlanetId === planet.id;
               const isHovered = hoveredPlanetKey === key;
+              const planetCssColor = `#${planet.colorHex.toString(16).padStart(6, '0')}`;
 
               return (
                 <g
@@ -1109,7 +1300,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                     y1={pTickOut.y}
                     x2={pTickIn.x}
                     y2={pTickIn.y}
-                    stroke={planet.cssColor}
+                    stroke={planetCssColor}
                     strokeWidth={1.6}
                   />
                   <line
@@ -1137,7 +1328,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                     cy={pPos.y}
                     r={13}
                     fill={palette.innerBg}
-                    stroke={isSelected ? '#fbbf24' : planet.cssColor}
+                    stroke={isSelected ? '#fbbf24' : planetCssColor}
                     strokeWidth={isSelected ? 2 : 1.25}
                   />
                   <text
@@ -1147,7 +1338,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                     dominantBaseline="central"
                     fontSize={15}
                     fontWeight="700"
-                    fill={palette.isLight ? '#0f172a' : planet.cssColor}
+                    fill={palette.isLight ? '#0f172a' : planetCssColor}
                   >
                     {planet.symbol}
                   </text>

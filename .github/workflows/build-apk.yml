@@ -76,19 +76,43 @@ jobs:
           npm install --legacy-peer-deps
           npm run build
 
-      - name: Build Capacitor APK
+      - name: Build Capacitor APK (Release Signé)
         run: |
+          set -e
           npx cap add android
           npx cap sync android
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ] && ! grep -q "screenOrientation" "$MANIFEST"; then
-            sed -i 's/<activity/<activity android:screenOrientation="sensorLandscape"/' "$MANIFEST"
-          fi
+          node -e '
+            const fs = require("fs");
+            const p = process.argv[1];
+            if (!fs.existsSync(p)) process.exit(0);
+            let xml = fs.readFileSync(p, "utf8");
+            if (!xml.includes("screenOrientation")) {
+              xml = xml.replace(/<activity\b/, "<activity android:screenOrientation=\"sensorLandscape\"");
+            }
+            fs.writeFileSync(p, xml);
+          ' "$MANIFEST"
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease --no-daemon
           cd ..
-          cp android/app/build/outputs/apk/debug/app-debug.apk uranie-vr-autonome.apk
+
+          SDK_PATH="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          BT_DIR="$(ls -d "$SDK_PATH"/build-tools/* | sort -V | tail -n 1)"
+          "$BT_DIR/zipalign" -v -f -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk app-autonome-aligned.apk
+          "$BT_DIR/apksigner" sign \
+            --ks "$PWD/scripts/uranie-sideload.p12" \
+            --ks-type PKCS12 \
+            --ks-key-alias uranie-vr \
+            --ks-pass pass:uranievr123 \
+            --key-pass pass:uranievr123 \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$PWD/uranie-vr-autonome.apk" \
+            app-autonome-aligned.apk
+          "$BT_DIR/apksigner" verify --verbose "$PWD/uranie-vr-autonome.apk"
+          ls -lh uranie-vr-autonome.apk
 
       - name: Upload standalone APK
         uses: actions/upload-artifact@v6
@@ -138,9 +162,7 @@ jobs:
           mkdir -p /tmp/bwcore /tmp/twa-build
           npm install --prefix /tmp/bwcore @bubblewrap/core --no-save
 
-          if [ ! -f "./android.keystore" ]; then
-            keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr -keyalg RSA -keysize 2048 -validity 10000 -storepass uranievr123 -keypass uranievr123 -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
-          fi
+          cp "$PWD/scripts/uranie-sideload.p12" ./android.keystore
 
           cp twa-manifest.json /tmp/twa-build/twa-manifest.json
 
@@ -181,12 +203,17 @@ jobs:
           BT_DIR="$(ls -d "$SDK_PATH"/build-tools/* | sort -V | tail -n 1)"
           "$BT_DIR/zipalign" -v -f -p 4 /tmp/twa-build/app/build/outputs/apk/release/app-release-unsigned.apk /tmp/twa-build/app-release-aligned.apk
           "$BT_DIR/apksigner" sign \
-            --ks "$PWD/android.keystore" \
+            --ks "$PWD/scripts/uranie-sideload.p12" \
+            --ks-type PKCS12 \
             --ks-key-alias uranie-vr \
             --ks-pass pass:uranievr123 \
             --key-pass pass:uranievr123 \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
             --out "$PWD/uranie-vr-quest3-webxr.apk" \
             /tmp/twa-build/app-release-aligned.apk
+          "$BT_DIR/apksigner" verify --verbose "$PWD/uranie-vr-quest3-webxr.apk"
 
           ls -lh uranie-vr-quest3-webxr.apk
 

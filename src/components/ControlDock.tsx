@@ -11,6 +11,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   User,
@@ -44,8 +45,13 @@ import {
   ZodiacWheelStyle,
 } from '../vr/textures';
 import { ZodiacSignArtSvg } from './ZodiacSignArtSvg';
+import {
+  WHEEL_2D_STYLES,
+  Wheel2DOrientation,
+  Wheel2DStyle,
+} from './Chart2DCanvas';
 
-type DockTab = 'natal' | 'derived' | 'aspects' | 'camera';
+type DockTab = 'natal' | 'derived' | 'aspects' | 'settings';
 
 export type ComparativePairKind =
   | 'natal-vs-sr'
@@ -131,6 +137,12 @@ interface ControlDockProps {
   onToggleAudio: () => void;
   skyAnimations: SkyAnimationsConfig;
   onSkyAnimationsChange: (next: SkyAnimationsConfig) => void;
+  viewDimension: '3d' | '2d';
+  onViewDimensionChange: (v: '3d' | '2d') => void;
+  wheel2DStyle: Wheel2DStyle;
+  onWheel2DStyleChange: (s: Wheel2DStyle) => void;
+  wheel2DOrientation: Wheel2DOrientation;
+  onWheel2DOrientationChange: (o: Wheel2DOrientation) => void;
   selectedPlanetId: PlanetId | null;
   onSelectPlanet: (id: PlanetId, layer: 'base' | 'outer') => void;
   onOpenFullSummary: () => void;
@@ -423,6 +435,12 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onToggleAudio,
   skyAnimations,
   onSkyAnimationsChange,
+  viewDimension,
+  onViewDimensionChange,
+  wheel2DStyle,
+  onWheel2DStyleChange,
+  wheel2DOrientation,
+  onWheel2DOrientationChange,
   selectedPlanetId,
   onSelectPlanet,
   onOpenFullSummary,
@@ -640,74 +658,34 @@ export const ControlDock: React.FC<ControlDockProps> = ({
 
             <div
               role="group"
-              aria-label="Tradition zodiacale"
+              aria-label="Mode d’affichage 2D ou 3D"
               className="flex items-center rounded-md border border-white/10 bg-[#0d1428] p-0.5"
             >
               <button
                 type="button"
-                onClick={() => onTraditionChange('western')}
+                onClick={() => onViewDimensionChange('2d')}
+                title="Afficher la roue astrologique en 2D sur PC"
                 className={`rounded px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  tradition === 'western'
+                  viewDimension === '2d'
+                    ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                2D PC
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewDimensionChange('3d')}
+                title="Afficher l’observatoire 3D / VR"
+                className={`rounded px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  viewDimension === '3d'
                     ? 'bg-[#d4af37] text-[#05070e] font-semibold'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Occidental
-              </button>
-              <button
-                type="button"
-                onClick={() => onTraditionChange('chinese')}
-                className={`rounded px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  tradition === 'chinese'
-                    ? 'bg-[#e0533c] text-white font-semibold'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Chinois 龍
+                3D · VR
               </button>
             </div>
-
-            <select
-              aria-label="Style des signes zodiaquaux"
-              title="Choisir le graphisme des signes zodiaquaux"
-              value={signStyle}
-              onChange={(e) => onSignStyleChange(e.target.value as ZodiacSignStyle)}
-              className="hidden sm:block rounded-md border border-[#d4af37]/30 bg-[#0d1428] px-2 py-1.5 text-[11px] font-medium text-[#fde68a] hover:border-[#d4af37] focus:outline-none cursor-pointer"
-            >
-              {ZODIAC_SIGN_STYLES.map((st) => (
-                <option key={st.id} value={st.id}>
-                  Signes : {st.shortLabel}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Graphisme de la roue zodiacale"
-              title="Choisir le graphisme de la roue zodiacale"
-              value={wheelStyle}
-              onChange={(e) => onWheelStyleChange(e.target.value as ZodiacWheelStyle)}
-              className="hidden sm:block rounded-md border border-[#d4af37]/30 bg-[#0d1428] px-2 py-1.5 text-[11px] font-medium text-[#e7cfa0] hover:border-[#d4af37] focus:outline-none cursor-pointer"
-            >
-              {ZODIAC_WHEEL_STYLES.map((st) => (
-                <option key={st.id} value={st.id}>
-                  Roue : {st.shortLabel}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Fond étoilé et Voie lactée"
-              title="Choisir le fond étoilé"
-              value={starfieldStyle}
-              onChange={(e) => onStarfieldStyleChange(e.target.value as StarfieldBackdropStyle)}
-              className="hidden md:block rounded-md border border-[#38bdf8]/30 bg-[#0d1428] px-2 py-1.5 text-[11px] font-medium text-[#bae6fd] hover:border-[#38bdf8] focus:outline-none cursor-pointer"
-            >
-              {STARFIELD_BACKDROP_STYLES.map((st) => (
-                <option key={st.id} value={st.id}>
-                  Ciel : {st.shortLabel}
-                </option>
-              ))}
-            </select>
 
             <button
               type="button"
@@ -765,65 +743,35 @@ export const ControlDock: React.FC<ControlDockProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('camera')}
+              onClick={() => setActiveTab('settings')}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'camera' ? 'bg-[#d4af37] text-[#05070e]' : 'text-slate-300 hover:text-white'
+                activeTab === 'settings' ? 'bg-[#d4af37] text-[#05070e]' : 'text-slate-300 hover:text-white'
               }`}
             >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Caméra & VR</span>
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Réglages</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto cosmic-scroll">
-            <div
-              role="group"
-              aria-label="Affichage sélectif des éléments 3D"
-              className="flex items-center gap-0.5 rounded-md border border-white/10 bg-[#0d1428] p-0.5 shrink-0"
-            >
-              {(
-                [
-                  ['all', 'Tout'],
-                  ['planetsOnly', 'Planètes seules'],
-                  ['aspectsOnly', 'Aspects seuls'],
-                  ['housesOnly', 'Maisons'],
-                ] as const
-              ).map(([focusKey, focusLabel]) => (
+          <div className="flex items-center gap-1 overflow-x-auto cosmic-scroll">
+            {baseChart.planets.map((p) => {
+              const active = selectedPlanetId === p.id;
+              return (
                 <button
-                  key={focusKey}
+                  key={p.id}
                   type="button"
-                  onClick={() => onDisplayFocusChange(focusKey)}
-                  className={`rounded px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                    displayFocus === focusKey
-                      ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
-                      : 'text-slate-300 hover:text-white'
+                  onClick={() => onSelectPlanet(p.id, 'base')}
+                  title={`${p.name} — ${p.formattedDeg} ${p.sign.name}`}
+                  className={`rounded-md px-2 py-1 text-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    active
+                      ? 'bg-[#d4af37]/25 text-[#fbbf24] ring-1 ring-[#d4af37]/60'
+                      : 'text-slate-300 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  {focusLabel}
+                  {p.symbol}
                 </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-1">
-              {baseChart.planets.map((p) => {
-                const active = selectedPlanetId === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => onSelectPlanet(p.id, 'base')}
-                    title={`${p.name} — ${p.formattedDeg} ${p.sign.name}`}
-                    className={`rounded-md px-2 py-1 text-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      active
-                        ? 'bg-[#d4af37]/25 text-[#fbbf24] ring-1 ring-[#d4af37]/60'
-                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    {p.symbol}
-                  </button>
-                );
-              })}
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1692,109 +1640,92 @@ export const ControlDock: React.FC<ControlDockProps> = ({
           </div>
         )}
 
-        {/* TAB 4: Camera, Sign Art, Wheel Graphics, Starfield Sky, Spatial Layers & Meta Quest 3 */}
-        {activeTab === 'camera' && (
-          <div className="mt-3 space-y-3">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <div>
-                <div className="text-[11px] font-medium text-slate-400 mb-1.5">
-                  Signes Zodiaquaux (Vectoriel Sculpté)
+        {/* TAB 4: Réglages unifiés (Affichage 2D/3D, Roues, Animations célestes, Tradition, Caméra & Quest 3) */}
+        {activeTab === 'settings' && (
+          <div className="mt-3 max-h-[46vh] overflow-y-auto cosmic-scroll pr-1 space-y-3">
+            {/* 1. Affichage PC 2D ou 3D / VR + Roues 2D */}
+            <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-semibold text-[#f3efe6]">
+                    Affichage : 2D (PC) ou 3D / VR
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Basculez entre la carte astrologique 2D haute lisibilité et la sphère 3D immersive.
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {ZODIAC_SIGN_STYLES.map((st, idx) => {
-                    const active = signStyle === st.id;
-                    return (
-                      <button
-                        key={st.id}
-                        type="button"
-                        onClick={() => onSignStyleChange(st.id)}
-                        title={st.description}
-                        className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
-                          active
-                            ? 'border-[#fde68a] bg-[#d4af37]/20 text-[#fffbeb]'
-                            : 'border-white/10 bg-[#0d1428] text-slate-300 hover:border-white/25 hover:text-white'
-                        }`}
-                      >
-                        <span
-                          className="flex h-7 w-7 items-center justify-center rounded-full border shrink-0"
-                          style={{
-                            backgroundColor: st.swatchPrimary,
-                            borderColor: st.swatchAccent,
-                          }}
-                        >
-                          <ZodiacSignArtSvg
-                            signIndex={[4, 0, 6, 8][idx % 4]}
-                            element={(['Feu', 'Feu', 'Air', 'Feu'] as const)[idx % 4]}
-                            style={st.id}
-                            size={22}
-                            primaryColor={st.swatchAccent}
-                            accentColor={st.swatchAccent}
-                          />
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold truncate">{st.label}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{st.description}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center gap-1 rounded-lg bg-[#070b18] p-1 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => onViewDimensionChange('2d')}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                      viewDimension === '2d'
+                        ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    2D seulement (PC)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onViewDimensionChange('3d')}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                      viewDimension === '3d'
+                        ? 'bg-[#d4af37] text-[#05070e] font-semibold'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    3D · VR
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <div className="text-[11px] font-medium text-slate-400 mb-1.5">
-                  Graphisme de la Roue Zodiacale
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {ZODIAC_WHEEL_STYLES.map((st) => {
-                    const active = wheelStyle === st.id;
-                    return (
+              <div className="space-y-2 pt-1 border-t border-white/10">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] font-medium text-[#e7cfa0]">
+                    Choix de la roue 2D ({WHEEL_2D_STYLES.length} styles)
+                  </span>
+                  <div className="flex items-center gap-1 rounded-md bg-[#070b18] p-0.5 border border-white/10">
+                    {(
+                      [
+                        ['ascendant', 'ASC à gauche'],
+                        ['aries0', '0° Bélier'],
+                        ['mcTop', 'MC en haut'],
+                      ] as const
+                    ).map(([oriKey, oriLabel]) => (
                       <button
-                        key={st.id}
+                        key={oriKey}
                         type="button"
-                        onClick={() => onWheelStyleChange(st.id)}
-                        title={st.description}
-                        className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
-                          active
-                            ? 'border-[#d4af37] bg-[#d4af37]/15 text-[#f8f3e6]'
-                            : 'border-white/10 bg-[#0d1428] text-slate-300 hover:border-white/25 hover:text-white'
+                        onClick={() => onWheel2DOrientationChange(oriKey)}
+                        className={`rounded px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                          wheel2DOrientation === oriKey
+                            ? 'bg-[#d4af37] text-[#05070e] font-semibold'
+                            : 'text-slate-300 hover:text-white'
                         }`}
                       >
-                        <span
-                          aria-hidden="true"
-                          className="w-4 h-4 rounded-full border shrink-0"
-                          style={{
-                            backgroundColor: st.swatchPrimary,
-                            borderColor: st.swatchAccent,
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold truncate">{st.label}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{st.description}</div>
-                        </div>
+                        {oriLabel}
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <div className="text-[11px] font-medium text-slate-400 mb-1.5">
-                  Fonds Étoilés & Voie Lactée
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {STARFIELD_BACKDROP_STYLES.map((st) => {
-                    const active = starfieldStyle === st.id;
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {WHEEL_2D_STYLES.map((st) => {
+                    const active = wheel2DStyle === st.id;
                     return (
                       <button
                         key={st.id}
                         type="button"
-                        onClick={() => onStarfieldStyleChange(st.id)}
+                        onClick={() => {
+                          onWheel2DStyleChange(st.id);
+                          if (viewDimension !== '2d') {
+                            onViewDimensionChange('2d');
+                          }
+                        }}
                         title={st.description}
                         className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
                           active
                             ? 'border-[#38bdf8] bg-[#38bdf8]/15 text-[#f8f3e6]'
-                            : 'border-white/10 bg-[#0d1428] text-slate-300 hover:border-white/25 hover:text-white'
+                            : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
                         }`}
                       >
                         <span
@@ -1806,8 +1737,8 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                           }}
                         />
                         <div className="min-w-0">
-                          <div className="text-xs font-semibold truncate">{st.label}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{st.description}</div>
+                          <div className="text-[11px] font-semibold truncate">{st.shortLabel}</div>
+                          <div className="text-[10px] text-slate-400 truncate">{st.label}</div>
                         </div>
                       </button>
                     );
@@ -1816,9 +1747,15 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-[#0d1428]/70 px-3 py-2">
-              <div className="text-[11px] font-medium text-slate-300">
-                Animations célestes discrètes dans le ciel
+            {/* 2. Animations célestes dans le ciel (PC 2D, 3D & VR) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#38bdf8]/25 bg-[#0d1428]/75 px-3 py-2.5">
+              <div>
+                <div className="text-xs font-semibold text-[#bae6fd]">
+                  Animations dans le ciel (PC 2D, 3D & VR)
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  Activer ou désactiver individuellement chaque animation discrète du fond céleste.
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {(
@@ -1841,7 +1778,7 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                       }
                       className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                         active
-                          ? 'border-[#38bdf8]/55 bg-[#38bdf8]/15 text-[#bae6fd]'
+                          ? 'border-[#38bdf8]/60 bg-[#38bdf8]/20 text-[#e0f2fe]'
                           : 'border-white/10 bg-[#080d1c] text-slate-400 hover:text-slate-200'
                       }`}
                     >
@@ -1873,144 +1810,305 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-medium text-slate-400 mb-1.5">Points de vue 3D / VR</div>
-                <div className="flex flex-wrap items-center gap-1 rounded-lg bg-[#0d1428] p-1">
-                  {(
-                    [
-                      ['overview', 'Vue Observatoire'],
-                      ['center', 'Centre 360°'],
-                      ['ecliptic', 'Plan Zénithal'],
-                      ['horizon', 'Horizon'],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => onCameraPresetChange(id)}
-                      className={`rounded-md px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                        cameraPreset === id ? 'bg-[#d4af37] text-[#05070e]' : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[11px] font-medium text-slate-400 mb-1.5">Isoler un élément</div>
-                <div className="flex flex-wrap items-center gap-1 rounded-lg bg-[#0d1428] p-1">
-                  {(
-                    [
-                      ['all', 'Tout'],
-                      ['planetsOnly', 'Planètes seules'],
-                      ['aspectsOnly', 'Aspects seuls'],
-                      ['housesOnly', 'Zodiaque & Maisons'],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => onDisplayFocusChange(id)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                        displayFocus === id ? 'bg-[#38bdf8] text-[#05070e] font-semibold' : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onToggleHouses}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  showHouses
-                    ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#f3efe6]'
-                    : 'border-white/10 bg-[#0d1428] text-slate-400'
-                }`}
-              >
-                Maisons
-              </button>
-              <button
-                type="button"
-                onClick={onToggleConstellations}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  showConstellations
-                    ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#f3efe6]'
-                    : 'border-white/10 bg-[#0d1428] text-slate-400'
-                }`}
-              >
-                Voûte étoilée
-              </button>
-              <button
-                type="button"
-                onClick={onToggleVRPlaque}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  showVRPlaque
-                    ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#f3efe6]'
-                    : 'border-white/10 bg-[#0d1428] text-slate-400'
-                }`}
-              >
-                Pupitre VR 3D
-              </button>
-              <button
-                type="button"
-                onClick={onToggleDesktopMR}
-                title="Active la transparence holographique (Passthrough / Caméra) sans sol opaque"
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  desktopMR
-                    ? 'border-[#38bdf8]/60 bg-[#38bdf8]/20 text-[#7dd3fc]'
-                    : 'border-white/10 bg-[#0d1428] text-slate-300 hover:text-white'
-                }`}
-              >
-                Aperçu Hologramme MR
-              </button>
-              <div className="flex items-center gap-1 rounded-lg bg-[#0d1428] p-1">
-                {[
-                  { scale: 0.14, label: 'RM Table' },
-                  { scale: 0.28, label: 'RM Salon' },
-                ].map((opt) => (
+            {/* 3. Tradition, Style des signes, Roue 3D & Fond étoilé */}
+            <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-[#f3efe6]">
+                  Tradition & Apparence du thème
+                </span>
+                <div
+                  role="group"
+                  aria-label="Tradition zodiacale"
+                  className="flex items-center rounded-md border border-white/10 bg-[#070b18] p-0.5"
+                >
                   <button
-                    key={opt.label}
                     type="button"
-                    onClick={() => onMrScaleChange(opt.scale)}
-                    className={`rounded px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      Math.abs(mrScale - opt.scale) < 0.02
-                        ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
+                    onClick={() => onTraditionChange('western')}
+                    className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                      tradition === 'western'
+                        ? 'bg-[#d4af37] text-[#05070e] font-semibold'
                         : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    {opt.label}
+                    Occidental
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => onTraditionChange('chinese')}
+                    className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                      tradition === 'chinese'
+                        ? 'bg-[#e0533c] text-white font-semibold'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Chinois 龍
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={onToggleAudio}
-                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  audioEnabled
-                    ? 'border-[#38bdf8]/50 bg-[#38bdf8]/15 text-[#38bdf8]'
-                    : 'border-white/15 bg-[#0d1428] text-slate-300 hover:text-white'
-                }`}
-              >
-                {audioEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                <span>Audio</span>
-              </button>
-              <button
-                type="button"
-                onClick={onOpenQuestGuide}
-                className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/40 bg-[#121931] px-3 py-1.5 text-xs font-medium text-[#f8f3e6] hover:border-[#d4af37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                <Glasses className="w-3.5 h-3.5 text-[#d4af37]" />
-                <span>Quest 3 / APK</span>
-              </button>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">
+                    Signes Zodiaquaux (2D & 3D)
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {ZODIAC_SIGN_STYLES.map((st, idx) => {
+                      const active = signStyle === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => onSignStyleChange(st.id)}
+                          title={st.description}
+                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#fde68a] bg-[#d4af37]/20 text-[#fffbeb]'
+                              : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
+                          }`}
+                        >
+                          <span
+                            className="flex h-7 w-7 items-center justify-center rounded-full border shrink-0"
+                            style={{
+                              backgroundColor: st.swatchPrimary,
+                              borderColor: st.swatchAccent,
+                            }}
+                          >
+                            <ZodiacSignArtSvg
+                              signIndex={[4, 0, 6, 8][idx % 4]}
+                              element={(['Feu', 'Feu', 'Air', 'Feu'] as const)[idx % 4]}
+                              style={st.id}
+                              size={22}
+                              primaryColor={st.swatchAccent}
+                              accentColor={st.swatchAccent}
+                            />
+                          </span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold truncate">{st.shortLabel}</div>
+                            <div className="text-[10px] text-slate-400 truncate">{st.label}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">
+                    Roue Zodiacale 3D / VR
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {ZODIAC_WHEEL_STYLES.map((st) => {
+                      const active = wheelStyle === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => onWheelStyleChange(st.id)}
+                          title={st.description}
+                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#d4af37] bg-[#d4af37]/15 text-[#f8f3e6]'
+                              : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
+                          }`}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="w-4 h-4 rounded-full border shrink-0"
+                            style={{
+                              backgroundColor: st.swatchPrimary,
+                              borderColor: st.swatchAccent,
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold truncate">{st.shortLabel}</div>
+                            <div className="text-[10px] text-slate-400 truncate">{st.label}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">
+                    Fonds Étoilés 3D & Voie Lactée
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {STARFIELD_BACKDROP_STYLES.map((st) => {
+                      const active = starfieldStyle === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => onStarfieldStyleChange(st.id)}
+                          title={st.description}
+                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? 'border-[#38bdf8] bg-[#38bdf8]/15 text-[#f8f3e6]'
+                              : 'border-white/10 bg-[#080d1c] text-slate-300 hover:border-white/25 hover:text-white'
+                          }`}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="w-4 h-4 rounded-full border shrink-0"
+                            style={{
+                              backgroundColor: st.swatchPrimary,
+                              borderColor: st.swatchAccent,
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold truncate">{st.shortLabel}</div>
+                            <div className="text-[10px] text-slate-400 truncate">{st.label}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* 4. Caméra 3D, Calques, Réalité Mixte, Audio & Quest 3 */}
+            <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">Points de vue 3D / VR</div>
+                  <div className="flex flex-wrap items-center gap-1 rounded-lg bg-[#070b18] p-1">
+                    {(
+                      [
+                        ['overview', 'Vue Observatoire'],
+                        ['center', 'Centre 360°'],
+                        ['ecliptic', 'Plan Zénithal'],
+                        ['horizon', 'Horizon'],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => onCameraPresetChange(id)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                          cameraPreset === id ? 'bg-[#d4af37] text-[#05070e]' : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5">Isoler un élément 3D</div>
+                  <div className="flex flex-wrap items-center gap-1 rounded-lg bg-[#070b18] p-1">
+                    {(
+                      [
+                        ['all', 'Tout'],
+                        ['planetsOnly', 'Planètes seules'],
+                        ['aspectsOnly', 'Aspects seuls'],
+                        ['housesOnly', 'Zodiaque & Maisons'],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => onDisplayFocusChange(id)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                          displayFocus === id ? 'bg-[#38bdf8] text-[#05070e] font-semibold' : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={onToggleHouses}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    showHouses
+                      ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#f3efe6]'
+                      : 'border-white/10 bg-[#080d1c] text-slate-400'
+                  }`}
+                >
+                  Maisons
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleConstellations}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    showConstellations
+                      ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#f3efe6]'
+                      : 'border-white/10 bg-[#080d1c] text-slate-400'
+                  }`}
+                >
+                  Voûte étoilée
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleVRPlaque}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    showVRPlaque
+                      ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#f3efe6]'
+                      : 'border-white/10 bg-[#080d1c] text-slate-400'
+                  }`}
+                >
+                  Pupitre VR 3D
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleDesktopMR}
+                  title="Active la transparence holographique (Passthrough / Caméra) sans sol opaque"
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    desktopMR
+                      ? 'border-[#38bdf8]/60 bg-[#38bdf8]/20 text-[#7dd3fc]'
+                      : 'border-white/10 bg-[#080d1c] text-slate-300 hover:text-white'
+                  }`}
+                >
+                  Aperçu Hologramme MR
+                </button>
+                <div className="flex items-center gap-1 rounded-lg bg-[#070b18] p-1">
+                  {[
+                    { scale: 0.14, label: 'RM Table' },
+                    { scale: 0.28, label: 'RM Salon' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => onMrScaleChange(opt.scale)}
+                      className={`rounded px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                        Math.abs(mrScale - opt.scale) < 0.02
+                          ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={onToggleAudio}
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    audioEnabled
+                      ? 'border-[#38bdf8]/50 bg-[#38bdf8]/15 text-[#38bdf8]'
+                      : 'border-white/15 bg-[#080d1c] text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {audioEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  <span>Audio</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenQuestGuide}
+                  className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/40 bg-[#121931] px-3 py-1.5 text-xs font-medium text-[#f8f3e6] hover:border-[#d4af37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <Glasses className="w-3.5 h-3.5 text-[#d4af37]" />
+                  <span>Quest 3 / Sideload APK</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

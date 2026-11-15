@@ -201,6 +201,7 @@ export class AstrologyScene {
   private texturesToDispose: THREE.Texture[] = [];
   private maxAniso = 4;
   private maxTexSize = 4096;
+  private paused = false;
 
   constructor(container: HTMLElement, callbacks: SceneCallbacks) {
     this.container = container;
@@ -1765,10 +1766,30 @@ export class AstrologyScene {
     this.frameId = window.setTimeout(poll, 5);
   }
 
+  public setPaused(paused: boolean) {
+    if (this.paused === paused || this.disposed) return;
+    this.paused = paused;
+    if (!paused) {
+      this.onResize();
+      this.clock.getDelta();
+    }
+    if (!this.isSoftwareGl) {
+      if (paused) {
+        this.renderer.setAnimationLoop(null);
+      } else {
+        this.startLoop();
+      }
+    }
+  }
+
   private startLoop() {
     if (this.isSoftwareGl) {
       const tick = () => {
         if (this.disposed) return;
+        if (this.paused) {
+          this.frameId = window.setTimeout(tick, 220);
+          return;
+        }
         const delta = Math.min(this.clock.getDelta(), 0.1);
         const elapsed = this.clock.getElapsedTime();
         this.updateFrame(delta, elapsed);
@@ -1777,8 +1798,9 @@ export class AstrologyScene {
       };
       tick();
     } else {
+      if (this.paused) return;
       this.renderer.setAnimationLoop(() => {
-        if (this.disposed) return;
+        if (this.disposed || this.paused) return;
         const delta = Math.min(this.clock.getDelta(), 0.1);
         const elapsed = this.clock.getElapsedTime();
         this.updateFrame(delta, elapsed);
