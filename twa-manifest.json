@@ -1,8 +1,8 @@
 {
-  "packageId": "app.uranie.vr.astrologie",
+  "packageId": "app.uranie.vr.quest",
   "host": "blessipo-crypto.github.io",
-  "name": "Uranie VR",
-  "launcherName": "Uranie VR",
+  "name": "Uranie VR WebXR",
+  "launcherName": "Uranie WebXR",
   "display": "fullscreen",
   "themeColor": "#05070E",
   "navigationColor": "#05070E",

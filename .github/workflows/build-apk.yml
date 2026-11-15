@@ -99,7 +99,7 @@ jobs:
           path: uranie-vr-autonome.apk
 
   build-quest-webxr-apk:
-    name: Compiler APK WebXR VR/Passthrough (Bubblewrap TWA)
+    name: Compiler APK WebXR VR/Passthrough (TWA Meta Quest)
     needs: deploy-pages
     if: always()
     runs-on: ubuntu-24.04
@@ -123,53 +123,28 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Build Meta Quest TWA APK
-        env:
-          CI: 'true'
-          BUBBLEWRAP_KEYSTORE_PASSWORD: uranievr123
-          BUBBLEWRAP_KEY_PASSWORD: uranievr123
+      - name: Build Meta Quest TWA APK (sans CLI interactif)
         run: |
           set -e
           npm install --legacy-peer-deps
           npm run build
-          npm install -g @bubblewrap/cli
 
           SDK_PATH="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "SDK_PATH=$SDK_PATH"
-
-          SDKMANAGER="$(command -v sdkmanager || true)"
-          if [ -z "$SDKMANAGER" ]; then
-            SDKMANAGER="$(find "$SDK_PATH" -maxdepth 4 -name sdkmanager -type f 2>/dev/null | head -n 1 || true)"
-          fi
-          echo "SDKMANAGER=$SDKMANAGER"
-
+          SDKMANAGER="$(command -v sdkmanager || find "$SDK_PATH" -maxdepth 4 -name sdkmanager -type f 2>/dev/null | head -n 1 || true)"
           if [ -n "$SDKMANAGER" ]; then
-            SDK_BIN_DIR="$(dirname "$SDKMANAGER")"
-            if [ ! -d "$SDK_PATH/tools" ] && [ ! -d "$SDK_PATH/bin" ]; then
-              ln -sfn "$SDK_BIN_DIR" "$SDK_PATH/bin" 2>/dev/null || sudo ln -sfn "$SDK_BIN_DIR" "$SDK_PATH/bin" || true
-            fi
-            echo "Accepting Android SDK licenses and installing build-tools;36.1.0 + android-36..."
+            echo "Installing Android SDK build-tools;36.1.0 & platforms;android-36..."
             (yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" --licenses >/dev/null 2>&1) || (yes | sudo "$SDKMANAGER" --sdk_root="$SDK_PATH" --licenses >/dev/null 2>&1) || true
             (yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" "platform-tools" "build-tools;36.1.0" "platforms;android-36") || (yes | sudo "$SDKMANAGER" --sdk_root="$SDK_PATH" "platform-tools" "build-tools;36.1.0" "platforms;android-36")
           fi
 
-          mkdir -p "$HOME/.bubblewrap"
-          BW_CONFIG="$HOME/.bubblewrap/config.json"
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$BW_CONFIG"
-          echo "Bubblewrap config:"
-          cat "$BW_CONFIG"
-          grep JAVA_VERSION "$JAVA_HOME/release" || true
-
-          if [ ! -d "$SDK_PATH/build-tools/36.1.0" ]; then
-            echo "ERROR: build-tools/36.1.0 missing in $SDK_PATH"
-            ls -la "$SDK_PATH/build-tools" 2>/dev/null || true
-            exit 1
-          fi
+          mkdir -p /tmp/bwcore /tmp/twa-build
+          npm install --prefix /tmp/bwcore @bubblewrap/core --no-save
 
           if [ ! -f "./android.keystore" ]; then
             keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr -keyalg RSA -keysize 2048 -validity 10000 -storepass uranievr123 -keypass uranievr123 -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
           fi
+
+          cp twa-manifest.json /tmp/twa-build/twa-manifest.json
 
           python3 -m http.server 8787 --bind 127.0.0.1 -d dist >/dev/null 2>&1 &
           SERVER_PID=$!
@@ -182,19 +157,40 @@ jobs:
           done
 
           if ! curl -sfI "https://blessipo-crypto.github.io/astro-vr/manifest.webmanifest" >/dev/null 2>&1; then
-            echo "GitHub Pages not yet reachable, using local HTTP fallback for icons and webManifest..."
-            node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync("twa-manifest.json","utf8"));m.iconUrl="http://127.0.0.1:8787/pwa-512x512.png";m.maskableIconUrl="http://127.0.0.1:8787/pwa-maskable-512x512.png";m.webManifestUrl="http://127.0.0.1:8787/manifest.webmanifest";fs.writeFileSync("twa-manifest.json",JSON.stringify(m,null,2));'
+            echo "Using local HTTP server for TWA icons & manifest..."
+            node -e 'const fs=require("fs"),p="/tmp/twa-build/twa-manifest.json",m=JSON.parse(fs.readFileSync(p,"utf8"));m.iconUrl="http://127.0.0.1:8787/pwa-512x512.png";m.maskableIconUrl="http://127.0.0.1:8787/pwa-maskable-512x512.png";m.webManifestUrl="http://127.0.0.1:8787/manifest.webmanifest";fs.writeFileSync(p,JSON.stringify(m,null,2));'
           fi
 
-          echo "Running bubblewrap update..."
-          timeout 300 bubblewrap update --config="$BW_CONFIG" --manifest="./twa-manifest.json" --skipVersionUpgrade < /dev/null
-          echo "Running bubblewrap build..."
-          timeout 480 bubblewrap build --config="$BW_CONFIG" --skipVersionUpgrade < /dev/null
+          echo "Generating TWA Android project via @bubblewrap/core (no prompts)..."
+          node -e '
+            const { TwaManifest, TwaGenerator, ConsoleLog } = require("/tmp/bwcore/node_modules/@bubblewrap/core");
+            (async () => {
+              const m = await TwaManifest.fromFile("/tmp/twa-build/twa-manifest.json");
+              const err = m.validate();
+              if (err) throw new Error(err);
+              const gen = new TwaGenerator();
+              await gen.createTwaProject("/tmp/twa-build", m, new ConsoleLog("twa"));
+            })().catch((e) => { console.error(e); process.exit(1); });
+          '
 
-          if [ -f "app-release-signed.apk" ]; then
-            cp app-release-signed.apk uranie-vr-quest3-webxr.apk
-            echo "Built uranie-vr-quest3-webxr.apk successfully."
-          fi
+          echo "Compiling TWA APK with Gradle..."
+          (
+            cd /tmp/twa-build
+            chmod +x gradlew
+            ANDROID_HOME="$SDK_PATH" ANDROID_SDK_ROOT="$SDK_PATH" ./gradlew assembleRelease --no-daemon
+          )
+
+          BT_DIR="$(ls -d "$SDK_PATH"/build-tools/* | sort -V | tail -n 1)"
+          "$BT_DIR/zipalign" -v -f -p 4 /tmp/twa-build/app/build/outputs/apk/release/app-release-unsigned.apk /tmp/twa-build/app-release-aligned.apk
+          "$BT_DIR/apksigner" sign \
+            --ks "$PWD/android.keystore" \
+            --ks-key-alias uranie-vr \
+            --ks-pass pass:uranievr123 \
+            --key-pass pass:uranievr123 \
+            --out "$PWD/uranie-vr-quest3-webxr.apk" \
+            /tmp/twa-build/app-release-aligned.apk
+
+          ls -lh uranie-vr-quest3-webxr.apk
 
       - name: Upload Quest WebXR APK
         uses: actions/upload-artifact@v6
