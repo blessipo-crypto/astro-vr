@@ -6,6 +6,7 @@ import {
   ChartMode,
   ComparativeAnalysis,
   ComparisonAspectInfo,
+  findHouseForLongitude,
   HouseCusp,
   PlanetId,
   PlanetPosition,
@@ -19,7 +20,10 @@ import {
   WuXingElement,
   ZodiacTradition,
 } from '../astro/chineseAstrology';
-import { generateChartInterpretation } from '../astro/interpretations';
+import {
+  DetailedAspectItem,
+  generateChartInterpretation,
+} from '../astro/interpretations';
 import {
   getDecanInfo,
   getHouseCuspInterpretation,
@@ -48,11 +52,14 @@ interface InspectorPanelProps {
   showFullSummary: boolean;
   onClose: () => void;
   onSelectPlanet: (id: PlanetId, layer: 'base' | 'outer') => void;
+  onSelectHouse?: (houseNum: number) => void;
   onHighlightAspect: (aspectId: string | null) => void;
   onOpenSharePrint?: () => void;
 }
 
 type SummaryViewTab = 'interpretation' | 'table' | 'chinese' | 'affinities';
+type InterpSubFilter = 'overview' | 'planets' | 'houses' | 'aspects';
+type AspectHarmonyFilter = 'all' | 'harmonious' | 'tense' | 'fusion';
 
 const OUTER_BADGE_MAP: Partial<Record<ChartMode, string>> = {
   transits: 'Transit',
@@ -78,10 +85,13 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   showFullSummary,
   onClose,
   onSelectPlanet,
+  onSelectHouse,
   onHighlightAspect,
   onOpenSharePrint,
 }) => {
   const [summaryTab, setSummaryTab] = useState<SummaryViewTab>('interpretation');
+  const [interpFilter, setInterpFilter] = useState<InterpSubFilter>('overview');
+  const [aspectHarmonyFilter, setAspectHarmonyFilter] = useState<AspectHarmonyFilter>('all');
 
   if (!selectedPlanet && !selectedHouse && !showFullSummary) return null;
 
@@ -198,7 +208,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </button>
         </div>
 
-        {/* SUB-TAB 1: Complete French Interpretations for ALL Themes */}
+        {/* SUB-TAB 1: Complete French Interpretations for ALL Themes + Exhaustive Natal & RS Details */}
         {summaryTab === 'interpretation' && (
           <div className="mt-3.5 space-y-3 text-xs">
             <div className="rounded-lg border border-[#d4af37]/30 bg-[#10172b] p-3.5 leading-relaxed text-[#f3efe6]">
@@ -220,10 +230,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 font-mono-tabular text-[11px] text-slate-300">
                   <div>
-                    ASC RS : {outerChart.ascSign.symbol} {outerChart.ascSign.name} (M.{solarReturnAnalysis.ascInNatalHouse.roman} nat.)
+                    ASC RS : <span className="font-glyph">{outerChart.ascSign.symbol}</span> {outerChart.ascSign.name} (M.{solarReturnAnalysis.ascInNatalHouse.roman} nat.)
                   </div>
                   <div>
-                    MC RS : {outerChart.mcSign.symbol} {outerChart.mcSign.name} (M.{solarReturnAnalysis.mcInNatalHouse.roman} nat.)
+                    MC RS : <span className="font-glyph">{outerChart.mcSign.symbol}</span> {outerChart.mcSign.name} (M.{solarReturnAnalysis.mcInNatalHouse.roman} nat.)
                   </div>
                   <div>Soleil RS : Maison {solarReturnAnalysis.sunInSrHouse.roman} RS</div>
                   <div>Maître ASC : {solarReturnAnalysis.srAscRuler}</div>
@@ -231,34 +241,391 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               </div>
             )}
 
-            {interpretation.sections.map((sec) => {
-              const titleColor =
-                sec.accent === 'cyan'
-                  ? 'text-[#38bdf8]'
-                  : sec.accent === 'amber'
-                    ? 'text-[#fb923c]'
-                    : sec.accent === 'emerald'
-                      ? 'text-emerald-300'
-                      : sec.accent === 'rose'
-                        ? 'text-rose-300'
-                        : 'text-[#e7cfa0]';
-              return (
-                <div key={sec.title} className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-2">
-                  <h3 className={`font-semibold ${titleColor}`}>{sec.title}</h3>
-                  <p className="leading-relaxed text-slate-200">{sec.body}</p>
-                  {sec.highlights && sec.highlights.length > 0 && (
-                    <ul className="pt-1 space-y-1.5 text-[11px] leading-relaxed text-slate-300 border-t border-white/5">
-                      {sec.highlights.map((h) => (
-                        <li key={h} className="flex items-start gap-1.5">
-                          <span className="text-[#d4af37] shrink-0">•</span>
-                          <span>{h}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+            {/* Exhaustive Sub-navigation for Natal & Solar Return (Planètes, Maisons, Aspects) */}
+            {(interpretation.detailedPlanets || interpretation.detailedHouses || interpretation.detailedAspects) && (
+              <div className="grid grid-cols-4 gap-1 rounded-lg border border-white/10 bg-[#0c1324] p-1">
+                <button
+                  type="button"
+                  onClick={() => setInterpFilter('overview')}
+                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                    interpFilter === 'overview'
+                      ? 'bg-white/15 text-[#f8f3e6] font-semibold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Synthèse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInterpFilter('planets')}
+                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                    interpFilter === 'planets'
+                      ? 'bg-[#d4af37]/25 text-[#f3d67a] font-semibold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Planètes ({interpretation.detailedPlanets?.length ?? 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInterpFilter('houses')}
+                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                    interpFilter === 'houses'
+                      ? 'bg-[#38bdf8]/25 text-[#7dd3fc] font-semibold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Maisons ({interpretation.detailedHouses?.length ?? 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInterpFilter('aspects')}
+                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                    interpFilter === 'aspects'
+                      ? 'bg-emerald-400/20 text-emerald-300 font-semibold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Aspects ({(interpretation.detailedAspects?.length ?? 0) + (interpretation.secondaryAspects?.length ?? 0)})
+                </button>
+              </div>
+            )}
+
+            {/* VIEW 1: Synthèse (or modes without detailed sub-tabs) */}
+            {(interpFilter === 'overview' ||
+              (!interpretation.detailedPlanets && !interpretation.detailedHouses && !interpretation.detailedAspects)) && (
+              <div className="space-y-3">
+                {(interpretation.detailedPlanets || interpretation.detailedHouses || interpretation.detailedAspects) && (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setInterpFilter('planets')}
+                      className="rounded-lg border border-[#d4af37]/25 bg-[#d4af37]/10 px-2.5 py-2 text-left hover:bg-[#d4af37]/20 transition-colors cursor-pointer"
+                    >
+                      <div className="text-[11px] font-semibold text-[#f3d67a]">11 Planètes</div>
+                      <div className="text-[10px] text-slate-300">Signe · Décan · Maison</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInterpFilter('houses')}
+                      className="rounded-lg border border-[#38bdf8]/25 bg-[#38bdf8]/10 px-2.5 py-2 text-left hover:bg-[#38bdf8]/20 transition-colors cursor-pointer"
+                    >
+                      <div className="text-[11px] font-semibold text-[#7dd3fc]">12 Maisons</div>
+                      <div className="text-[10px] text-slate-300">Cuspides · Maîtres</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInterpFilter('aspects')}
+                      className="rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-2 text-left hover:bg-emerald-400/20 transition-colors cursor-pointer"
+                    >
+                      <div className="text-[11px] font-semibold text-emerald-300">
+                        {(interpretation.detailedAspects?.length ?? 0) + (interpretation.secondaryAspects?.length ?? 0)} Aspects
+                      </div>
+                      <div className="text-[10px] text-slate-300">Analyse complète</div>
+                    </button>
+                  </div>
+                )}
+
+                {interpretation.sections.map((sec) => {
+                  const titleColor =
+                    sec.accent === 'cyan'
+                      ? 'text-[#38bdf8]'
+                      : sec.accent === 'amber'
+                        ? 'text-[#fb923c]'
+                        : sec.accent === 'emerald'
+                          ? 'text-emerald-300'
+                          : sec.accent === 'rose'
+                            ? 'text-rose-300'
+                            : 'text-[#e7cfa0]';
+                  return (
+                    <div key={sec.title} className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-2">
+                      <h3 className={`font-semibold ${titleColor}`}>{sec.title}</h3>
+                      <p className="leading-relaxed text-slate-200">{sec.body}</p>
+                      {sec.highlights && sec.highlights.length > 0 && (
+                        <ul className="pt-1 space-y-1.5 text-[11px] leading-relaxed text-slate-300 border-t border-white/5">
+                          {sec.highlights.map((h) => (
+                            <li key={h} className="flex items-start gap-1.5">
+                              <span className="text-[#d4af37] shrink-0">•</span>
+                              <span>{h}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* VIEW 2: Detailed Planets */}
+            {interpFilter === 'planets' && interpretation.detailedPlanets && (
+              <div className="space-y-2.5">
+                <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                  <span>Lecture complète des {interpretation.detailedPlanets.length} astres ({interpretation.detailedContextLabel})</span>
+                  <span className="text-[#e7cfa0]">Cliquer pour centrer</span>
                 </div>
-              );
-            })}
+                {interpretation.detailedPlanets.map((dp) => (
+                  <div
+                    key={`${dp.layer}-${dp.planetId}`}
+                    className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-1.5"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onSelectPlanet(dp.planetId, dp.layer)}
+                      className="w-full flex items-center justify-between gap-2 text-left hover:text-[#f3d67a] transition-colors cursor-pointer"
+                    >
+                      <span className="font-semibold text-sm text-[#f8f3e6] flex items-center gap-1.5">
+                        <span className="font-glyph text-base text-[#e7cfa0]">{dp.symbol}</span>
+                        <span>{dp.name}</span>
+                        {dp.retrograde && <span className="text-amber-400 text-xs">℞</span>}
+                      </span>
+                      <span className="font-mono-tabular text-[11px] text-[#7dd3fc]">
+                        {dp.formattedDeg} <span className="font-glyph">{dp.signSymbol}</span> {dp.signName}
+                      </span>
+                    </button>
+
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400">
+                      <span className="text-slate-200 font-medium">Maison {dp.houseRoman}</span>
+                      {dp.natalHouseRoman && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="text-[#7dd3fc]">Active M.{dp.natalHouseRoman} natale</span>
+                        </>
+                      )}
+                      {dp.planetId !== 'northNode' && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span style={{ color: dp.dignityColor }} className="font-medium">
+                            {dp.dignityStatus}
+                          </span>
+                        </>
+                      )}
+                      <span aria-hidden="true">·</span>
+                      <span>{dp.decanLabel.split('·')[0].trim()}</span>
+                    </div>
+
+                    {dp.ruledHouses.length > 0 && (
+                      <div className="text-[11px] text-[#e7cfa0]">
+                        Maître de : Maison{dp.ruledHouses.length > 1 ? 's' : ''} {dp.ruledHouses.join(', ')}
+                      </div>
+                    )}
+
+                    <p className="text-[11.5px] leading-relaxed text-slate-200 pt-0.5">
+                      {dp.summary}
+                    </p>
+
+                    <div className="text-[10.5px] font-mono-tabular text-slate-400 pt-1 border-t border-white/5 flex items-center justify-between">
+                      <span>Chinois : {dp.chineseLabel}</span>
+                      <span>{dp.aspectCount} aspect{dp.aspectCount > 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* VIEW 3: Detailed 12 Houses */}
+            {interpFilter === 'houses' && interpretation.detailedHouses && (
+              <div className="space-y-2.5">
+                <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                  <span>Analyse des 12 Maisons ({interpretation.detailedContextLabel})</span>
+                  {mode === 'natal' && <span className="text-[#7dd3fc]">Cliquer pour cibler</span>}
+                </div>
+                {interpretation.detailedHouses.map((dh) => (
+                  <div
+                    key={dh.house}
+                    className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-1.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      {mode === 'natal' && onSelectHouse ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelectHouse(dh.house)}
+                          className="text-left font-semibold text-[#f8f3e6] hover:text-[#7dd3fc] transition-colors cursor-pointer"
+                        >
+                          Maison {dh.roman} · {dh.title}
+                        </button>
+                      ) : (
+                        <div className="font-semibold text-[#f8f3e6]">
+                          Maison {dh.roman} · {dh.title}
+                        </div>
+                      )}
+                      <span className="font-mono-tabular text-[11px] text-[#e7cfa0] shrink-0">
+                        {dh.formattedDeg} <span className="font-glyph">{dh.signSymbol}</span> {dh.signName}
+                      </span>
+                    </div>
+
+                    {dh.superposedNatalHouse && (
+                      <div className="text-[11px] font-medium text-[#7dd3fc]">
+                        {dh.superposedNatalHouse}
+                      </div>
+                    )}
+
+                    <div className="text-[11px] text-slate-300">
+                      Gouverneur : <span className="text-slate-100">{dh.rulerLocation}</span>
+                    </div>
+
+                    {dh.occupants.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span className="text-[10.5px] text-slate-400">Occupants :</span>
+                        {dh.occupants.map((occ) => (
+                          <button
+                            key={occ.id}
+                            type="button"
+                            onClick={() => onSelectPlanet(occ.id, mode === 'solarReturn' ? 'outer' : 'base')}
+                            className="rounded border border-[#d4af37]/30 bg-[#d4af37]/10 px-1.5 py-0.5 text-[10.5px] text-[#f3d67a] hover:bg-[#d4af37]/25 transition-colors cursor-pointer"
+                          >
+                            <span className="font-glyph">{occ.symbol}</span> {occ.name} ({occ.formattedDeg})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="text-[11.5px] leading-relaxed text-slate-200 pt-0.5">
+                      {dh.interpretation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* VIEW 4: Complete Aspects (Natal or RS -> Natal + RS <-> RS) */}
+            {interpFilter === 'aspects' && (
+              <div className="space-y-3">
+                {/* Harmony Filter */}
+                <div className="grid grid-cols-4 gap-1 rounded-lg bg-[#0c1324] p-1">
+                  {(
+                    [
+                      { id: 'all', label: 'Tous' },
+                      { id: 'harmonious', label: 'Harmon.' },
+                      { id: 'tense', label: 'Tensions' },
+                      { id: 'fusion', label: 'Conjonct.' },
+                    ] as const
+                  ).map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setAspectHarmonyFilter(f.id)}
+                      className={`rounded px-1.5 py-1 text-[10.5px] font-medium transition-colors cursor-pointer ${
+                        aspectHarmonyFilter === f.id
+                          ? 'bg-[#d4af37] text-[#05070e] font-semibold'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {(() => {
+                  const filterFn = (item: DetailedAspectItem) =>
+                    aspectHarmonyFilter === 'all' || item.harmony === aspectHarmonyFilter;
+
+                  const primaryList = (interpretation.detailedAspects ?? []).filter(filterFn);
+                  const secondaryList = (interpretation.secondaryAspects ?? []).filter(filterFn);
+
+                  const harmonyLabel = (h: DetailedAspectItem['harmony']) =>
+                    h === 'harmonious' ? 'Harmonique' : h === 'tense' ? 'Dynamique' : 'Fusion';
+
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        <div className="text-[11px] font-semibold text-[#e7cfa0] flex items-center justify-between">
+                          <span>
+                            {mode === 'solarReturn'
+                              ? `Aspects Révolution Solaire → Natal (${primaryList.length})`
+                              : `Aspects Natals complets (${primaryList.length})`}
+                          </span>
+                          <span className="font-normal text-slate-400">Cliquer pour tracer</span>
+                        </div>
+                        {primaryList.length === 0 ? (
+                          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] text-slate-400">
+                            Aucun aspect dans cette catégorie d’harmonie.
+                          </div>
+                        ) : (
+                          primaryList.map((asp) => (
+                            <button
+                              key={asp.id}
+                              type="button"
+                              onClick={() => onHighlightAspect(asp.id)}
+                              className="w-full text-left rounded-lg border border-white/10 bg-white/[0.025] p-2.5 hover:border-[#d4af37]/45 hover:bg-white/[0.05] transition-colors cursor-pointer space-y-1"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-[#f8f3e6] font-glyph">
+                                  {asp.title}
+                                </span>
+                                <span className="font-mono-tabular text-[11px] shrink-0" style={{ color: asp.cssColor }}>
+                                  {asp.aspectLabel} · {asp.orb.toFixed(2)}°
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400">
+                                Nature : {harmonyLabel(asp.harmony)}
+                              </div>
+                              <p className="text-[11.5px] leading-relaxed text-slate-200">
+                                {asp.interpretation}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+
+                      {mode === 'solarReturn' && (interpretation.secondaryAspects?.length ?? 0) > 0 && (
+                        <div className="space-y-2 border-t border-white/10 pt-3">
+                          <div className="text-[11px] font-semibold text-[#7dd3fc]">
+                            Aspects internes de la Révolution Solaire (RS ↔ RS · {secondaryList.length})
+                          </div>
+                          {secondaryList.length === 0 ? (
+                            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] text-slate-400">
+                              Aucun aspect interne RS dans cette catégorie.
+                            </div>
+                          ) : (
+                            secondaryList.map((asp) => (
+                              <div
+                                key={asp.id}
+                                className="rounded-lg border border-sky-400/20 bg-sky-950/15 p-2.5 space-y-1"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-semibold text-[#f8f3e6] font-glyph">
+                                    {asp.title}
+                                  </span>
+                                  <span className="font-mono-tabular text-[11px] shrink-0" style={{ color: asp.cssColor }}>
+                                    {asp.aspectLabel} · {asp.orb.toFixed(2)}°
+                                  </span>
+                                </div>
+                                <p className="text-[11.5px] leading-relaxed text-slate-200">
+                                  {asp.interpretation}
+                                </p>
+                                {(asp.planetA || asp.planetB) && (
+                                  <div className="flex items-center gap-2 pt-0.5 text-[10.5px]">
+                                    {asp.planetA && (
+                                      <button
+                                        type="button"
+                                        onClick={() => onSelectPlanet(asp.planetA!, 'outer')}
+                                        className="text-[#7dd3fc] hover:underline cursor-pointer"
+                                      >
+                                        Voir 1er astre RS
+                                      </button>
+                                    )}
+                                    {asp.planetB && (
+                                      <button
+                                        type="button"
+                                        onClick={() => onSelectPlanet(asp.planetB!, 'outer')}
+                                        className="text-[#7dd3fc] hover:underline cursor-pointer"
+                                      >
+                                        Voir 2e astre RS
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 
@@ -665,6 +1032,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     const signAffinity = buildSignAffinityProfile(p.sign, p.name);
     const dignity = getPlanetDignity(p.id, p.sign.index);
     const decan = getDecanInfo(p.sign, p.degInSign);
+    const natalActivatedHouse =
+      isOuter && mode === 'solarReturn'
+        ? baseChart.houses[findHouseForLongitude(p.longitude, baseChart.houses) - 1]
+        : null;
 
     return (
       <aside
@@ -673,10 +1044,16 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className={`flex items-center gap-2 text-xs ${isOuter ? 'text-[#38bdf8]' : 'text-[#e7cfa0]'}`}>
+            <div className={`flex flex-wrap items-center gap-1.5 text-xs ${isOuter ? 'text-[#38bdf8]' : 'text-[#e7cfa0]'}`}>
               <span>{isOuter ? outerLabel : mode === 'composite' ? 'Composite' : mode === 'live' ? 'En direct' : 'Base'}</span>
               <span aria-hidden="true">·</span>
-              <span>Maison {house.roman}</span>
+              <span>Maison {house.roman}{isOuter && mode === 'solarReturn' ? ' RS' : ''}</span>
+              {natalActivatedHouse && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-[#e7cfa0]">M.{natalActivatedHouse.roman} natale</span>
+                </>
+              )}
               <span aria-hidden="true">·</span>
               <span>{p.sign.element}</span>
               {p.retrograde && (

@@ -24,12 +24,15 @@ import {
   esotericIntroMusic,
   INTRO_NARRATION_CHAPTERS,
   isSpeechSynthesisSupported,
+  MUSIC_STYLES,
+  MusicStyleId,
   pickFrenchVoice,
   stopFrenchSpeech,
 } from '../vr/audio';
 
 const CREATOR_STORAGE_KEY = 'uranie_vr_creator_profile_v1';
 const ALWAYS_SHOW_INTRO_KEY = 'uranie_vr_intro_always_v1';
+const MUSIC_STYLE_STORAGE_KEY = 'uranie_vr_music_style_v1';
 
 interface CreatorProfile {
   name: string;
@@ -97,6 +100,18 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
   const [activeChapterIdx, setActiveChapterIdx] = useState<number>(0);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [musicEnabled, setMusicEnabled] = useState<boolean>(true);
+  const [musicStyle, setMusicStyle] = useState<MusicStyleId>(() => {
+    try {
+      const saved = localStorage.getItem(MUSIC_STYLE_STORAGE_KEY) as MusicStyleId | null;
+      if (saved && MUSIC_STYLES.some((s) => s.id === saved)) {
+        esotericIntroMusic.setStyle(saved);
+        return saved;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return 'nocturne';
+  });
   const [musicActive, setMusicActive] = useState<boolean>(false);
   const [needsUserClickForAudio, setNeedsUserClickForAudio] = useState<boolean>(false);
 
@@ -350,10 +365,13 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
               <div>
                 <div className="flex items-center gap-2 text-xs font-semibold text-[#fde68a]">
                   <Volume2 className="w-4 h-4 text-[#d4af37]" />
-                  <span>Visite guidée vocale · Ambiance sonore ésotérique (136,1 Hz)</span>
+                  <span>
+                    Visite guidée vocale ·{' '}
+                    {MUSIC_STYLES.find((s) => s.id === musicStyle)?.label ?? 'Nocturne Astral'} (432 Hz)
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Écoutez la présentation complète de toutes les possibilités d’Uranie VR sur fond musical harmonique.
+                  Écoutez la présentation complète d’Uranie VR sur une ambiance céleste stéréo apaisante.
                 </p>
               </div>
 
@@ -417,7 +435,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                 <button
                   type="button"
                   onClick={() => void handleToggleMusic()}
-                  title="Activer ou couper la musique ésotérique"
+                  title="Activer ou couper la musique d’ambiance"
                   className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
                     musicEnabled
                       ? 'border-[#d4af37]/55 bg-[#d4af37]/15 text-[#fde68a]'
@@ -428,6 +446,42 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   <span>Musique {musicActive ? '· On' : ''}</span>
                 </button>
               </div>
+            </div>
+
+            {/* Sélecteur d'ambiance musicale */}
+            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-slate-400 mr-1">Ambiance :</span>
+              {MUSIC_STYLES.map((st) => {
+                const active = musicStyle === st.id;
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    title={st.description}
+                    onClick={async () => {
+                      setMusicStyle(st.id);
+                      esotericIntroMusic.setStyle(st.id);
+                      try {
+                        localStorage.setItem(MUSIC_STYLE_STORAGE_KEY, st.id);
+                      } catch {
+                        // Ignore storage errors
+                      }
+                      if (!musicEnabled) setMusicEnabled(true);
+                      if (!esotericIntroMusic.isPlaying()) {
+                        const ok = await esotericIntroMusic.start();
+                        setMusicActive(ok);
+                      }
+                    }}
+                    className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                      active
+                        ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#fde68a]'
+                        : 'border-white/10 bg-[#090e1d]/75 text-slate-300 hover:border-white/25 hover:text-white'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Chapitres cliquables */}

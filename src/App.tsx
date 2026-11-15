@@ -1882,6 +1882,7 @@ export default function App() {
           sceneRef.current?.highlightAspect(null);
         }}
         onSelectPlanet={handleSelectPlanet}
+        onSelectHouse={handleSelectHouse2D}
         onHighlightAspect={handleHighlightAspect}
         onOpenSharePrint={handleOpenSharePrint}
       />

@@ -6,18 +6,26 @@ import {
   ElementType,
   findHouseForLongitude,
   normalizeDeg,
+  PlanetId,
   SolarReturnAnalysis,
   ZODIAC_SIGNS,
 } from './astroEngine';
 import {
   describeSlowTransitInHouse,
+  getAscendantDeepInterpretation,
   getDecanInfo,
   getElementDeficitAdvice,
   getHemisphereBalance,
   getHouseArenaFocus,
+  getHouseRulerInfo,
   getLunarPhaseInfo,
+  getNatalHouseDetailedText,
+  getNatalPlanetDetailedText,
   getPlanetDignity,
   getPlanetTrait,
+  getRuledHousesLabels,
+  getSolarReturnHouseDetailedText,
+  getSolarReturnPlanetDetailedText,
   getSolarReturnSunHouseMeaning,
   getWuXingDynamicAdvice,
 } from './astroKnowledge';
@@ -36,11 +44,66 @@ export interface InterpretationSection {
   highlights?: string[];
 }
 
+export interface DetailedPlanetInterpretation {
+  planetId: PlanetId;
+  layer: 'base' | 'outer';
+  name: string;
+  symbol: string;
+  signName: string;
+  signSymbol: string;
+  formattedDeg: string;
+  decanLabel: string;
+  dignityStatus: string;
+  dignityColor: string;
+  houseRoman: string;
+  houseTitle: string;
+  natalHouseRoman?: string;
+  natalHouseTitle?: string;
+  retrograde: boolean;
+  ruledHouses: string[];
+  aspectCount: number;
+  summary: string;
+  chineseLabel: string;
+}
+
+export interface DetailedHouseInterpretation {
+  house: number;
+  roman: string;
+  title: string;
+  signName: string;
+  signSymbol: string;
+  formattedDeg: string;
+  rulerName: string;
+  rulerLocation: string;
+  occupants: Array<{ id: PlanetId; symbol: string; name: string; formattedDeg: string }>;
+  superposedNatalHouse?: string;
+  interpretation: string;
+}
+
+export interface DetailedAspectItem {
+  id: string;
+  layer: 'natal' | 'comparison' | 'srInternal';
+  title: string;
+  aspectLabel: string;
+  symbol: string;
+  cssColor: string;
+  harmony: 'harmonious' | 'tense' | 'fusion';
+  orb: number;
+  interpretation: string;
+  planetA?: PlanetId;
+  planetB?: PlanetId;
+}
+
 export interface ChartInterpretationReport {
   headline: string;
   subtitle: string;
   synthesis: string;
   sections: InterpretationSection[];
+  detailedContextLabel?: string;
+  detailedPlanets?: DetailedPlanetInterpretation[];
+  detailedHouses?: DetailedHouseInterpretation[];
+  detailedAspects?: DetailedAspectItem[];
+  secondaryAspects?: DetailedAspectItem[];
 }
 
 const ELEMENT_TEMPERAMENT: Record<ElementType, string> = {
@@ -146,11 +209,13 @@ export function generateChartInterpretation(params: {
   };
 
   if (mode === 'natal') {
-    const tightAspects = baseChart.aspects.slice(0, 5);
+    const tightAspects = baseChart.aspects.slice(0, 6);
     const sunHouse = baseChart.houses[sun.house - 1];
     const moonHouse = baseChart.houses[moon.house - 1];
     const sunDecan = getDecanInfo(sun.sign, sun.degInSign);
     const moonDecan = getDecanInfo(moon.sign, moon.degInSign);
+    const ascDegInSign = ((baseChart.ascendant % 30) + 30) % 30;
+    const ascProfile = getAscendantDeepInterpretation(baseChart.ascSign, ascDegInSign);
     const dominantModality = (['Cardinal', 'Fixe', 'Mutable'] as const).reduce((best, cur) =>
       baseChart.modalities[cur] > baseChart.modalities[best] ? cur : best
     );
@@ -179,18 +244,93 @@ export function generateChartInterpretation(params: {
       ? ` Son maître ${mcRuler.symbol} ${mcRuler.name} en ${mcRuler.sign.name} (Maison ${baseChart.houses[mcRuler.house - 1].roman}) précise le levier concret de votre réussite sociale.`
       : '';
 
+    const detailedPlanets: DetailedPlanetInterpretation[] = baseChart.planets.map((p) => {
+      const decan = getDecanInfo(p.sign, p.degInSign);
+      const dignity = getPlanetDignity(p.id, p.sign.index);
+      const house = baseChart.houses[p.house - 1];
+      const ruled = getRuledHousesLabels(p.id, baseChart.houses);
+      const aspectCount = baseChart.aspects.filter(
+        (a) => a.planetA === p.id || a.planetB === p.id
+      ).length;
+      const ch = transposeLongitudeToChinese(p.longitude).sign;
+      return {
+        planetId: p.id,
+        layer: 'base',
+        name: p.name,
+        symbol: p.symbol,
+        signName: p.sign.name,
+        signSymbol: p.sign.symbol,
+        formattedDeg: p.formattedDeg,
+        decanLabel: decan.label,
+        dignityStatus: dignity.status,
+        dignityColor: dignity.badgeColor,
+        houseRoman: house.roman,
+        houseTitle: house.title,
+        retrograde: p.retrograde,
+        ruledHouses: ruled,
+        aspectCount,
+        summary: getNatalPlanetDetailedText(p, baseChart, aspectCount),
+        chineseLabel: `${ch.branchHanzi}${ch.hanzi} ${ch.name} (${ch.wuXing})`,
+      };
+    });
+
+    const detailedHouses: DetailedHouseInterpretation[] = baseChart.houses.map((h) => {
+      const { rulerLocationText } = getHouseRulerInfo(h, baseChart.planets, baseChart.houses);
+      const occupants = baseChart.planets
+        .filter((p) => p.house === h.house)
+        .map((p) => ({
+          id: p.id,
+          symbol: p.symbol,
+          name: p.name,
+          formattedDeg: p.formattedDeg,
+        }));
+      return {
+        house: h.house,
+        roman: h.roman,
+        title: h.title,
+        signName: h.sign.name,
+        signSymbol: h.sign.symbol,
+        formattedDeg: h.formattedDeg,
+        rulerName: h.sign.ruler,
+        rulerLocation: rulerLocationText,
+        occupants,
+        interpretation: getNatalHouseDetailedText(h, baseChart),
+      };
+    });
+
+    const detailedAspects: DetailedAspectItem[] = [...baseChart.aspects]
+      .sort((a, b) => a.orb - b.orb)
+      .map((a) => ({
+        id: a.id,
+        layer: 'natal',
+        title: `${a.planetASymbol} ${a.planetAName} ${a.symbol} ${a.planetBSymbol} ${a.planetBName}`,
+        aspectLabel: a.label,
+        symbol: a.symbol,
+        cssColor: a.cssColor,
+        harmony: a.harmony,
+        orb: a.orb,
+        interpretation: a.interpretation,
+        planetA: a.planetA,
+        planetB: a.planetB,
+      }));
+
     return {
-      headline: 'Interprétation Approfondie du Thème Natal',
+      headline: 'Interprétation Complète du Thème Natal',
       subtitle: `${sunLabel} · Lune ${moonLabel} · ASC ${ascLabel}`,
       synthesis: `Ce thème natal s’organise autour d’une dominante ${domEl} et d’une modalité ${dominantModality}, révélant ${ELEMENT_TEMPERAMENT[domEl]}, ainsi que ${modalityDesc}. Né sous une ${lunarPhase.name} (écart Soleil–Lune ${lunarPhase.angleDeg}°), ce ciel articule la volonté solaire en ${sunLabel} (Maison ${sunHouse.roman}) et l’instinct lunaire en ${moonLabel} (Maison ${moonHouse.roman}). ${getHemisphereBalance(baseChart)}`,
+      detailedContextLabel: 'Thème Natal seul',
+      detailedPlanets,
+      detailedHouses,
+      detailedAspects,
       sections: [
         {
-          title: 'Triade Fondamentale & Maître d’Ascendant',
+          title: 'Triade Fondamentale, Ascendant & Maître d’Ascendant',
           accent: 'gold',
-          body: `Soleil en ${sunLabel} (${sunDecan.label}, Maison ${sunHouse.roman} · ${sunHouse.title}) — ${getPlanetTrait('sun', sun.sign.index)}, énergie investie ${getHouseArenaFocus(sun.house)}. Lune en ${moonLabel} (${moonDecan.label}, Maison ${moonHouse.roman} · ${moonHouse.title}) — ${getPlanetTrait('moon', moon.sign.index)}. Ascendant en ${ascLabel} : votre posture spontanée s’exprime par ${baseChart.ascSign.keywords.toLowerCase()}.${ascRulerSentence}`,
+          body: `Soleil en ${sunLabel} (${sunDecan.label}, Maison ${sunHouse.roman} · ${sunHouse.title}) — ${getPlanetTrait('sun', sun.sign.index)}, énergie investie ${getHouseArenaFocus(sun.house)}. Lune en ${moonLabel} (${moonDecan.label}, Maison ${moonHouse.roman} · ${moonHouse.title}) — ${getPlanetTrait('moon', moon.sign.index)}. Ascendant en ${ascLabel} : ${ascProfile.temperament} ${ascProfile.axisBalance}${ascRulerSentence}`,
           highlights: [
             `Soleil : ${sun.formattedDeg} ${sun.sign.name} · ${sunDecan.decanNumber}${sunDecan.decanNumber === 1 ? 'er' : 'e'} décan · Maison ${sunHouse.roman}`,
             `Lune : ${moon.formattedDeg} ${moon.sign.name} · ${lunarPhase.name}`,
+            `Ascendant : ${ascProfile.firstImpression}`,
             ascRuler
               ? `Gouverneur du thème (${ascRuler.name}) : ${ascRuler.sign.name} M.${baseChart.houses[ascRuler.house - 1].roman}`
               : `Ascendant : ${baseChart.ascSign.name}`,
@@ -226,11 +366,11 @@ export function generateChartInterpretation(params: {
               : ['Répartition équilibrée sans planète en dignité ou faiblesse marquée.'],
         },
         {
-          title: 'Aspects Majeurs du Natal (Lecture Détaillée)',
+          title: 'Aspects Majeurs du Natal (Vue Synthétique)',
           accent: 'rose',
           body:
             tightAspects.length > 0
-              ? 'Les configurations angulaires ci-dessous structurent les dialogues intérieurs et les leviers dynamiques les plus précis de votre thème natal :'
+              ? `Sur les ${baseChart.aspects.length} aspects natals calculés, voici les configurations angulaires les plus serrées (consultez l’onglet Aspects pour l’intégralité) :`
               : 'Les planètes évoluent avec une grande autonomie angulaire, sans aspect majeur très serré.',
           highlights: tightAspects.map((a) => a.interpretation),
         },
@@ -254,10 +394,110 @@ export function generateChartInterpretation(params: {
     const srLunarPhase = getLunarPhaseInfo(srSun.longitude, srMoon.longitude);
     const topAspects = comparisonAspects.slice(0, 6);
 
+    const detailedPlanets: DetailedPlanetInterpretation[] = outerChart.planets.map((srP) => {
+      const decan = getDecanInfo(srP.sign, srP.degInSign);
+      const dignity = getPlanetDignity(srP.id, srP.sign.index);
+      const srHouse = outerChart.houses[srP.house - 1];
+      const natalHouseNum = findHouseForLongitude(srP.longitude, baseChart.houses);
+      const natalHouse = baseChart.houses[natalHouseNum - 1];
+      const ruledSr = getRuledHousesLabels(srP.id, outerChart.houses);
+      const srAspectCount =
+        comparisonAspects.filter((a) => a.outerPlanet === srP.id).length +
+        outerChart.aspects.filter((a) => a.planetA === srP.id || a.planetB === srP.id).length;
+      const ch = transposeLongitudeToChinese(srP.longitude).sign;
+
+      return {
+        planetId: srP.id,
+        layer: 'outer',
+        name: `${srP.name} RS`,
+        symbol: srP.symbol,
+        signName: srP.sign.name,
+        signSymbol: srP.sign.symbol,
+        formattedDeg: srP.formattedDeg,
+        decanLabel: decan.label,
+        dignityStatus: dignity.status,
+        dignityColor: dignity.badgeColor,
+        houseRoman: `${srHouse.roman} RS`,
+        houseTitle: srHouse.title,
+        natalHouseRoman: natalHouse.roman,
+        natalHouseTitle: natalHouse.title,
+        retrograde: srP.retrograde,
+        ruledHouses: ruledSr,
+        aspectCount: srAspectCount,
+        summary: getSolarReturnPlanetDetailedText(srP, outerChart, natalHouse, srAspectCount),
+        chineseLabel: `${ch.branchHanzi}${ch.hanzi} ${ch.name} (${ch.wuXing})`,
+      };
+    });
+
+    const detailedHouses: DetailedHouseInterpretation[] = outerChart.houses.map((srH) => {
+      const natalHouseNum = findHouseForLongitude(srH.longitude, baseChart.houses);
+      const natalSuperposed = baseChart.houses[natalHouseNum - 1];
+      const { rulerLocationText } = getHouseRulerInfo(srH, outerChart.planets, outerChart.houses);
+      const occupants = outerChart.planets
+        .filter((p) => p.house === srH.house)
+        .map((p) => ({
+          id: p.id,
+          symbol: p.symbol,
+          name: `${p.name} RS`,
+          formattedDeg: p.formattedDeg,
+        }));
+
+      return {
+        house: srH.house,
+        roman: `${srH.roman} RS`,
+        title: srH.title,
+        signName: srH.sign.name,
+        signSymbol: srH.sign.symbol,
+        formattedDeg: srH.formattedDeg,
+        rulerName: srH.sign.ruler,
+        rulerLocation: rulerLocationText,
+        occupants,
+        superposedNatalHouse: `Superposée à la Maison ${natalSuperposed.roman} natale (${natalSuperposed.title})`,
+        interpretation: getSolarReturnHouseDetailedText(srH, outerChart, natalSuperposed),
+      };
+    });
+
+    const detailedAspects: DetailedAspectItem[] = [...comparisonAspects]
+      .sort((a, b) => a.orb - b.orb)
+      .map((a) => ({
+        id: a.id,
+        layer: 'comparison',
+        title: `${a.outerSymbol} ${a.outerPlanetName} (RS) ${a.symbol} ${a.natalSymbol} ${a.natalPlanetName} (Natal)`,
+        aspectLabel: a.label,
+        symbol: a.symbol,
+        cssColor: a.cssColor,
+        harmony: a.harmony,
+        orb: a.orb,
+        interpretation: a.interpretation,
+        planetA: a.outerPlanet,
+        planetB: a.natalPlanet,
+      }));
+
+    const secondaryAspects: DetailedAspectItem[] = [...outerChart.aspects]
+      .sort((a, b) => a.orb - b.orb)
+      .map((a) => ({
+        id: `sr-${a.id}`,
+        layer: 'srInternal',
+        title: `${a.planetASymbol} ${a.planetAName} RS ${a.symbol} ${a.planetBSymbol} ${a.planetBName} RS`,
+        aspectLabel: a.label,
+        symbol: a.symbol,
+        cssColor: a.cssColor,
+        harmony: a.harmony,
+        orb: a.orb,
+        interpretation: a.interpretation,
+        planetA: a.planetA,
+        planetB: a.planetB,
+      }));
+
     return {
       headline: `Interprétation Complète de la Révolution Solaire ${outerChart.date.getFullYear()}`,
       subtitle: `${outerChart.cityName} · ASC RS ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)} en M.${solarReturnAnalysis.ascInNatalHouse.roman} natale`,
       synthesis: `Calculée pour ${outerChart.cityName}, cette Révolution Solaire place l’Ascendant annuel en ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)}, superposé à votre Maison ${solarReturnAnalysis.ascInNatalHouse.roman} natale (${solarReturnAnalysis.ascInNatalHouse.title}). ${getSolarReturnSunHouseMeaning(solarReturnAnalysis.sunInSrHouse.house)} Le climat lunaire annuel correspond à une ${srLunarPhase.name}.`,
+      detailedContextLabel: `Révolution Solaire ${outerChart.date.getFullYear()}`,
+      detailedPlanets,
+      detailedHouses,
+      detailedAspects,
+      secondaryAspects,
       sections: [
         {
           title: 'Axe Annuel, Foyer Solaire & Maître de l’Année',
@@ -289,7 +529,7 @@ export function generateChartInterpretation(params: {
           accent: 'emerald',
           body: `Jupiter RS en ${srJupiter.sign.name} (Maison ${outerChart.houses[srJupiter.house - 1].roman} RS) soutient la croissance ${getHouseArenaFocus(srJupiter.house)}. Saturne RS en ${srSaturn.sign.name} (Maison ${outerChart.houses[srSaturn.house - 1].roman} RS) structure durablement ${getHouseArenaFocus(srSaturn.house)}. ${
             topAspects.length > 0
-              ? 'Les aspects RS → Natal les plus exacts signalent les événements et prises de conscience majeurs de l’année :'
+              ? `Les ${comparisonAspects.length} aspects RS → Natal et ${outerChart.aspects.length} aspects internes RS ↔ RS sont consultables intégralement dans l’onglet Aspects.`
               : 'Peu d’aspects serrés RS → Natal : année d’évolution intérieure et progressive.'
           }`,
           highlights: topAspects.map((a) => a.interpretation),

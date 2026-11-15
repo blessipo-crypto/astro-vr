@@ -526,6 +526,127 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
         </div>
       </div>
 
+      {/* Detailed Planets Breakdown (Natal / Solar Return) */}
+      {interpretation.detailedPlanets && interpretation.detailedPlanets.length > 0 && (
+        <div className="mb-5 space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-amber-900 border-b border-slate-300 pb-1">
+            Interprétation Détaillée des Planètes ({interpretation.detailedContextLabel})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {interpretation.detailedPlanets.map((dp) => (
+              <div
+                key={`${dp.layer}-${dp.planetId}`}
+                className="print-break-inside-avoid border border-slate-200 rounded p-2.5 bg-white space-y-1"
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1">
+                  <span className="font-bold text-slate-900">
+                    <span className="font-glyph">{dp.symbol}</span> {dp.name}
+                    {dp.retrograde ? ' ℞' : ''}
+                  </span>
+                  <span className="font-mono text-[10.5px] text-slate-700">
+                    {dp.formattedDeg} <span className="font-glyph">{dp.signSymbol}</span> {dp.signName}
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-600">
+                  Maison {dp.houseRoman}
+                  {dp.natalHouseRoman ? ` · Active Maison ${dp.natalHouseRoman} natale` : ''}
+                  {dp.planetId !== 'northNode' ? ` · ${dp.dignityStatus}` : ''}
+                  {dp.ruledHouses.length > 0 ? ` · Maître de M.${dp.ruledHouses.join(', ')}` : ''}
+                </div>
+                <p className="text-[10.5px] text-slate-700 leading-relaxed">{dp.summary}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Detailed 12 Houses Breakdown (Natal / Solar Return) */}
+      {interpretation.detailedHouses && interpretation.detailedHouses.length > 0 && (
+        <div className="mb-5 space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-amber-900 border-b border-slate-300 pb-1">
+            Interprétation Détaillée des 12 Maisons ({interpretation.detailedContextLabel})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {interpretation.detailedHouses.map((dh) => (
+              <div
+                key={dh.house}
+                className="print-break-inside-avoid border border-slate-200 rounded p-2.5 bg-white space-y-1"
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1">
+                  <span className="font-bold text-slate-900">
+                    Maison {dh.roman} · {dh.title}
+                  </span>
+                  <span className="font-mono text-[10.5px] text-slate-700 shrink-0">
+                    {dh.formattedDeg} <span className="font-glyph">{dh.signSymbol}</span> {dh.signName}
+                  </span>
+                </div>
+                {dh.superposedNatalHouse && (
+                  <div className="text-[10px] font-semibold text-sky-900">{dh.superposedNatalHouse}</div>
+                )}
+                <div className="text-[10px] text-slate-600">
+                  Gouverneur : {dh.rulerLocation}
+                  {dh.occupants.length > 0
+                    ? ` · Occupants : ${dh.occupants.map((o) => `${o.symbol} ${o.name}`).join(', ')}`
+                    : ''}
+                </div>
+                <p className="text-[10.5px] text-slate-700 leading-relaxed">{dh.interpretation}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Complete Aspects Breakdown (Natal / Solar Return RS -> Natal & RS <-> RS) */}
+      {interpretation.detailedAspects && interpretation.detailedAspects.length > 0 && (
+        <div className="mb-5 space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-amber-900 border-b border-slate-300 pb-1">
+            {mode === 'solarReturn'
+              ? `Analyse Complète des Aspects Révolution Solaire → Natal (${interpretation.detailedAspects.length})`
+              : `Analyse Complète des Aspects Natals (${interpretation.detailedAspects.length})`}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+            {interpretation.detailedAspects.map((asp) => (
+              <div
+                key={asp.id}
+                className="print-break-inside-avoid border border-slate-200 rounded p-2 bg-white space-y-0.5"
+              >
+                <div className="flex items-center justify-between gap-2 text-[10.5px]">
+                  <span className="font-bold text-slate-900 font-glyph">{asp.title}</span>
+                  <span className="font-mono text-slate-700 shrink-0">
+                    {asp.aspectLabel} ({asp.orb.toFixed(2)}°)
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-700 leading-snug">{asp.interpretation}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mode === 'solarReturn' && interpretation.secondaryAspects && interpretation.secondaryAspects.length > 0 && (
+        <div className="mb-5 space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-sky-900 border-b border-slate-300 pb-1">
+            Aspects Internes de la Révolution Solaire (RS ↔ RS · {interpretation.secondaryAspects.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+            {interpretation.secondaryAspects.map((asp) => (
+              <div
+                key={asp.id}
+                className="print-break-inside-avoid border border-sky-200 rounded p-2 bg-sky-50/40 space-y-0.5"
+              >
+                <div className="flex items-center justify-between gap-2 text-[10.5px]">
+                  <span className="font-bold text-slate-900 font-glyph">{asp.title}</span>
+                  <span className="font-mono text-slate-700 shrink-0">
+                    {asp.aspectLabel} ({asp.orb.toFixed(2)}°)
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-700 leading-snug">{asp.interpretation}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Opposites, Complements & Affinities */}
       <div className="print-break-inside-avoid mb-4 space-y-2">
         <h2 className="text-sm font-bold uppercase tracking-wide text-amber-900 border-b border-slate-300 pb-1">

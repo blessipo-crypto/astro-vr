@@ -765,3 +765,206 @@ export function getAscendantDeepInterpretation(
   };
 }
 
+const RULER_NAME_TO_ID: Record<string, PlanetId> = {
+  soleil: 'sun',
+  lune: 'moon',
+  mercure: 'mercury',
+  vénus: 'venus',
+  venus: 'venus',
+  mars: 'mars',
+  jupiter: 'jupiter',
+  saturne: 'saturn',
+  uranus: 'uranus',
+  neptune: 'neptune',
+  pluton: 'pluto',
+};
+
+export function getRuledHousesLabels(planetId: PlanetId, houses: HouseCusp[]): string[] {
+  return houses
+    .filter((h) => RULER_NAME_TO_ID[h.sign.ruler.toLowerCase()] === planetId)
+    .map((h) => {
+      if (h.house === 1) return 'I (ASC)';
+      if (h.house === 10) return 'X (MC)';
+      if (h.house === 7) return 'VII (DSC)';
+      if (h.house === 4) return 'IV (FC)';
+      return h.roman;
+    });
+}
+
+export function getHouseRulerInfo(
+  house: HouseCusp,
+  allPlanets: PlanetPosition[],
+  allHouses: HouseCusp[]
+): {
+  rulerPlanet: PlanetPosition | null;
+  rulerLocationText: string;
+  rulerDignityStatus: DignityStatus | null;
+} {
+  const rulerId = RULER_NAME_TO_ID[house.sign.ruler.toLowerCase()];
+  const rulerPlanet = rulerId ? (allPlanets.find((p) => p.id === rulerId) ?? null) : null;
+  if (!rulerPlanet) {
+    return {
+      rulerPlanet: null,
+      rulerLocationText: house.sign.ruler,
+      rulerDignityStatus: null,
+    };
+  }
+  const rulerHouse = allHouses[rulerPlanet.house - 1];
+  const dignity = getPlanetDignity(rulerPlanet.id, rulerPlanet.sign.index);
+  return {
+    rulerPlanet,
+    rulerLocationText: `${rulerPlanet.symbol} ${rulerPlanet.name} en ${rulerPlanet.sign.symbol} ${rulerPlanet.sign.name} (Maison ${rulerHouse?.roman ?? rulerPlanet.house})`,
+    rulerDignityStatus: dignity.status,
+  };
+}
+
+export function getNatalPlanetDetailedText(
+  planet: PlanetPosition,
+  chart: AstroChart,
+  aspectCount: number
+): string {
+  const trait = PLANET_SIGN_TRAITS[planet.id]?.[planet.sign.index] ?? planet.sign.keywords.toLowerCase();
+  const dignity = getPlanetDignity(planet.id, planet.sign.index);
+  const decan = getDecanInfo(planet.sign, planet.degInSign);
+  const house = chart.houses[planet.house - 1];
+  const houseFocus = PLANET_HOUSE_FOCUS[planet.house] ?? house.meaning;
+  const ruled = getRuledHousesLabels(planet.id, chart.houses);
+
+  const ruledSentence =
+    ruled.length > 0
+      ? ` Comme maître ${ruled.length > 1 ? 'des Maisons' : 'de la Maison'} ${ruled.join(' et ')}, cet astre relie directement ${ruled.length > 1 ? 'ces secteurs' : 'ce secteur'} à votre Maison ${house.roman}.`
+      : '';
+
+  const dignityDetail =
+    planet.id === 'northNode'
+      ? ''
+      : ` (${dignity.status} : ${dignity.explanation.charAt(0).toLowerCase()}${dignity.explanation.slice(1)})`;
+
+  const retroNote =
+    planet.retrograde && RETROGRADE_PLANET_NOTES[planet.id]
+      ? ` ${RETROGRADE_PLANET_NOTES[planet.id]}`
+      : '';
+
+  const aspectNote =
+    aspectCount > 0
+      ? ` Relié par ${aspectCount} aspect${aspectCount > 1 ? 's' : ''} majeur${aspectCount > 1 ? 's' : ''} dans le thème.`
+      : ' Sans aspect majeur serré : fonctionne de manière autonome et directe.';
+
+  return `${planet.name} en ${planet.sign.name} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan · sous-influence ${decan.subSignName})${dignityDetail} se traduit par : ${trait}. En Maison ${house.roman} (${house.title}), cette fonction s’investit ${houseFocus}.${ruledSentence}${retroNote}${aspectNote}`;
+}
+
+export function getNatalHouseDetailedText(house: HouseCusp, chart: AstroChart): string {
+  const occupants = chart.planets.filter((p) => p.house === house.house);
+  const { rulerPlanet, rulerLocationText, rulerDignityStatus } = getHouseRulerInfo(
+    house,
+    chart.planets,
+    chart.houses
+  );
+
+  const rulerSentence = rulerPlanet
+    ? ` Son gouverneur est ${rulerLocationText}${rulerDignityStatus && rulerDignityStatus !== 'Pérégrine' ? ` [${rulerDignityStatus}]` : ''}, ce qui rattache concrètement ce domaine ${PLANET_HOUSE_FOCUS[rulerPlanet.house] ?? ''}.`
+    : '';
+
+  const occupantsSentence =
+    occupants.length > 0
+      ? ` ${occupants.length > 1 ? 'Les astres présents' : 'L’astre présent'} (${occupants.map((p) => `${p.symbol} ${p.name}${p.retrograde ? ' ℞' : ''}`).join(', ')}) ${occupants.length > 1 ? 'animent' : 'anime'} activement ce secteur tout au long de votre vie.`
+      : ' Sans planète occupante, ce secteur s’exprime avec fluidité à travers l’état et les aspects de son maître planétaire.';
+
+  return `${house.meaning} Avec sa cuspide en ${house.sign.symbol} ${house.sign.name} (${house.sign.element} · ${house.sign.modality}), vous abordez ce domaine avec ${house.sign.keywords.toLowerCase()}.${rulerSentence}${occupantsSentence}`;
+}
+
+const SOLAR_RETURN_HOUSE_MEANINGS: Record<number, string> = {
+  1: 'Donne le ton général de l’année : votre élan personnel, votre attitude spontanée, votre image et votre vitalité physique.',
+  2: 'Secteur des finances de l’année : revenus, gestion budgétaire, acquisitions concrètes, talents valorisés et sécurité matérielle.',
+  3: 'Secteur des échanges et démarches annuelles : contrats courts, écrits, formations, déplacements fréquents et entourage proche.',
+  4: 'Secteur du foyer et de la base privée durant l’année : lieu de vie, famille, immobilier, racines et recherche de stabilité intérieure.',
+  5: 'Secteur des joies, créations et amours de l’année : projets personnels, élans du cœur, enfants, expression artistique et loisirs.',
+  6: 'Secteur du quotidien professionnel et de la santé de l’année : rythme de travail, organisation pratique, collaborations et hygiène de vie.',
+  7: 'Secteur des alliances et du couple sur l’année : partenariats, contrats majeurs, vie à deux et miroir relationnel.',
+  8: 'Secteur des mues et finances partagées de l’année : transformations psychologiques, investissements, transmissions et tri nécessaire.',
+  9: 'Secteur des grands horizons annuels : voyages lointains, études supérieures, projets éditoriaux ou juridiques et élargissement de vision.',
+  10: 'Secteur de la vocation et de la reconnaissance sociale cette année : carrière, responsabilités publiques, objectifs et visibilité.',
+  11: 'Secteur des projets collectifs et appuis de l’année : amitiés, réseaux, soutiens extérieurs et idéaux d’avenir.',
+  12: 'Secteur de la maturation silencieuse : introspection, bilan de fin de cycle, inspiration intérieure et préparation des étapes futures.',
+};
+
+export function getSolarReturnHouseMeaning(houseNum: number): string {
+  return SOLAR_RETURN_HOUSE_MEANINGS[houseNum] ?? '';
+}
+
+const SOLAR_RETURN_PLANET_ROLE: Record<PlanetId, string> = {
+  sun: 'Foyer central de votre vitalité, de vos projets conscients et de ce qui demande à rayonner cette année',
+  moon: 'Climat émotionnel dominant, vie quotidienne, besoins intimes et fluctuations affectives de l’année',
+  mercury: 'Orientation de vos pensées, négociations, signatures, études et déplacements de l’année',
+  venus: 'Tonalité sentimentale, qualité des relations harmonieuses, plaisirs et aisance financière de l’année',
+  mars: 'Moteur d’initiative, combats constructifs, courage d’entreprendre et gestion de l’impatience annuelle',
+  jupiter: 'Champ principal d’opportunités, d’appuis bienveillants, de croissance et d’ouverture de l’année',
+  saturn: 'Point d’ancrage exigeant de l’année : responsabilités, patience constructive et consolidations durables',
+  uranus: 'Secteur des tournants inattendus, prises de liberté et innovations nécessaires cette année',
+  neptune: 'Zone d’inspiration intuitive, de créativité subtile ou de flou à éclaircir avec discernement cette année',
+  pluto: 'Levier de transformation profonde, de lucidité stratégique et de régénération sur l’année',
+  northNode: 'Cap évolutif annuel indiquant vers quelles expériences nouvelles il est fécond d’avancer',
+};
+
+export function getSolarReturnPlanetDetailedText(
+  srPlanet: PlanetPosition,
+  srChart: AstroChart,
+  natalHouse: HouseCusp,
+  srAspectCount: number
+): string {
+  const srHouse = srChart.houses[srPlanet.house - 1];
+  const dignity = getPlanetDignity(srPlanet.id, srPlanet.sign.index);
+  const decan = getDecanInfo(srPlanet.sign, srPlanet.degInSign);
+  const trait = PLANET_SIGN_TRAITS[srPlanet.id]?.[srPlanet.sign.index] ?? srPlanet.sign.keywords.toLowerCase();
+  const roleDesc = SOLAR_RETURN_PLANET_ROLE[srPlanet.id] ?? srPlanet.role;
+  const ruledSr = getRuledHousesLabels(srPlanet.id, srChart.houses);
+
+  const dignityPart =
+    srPlanet.id !== 'northNode' && dignity.status !== 'Pérégrine'
+      ? ` [${dignity.status} en ${srPlanet.sign.name}]`
+      : '';
+
+  const ruledPart =
+    ruledSr.length > 0
+      ? ` En RS, il gouverne ${ruledSr.length > 1 ? 'les Maisons' : 'la Maison'} ${ruledSr.join(' et ')} RS.`
+      : '';
+
+  const retroPart =
+    srPlanet.retrograde && RETROGRADE_PLANET_NOTES[srPlanet.id]
+      ? ` Rétrograde à l’ouverture de l’année : invite à la maturation et à la relecture avant d’agir.`
+      : '';
+
+  const aspPart =
+    srAspectCount > 0
+      ? ` (${srAspectCount} aspect${srAspectCount > 1 ? 's' : ''} actif${srAspectCount > 1 ? 's' : ''} en RS.)`
+      : '';
+
+  return `${roleDesc}. Situé en ${srPlanet.sign.name}${dignityPart} (${decan.decanNumber}${decan.decanNumber === 1 ? 'er' : 'e'} décan) et en Maison ${srHouse.roman} RS (${srHouse.title}), il s’exprime par : ${trait}. En parallèle, il se projette sur votre Maison ${natalHouse.roman} natale (${natalHouse.title}), activant durant cette année ${PLANET_HOUSE_FOCUS[natalHouse.house] ?? natalHouse.meaning}.${ruledPart}${retroPart}${aspPart}`;
+}
+
+export function getSolarReturnHouseDetailedText(
+  srHouse: HouseCusp,
+  srChart: AstroChart,
+  natalSuperposedHouse: HouseCusp
+): string {
+  const baseMeaning = getSolarReturnHouseMeaning(srHouse.house);
+  const occupants = srChart.planets.filter((p) => p.house === srHouse.house);
+  const { rulerPlanet, rulerLocationText } = getHouseRulerInfo(
+    srHouse,
+    srChart.planets,
+    srChart.houses
+  );
+
+  const rulerSentence = rulerPlanet
+    ? ` Son gouverneur annuel est ${rulerLocationText}, orientant les résultats de ce secteur vers la Maison ${srChart.houses[rulerPlanet.house - 1].roman} RS.`
+    : '';
+
+  const occSentence =
+    occupants.length > 0
+      ? ` Planètes RS présentes : ${occupants.map((p) => `${p.symbol} ${p.name}${p.retrograde ? ' ℞' : ''}`).join(', ')}, qui rendent ce domaine particulièrement actif cette année.`
+      : ' Aucune planète RS ne séjourne ici : ce secteur évolue de façon calme selon le bilan de son maître annuel.';
+
+  return `${baseMeaning} La cuspide RS en ${srHouse.sign.symbol} ${srHouse.sign.name} (${srHouse.sign.keywords.toLowerCase()}) se superpose à votre Maison ${natalSuperposedHouse.roman} natale (${natalSuperposedHouse.title}), reliant ce thème annuel à ${PLANET_HOUSE_FOCUS[natalSuperposedHouse.house] ?? natalSuperposedHouse.meaning}.${rulerSentence}${occSentence}`;
+}
+
+
