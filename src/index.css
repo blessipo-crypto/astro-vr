@@ -74,7 +74,8 @@ svg text {
 
   html,
   body,
-  #root {
+  #root,
+  .app-print-shell {
     width: auto !important;
     height: auto !important;
     min-height: 0 !important;

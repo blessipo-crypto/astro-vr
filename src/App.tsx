@@ -1545,7 +1545,7 @@ export default function App() {
 
   return (
     <div
-      className={`relative h-full w-full overflow-hidden text-[#f3efe6] ${
+      className={`app-print-shell relative h-full w-full overflow-hidden text-[#f3efe6] ${
         desktopMR && !cameraActive
           ? 'bg-[radial-gradient(circle_at_center,_#162238_0%,_#0b1120_65%,_#060913_100%)]'
           : 'bg-[#05070e]'
@@ -1571,31 +1571,33 @@ export default function App() {
 
       {/* Interactive PC 2D Astrological Wheel View */}
       {viewDimension === '2d' && (
-        <Chart2DCanvas
-          baseChart={baseChart}
-          outerChart={outerChart}
-          comparisonAspects={comparisonAspects}
-          tradition={tradition}
-          wheel2DStyle={wheel2DStyle}
-          onWheel2DStyleChange={handleWheel2DStyleChange}
-          wheel2DOrientation={wheel2DOrientation}
-          onWheel2DOrientationChange={setWheel2DOrientation}
-          signStyle={signStyle}
-          onSignStyleChange={setSignStyle}
-          skyAnimations={skyAnimations}
-          aspectFilter={aspectFilter}
-          showHouses={showHouses}
-          selectedPlanetId={selectedPlanet?.id ?? null}
-          selectedPlanetLayer={selectedPlanetLayer}
-          selectedHouseNum={selectedHouse?.house ?? null}
-          highlightedAspectId={highlightedAspectId}
-          onSelectPlanet={handleSelectPlanet}
-          onSelectHouse={handleSelectHouse2D}
-          onHighlightAspect={handleHighlightAspect}
-          onSwitchTo3D={() => setViewDimension('3d')}
-          inspectorOpen={Boolean(showFullSummary || selectedPlanet || selectedHouse)}
-          dockCollapsed={dockCollapsed}
-        />
+        <div className="no-print">
+          <Chart2DCanvas
+            baseChart={baseChart}
+            outerChart={outerChart}
+            comparisonAspects={comparisonAspects}
+            tradition={tradition}
+            wheel2DStyle={wheel2DStyle}
+            onWheel2DStyleChange={handleWheel2DStyleChange}
+            wheel2DOrientation={wheel2DOrientation}
+            onWheel2DOrientationChange={setWheel2DOrientation}
+            signStyle={signStyle}
+            onSignStyleChange={setSignStyle}
+            skyAnimations={skyAnimations}
+            aspectFilter={aspectFilter}
+            showHouses={showHouses}
+            selectedPlanetId={selectedPlanet?.id ?? null}
+            selectedPlanetLayer={selectedPlanetLayer}
+            selectedHouseNum={selectedHouse?.house ?? null}
+            highlightedAspectId={highlightedAspectId}
+            onSelectPlanet={handleSelectPlanet}
+            onSelectHouse={handleSelectHouse2D}
+            onHighlightAspect={handleHighlightAspect}
+            onSwitchTo3D={() => setViewDimension('3d')}
+            inspectorOpen={Boolean(showFullSummary || selectedPlanet || selectedHouse)}
+            dockCollapsed={dockCollapsed}
+          />
+        </div>
       )}
 
       {contextLost && (

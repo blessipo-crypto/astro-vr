@@ -1,5 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { Check, Copy, Download, Mail, Printer, Share2, X } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  Download,
+  FileDown,
+  Loader2,
+  Mail,
+  MessageCircle,
+  Printer,
+  Share2,
+  X,
+} from 'lucide-react';
+import { buildPrintableHtmlDocument, exportChartReportToPdf } from '../astro/pdfExport';
 import { PrintableChartReport, PrintableChartReportProps } from './PrintableChartReport';
 
 interface SharePrintModalProps {
@@ -16,11 +28,17 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
   reportProps,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfDone, setPdfDone] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const dossierRef = useRef<HTMLDivElement | null>(null);
 
   if (!open) return null;
 
   const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const profileLabel = reportProps.profile.name.trim() || 'Thème astral';
+  const sun = reportProps.baseChart.planets.find((p) => p.id === 'sun');
+  const moon = reportProps.baseChart.planets.find((p) => p.id === 'moon');
 
   const handleCopyLink = async () => {
     try {
@@ -32,12 +50,80 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
     }
   };
 
+  const handleConvertAndDownloadPdf = async () => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    setPdfError(null);
+    setPdfDone(false);
+    try {
+      const svgEl = dossierRef.current?.querySelector('svg') ?? null;
+      await exportChartReportToPdf(reportProps, svgEl);
+      setPdfDone(true);
+      window.setTimeout(() => setPdfDone(false), 3000);
+    } catch {
+      setPdfError('Impossible de générer le PDF directement ; utilisez Fiche HTML ou Imprimer.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const handleDirectPrint = () => {
+    const bodyHtml = dossierRef.current?.innerHTML ?? '';
+    if (!bodyHtml) {
+      onPrintPdf();
+      return;
+    }
+
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (!doc) {
+        document.body.removeChild(iframe);
+        onPrintPdf();
+        return;
+      }
+
+      const html = buildPrintableHtmlDocument(
+        bodyHtml,
+        `Uranie VR — ${profileLabel} (${reportProps.modeLabel})`,
+        false
+      );
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      window.setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          onPrintPdf();
+        } finally {
+          window.setTimeout(() => {
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+          }, 4000);
+        }
+      }, 450);
+    } catch {
+      onPrintPdf();
+    }
+  };
+
   const handleNativeShare = async () => {
     if (!canNativeShare) return;
     try {
       await navigator.share({
-        title: `Uranie VR — ${reportProps.profile.name} (${reportProps.modeLabel})`,
-        text: `Voici le thème astrologique de ${reportProps.profile.name} sur Uranie VR.`,
+        title: `Uranie VR — ${profileLabel} (${reportProps.modeLabel})`,
+        text: `Voici le thème astrologique de ${profileLabel} sur Uranie VR.`,
         url: reportProps.shareUrl,
       });
     } catch {
@@ -47,53 +133,47 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
 
   const handleDownloadHtml = () => {
     const bodyHtml = dossierRef.current?.innerHTML ?? '';
-    const html = `<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Uranie VR — ${reportProps.profile.name} (${reportProps.modeLabel})</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Symbols+2&family=Noto+Sans+Symbols:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  @page { size: A4 portrait; margin: 12mm 14mm; }
-  body { background: #ffffff; color: #0f172a; font-family: 'Montserrat', 'Lato', 'Noto Sans Symbols', sans-serif; font-variant-emoji: text; padding: 24px; max-width: 900px; margin: 0 auto; }
-  .font-display, h1, h2, h3 { font-family: 'Cinzel', 'Cormorant Garamond', 'Playfair Display', Cochin, Georgia, serif; }
-  .font-glyph { font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', sans-serif; font-variant-emoji: text; }
-  @media print { .print-toolbar { display: none !important; } body { padding: 0; } }
-</style>
-</head>
-<body>
-  <div class="print-toolbar" style="margin-bottom:16px;padding:10px 14px;background:#fef3c7;border:1px solid #d97706;border-radius:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
-    <span>Fiche astrologique Uranie VR · Utilisez <strong>Ctrl+P / Imprimer → Enregistrer en PDF</strong></span>
-    <button onclick="window.print()" style="background:#b45309;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;">Imprimer / PDF</button>
-  </div>
-  ${bodyHtml}
-</body>
-</html>`;
+    const html = buildPrintableHtmlDocument(
+      bodyHtml,
+      `Uranie VR — ${profileLabel} (${reportProps.modeLabel})`,
+      false
+    );
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const safeName = reportProps.profile.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-');
+    const safeName = profileLabel.toLowerCase().replace(/[^a-z0-9]+/gi, '-');
     a.download = `theme-${safeName || 'uranie'}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  const whatsappText = [
+    `✨ *Uranie VR — ${profileLabel}*`,
+    `Analyse : ${reportProps.modeLabel}`,
+    sun ? `• Soleil : ${sun.formattedDeg} ${sun.sign.name} (Maison ${reportProps.baseChart.houses[sun.house - 1].roman})` : null,
+    moon ? `• Lune : ${moon.formattedDeg} ${moon.sign.name} (Maison ${reportProps.baseChart.houses[moon.house - 1].roman})` : null,
+    `• Ascendant : ${reportProps.baseChart.ascSign.name} · MC : ${reportProps.baseChart.mcSign.name}`,
+    ``,
+    `Consulter la carte interactive complète :`,
+    reportProps.shareUrl,
+  ]
+    .filter((line): line is string => line !== null)
+    .join('\n');
+
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+
   const mailtoHref = `mailto:?subject=${encodeURIComponent(
-    `Thème astrologique — ${reportProps.profile.name} (${reportProps.modeLabel})`
+    `Thème astrologique — ${profileLabel} (${reportProps.modeLabel})`
   )}&body=${encodeURIComponent(
-    `Découvrez le thème astrologique de ${reportProps.profile.name} (${reportProps.modeLabel}) calculé sur Uranie VR :\n\n${reportProps.shareUrl}`
+    `Découvrez le thème astrologique de ${profileLabel} (${reportProps.modeLabel}) calculé sur Uranie VR :\n\n${reportProps.shareUrl}`
   )}`;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Imprimer en PDF ou partager le thème par lien"
+      aria-label="Convertir en PDF, imprimer ou partager le thème"
       className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
     >
       <div className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-[#d4af37]/35 bg-[#0a1020] text-[#f3efe6] shadow-2xl overflow-hidden">
@@ -101,10 +181,10 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4 shrink-0">
           <div>
             <h2 className="font-display text-2xl font-semibold text-[#f8f3e6]">
-              Imprimer en PDF & Partager par lien
+              Exporter PDF, Imprimer & Partager
             </h2>
             <p className="text-xs text-slate-300 mt-0.5">
-              Dossier complet ({reportProps.profile.name} · {reportProps.modeLabel}) ou lien direct encodé.
+              Téléchargez le dossier complet en PDF, imprimez, ou envoyez vers WhatsApp / e-mail.
             </p>
           </div>
           <button
@@ -117,16 +197,38 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
           </button>
         </div>
 
-        {/* Action Bar: Share Link + PDF Print */}
+        {/* Action Bar: Real PDF Export + Print + HTML + WhatsApp + Mail */}
         <div className="border-b border-white/10 bg-[#0d152a] px-6 py-3.5 space-y-3 shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={onPrintPdf}
-              className="flex items-center gap-2 rounded-lg bg-[#d4af37] px-4 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer"
+              onClick={() => void handleConvertAndDownloadPdf()}
+              disabled={pdfBusy}
+              className="flex items-center gap-2 rounded-lg bg-[#d4af37] px-4 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] disabled:opacity-60 transition-colors cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
-              <span>Imprimer / Enregistrer en PDF</span>
+              {pdfBusy ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : pdfDone ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <FileDown className="w-4 h-4" />
+              )}
+              <span>
+                {pdfBusy
+                  ? 'Génération PDF...'
+                  : pdfDone
+                    ? 'PDF téléchargé !'
+                    : 'Convertir & Télécharger PDF'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDirectPrint}
+              className="flex items-center gap-2 rounded-lg border border-white/20 bg-[#121c36] px-3.5 py-2 text-xs font-medium text-slate-100 hover:border-[#d4af37] hover:text-white transition-colors cursor-pointer"
+            >
+              <Printer className="w-4 h-4 text-[#e7cfa0]" />
+              <span>Imprimer</span>
             </button>
 
             <button
@@ -135,15 +237,25 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               className="flex items-center gap-2 rounded-lg border border-white/15 bg-[#121c36] px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer"
             >
               <Download className="w-4 h-4 text-[#38bdf8]" />
-              <span>Télécharger Fiche HTML</span>
+              <span>Fiche HTML</span>
             </button>
+
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border border-emerald-400/45 bg-emerald-500/15 px-3.5 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Envoyer vers WhatsApp</span>
+            </a>
 
             <a
               href={mailtoHref}
               className="flex items-center gap-2 rounded-lg border border-white/15 bg-[#121c36] px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-[#d4af37] hover:text-white transition-colors"
             >
               <Mail className="w-4 h-4 text-[#e7cfa0]" />
-              <span>Envoyer par e-mail</span>
+              <span>E-mail</span>
             </a>
 
             {canNativeShare && (
@@ -157,6 +269,10 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               </button>
             )}
           </div>
+
+          {pdfError && (
+            <div className="text-[11px] text-rose-300">{pdfError}</div>
+          )}
 
           <div className="flex items-center gap-2">
             <label htmlFor="share-theme-url" className="text-[11px] text-slate-400 whitespace-nowrap">
