@@ -7,7 +7,42 @@ on:
       - main
       - master
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
+  deploy-pages:
+    name: Deployer WebXR HTTPS (GitHub Pages)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install and build web bundle
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   build-standalone-apk:
     name: Compiler APK Autonome Hors-Ligne (Capacitor)
     runs-on: ubuntu-24.04
@@ -57,6 +92,7 @@ jobs:
   build-quest-webxr-apk:
     name: Compiler APK WebXR VR/Passthrough (Bubblewrap TWA)
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     continue-on-error: true
     steps:
       - name: Checkout
@@ -67,11 +103,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Setup Java JDK 21
+      - name: Setup Java JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
@@ -81,7 +117,12 @@ jobs:
           npm install --legacy-peer-deps
           npm run build
           npm install -g @bubblewrap/cli
-          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="${ANDROID_SDK_ROOT:-$ANDROID_HOME}" || true
+          SDK_PATH="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          mkdir -p "$HOME/.bubblewrap"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$HOME/.bubblewrap/config.json"
+          if [ -x "$SDK_PATH/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$SDK_PATH/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          fi
           if [ ! -f "./android.keystore" ]; then
             keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr -keyalg RSA -keysize 2048 -validity 10000 -storepass uranievr123 -keypass uranievr123 -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
           fi
@@ -89,10 +130,10 @@ jobs:
           SERVER_PID=$!
           trap "kill $SERVER_PID 2>/dev/null || true" EXIT
           sleep 2
-          if ! curl -sfI "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/pwa-512x512.png" >/dev/null 2>&1; then
+          if ! curl -sfI "https://blessipo-crypto.github.io/astro-vr/pwa-512x512.png" >/dev/null 2>&1; then
             node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync("twa-manifest.json","utf8"));m.iconUrl="http://127.0.0.1:8787/pwa-512x512.png";m.maskableIconUrl="http://127.0.0.1:8787/pwa-maskable-512x512.png";fs.writeFileSync("twa-manifest.json",JSON.stringify(m,null,2));'
           fi
-          printf "uranievr123\nuranievr123\n" | bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade
+          bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade < /dev/null
           printf "uranievr123\nuranievr123\n" | bubblewrap build --skipVersionUpgrade --skipPwaValidation
           if [ -f "app-release-signed.apk" ]; then
             cp app-release-signed.apk uranie-vr-quest3-webxr.apk
