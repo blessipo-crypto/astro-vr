@@ -1,0 +1,52 @@
+{
+  "name": "uranie-vr-desktop",
+  "version": "1.0.0",
+  "description": "Uranie VR — Observatoire Astrologique 3D & WebXR pour PC Windows",
+  "main": "main.cjs",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux AppImage --publish never",
+    "dist:mac": "electron-builder --mac dmg --publish never"
+  },
+  "devDependencies": {
+    "electron": "^35.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "app.uranie.vr.desktop",
+    "productName": "Uranie VR",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "dist/**/*"
+    ],
+    "win": {
+      "icon": "dist/pwa-512x512.png",
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        },
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Uranie-VR-Portable.exe"
+    },
+    "nsis": {
+      "artifactName": "Uranie-VR-Setup.exe",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

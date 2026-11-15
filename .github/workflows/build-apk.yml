@@ -35,8 +35,6 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Install and build web bundle
         run: |
@@ -197,4 +195,41 @@ jobs:
         with:
           name: uranie-vr-quest3-webxr-apk
           path: uranie-vr-quest3-webxr.apk
+          if-no-files-found: ignore
+
+  build-windows-exe:
+    name: Compiler Application PC Windows (.exe)
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install and build web bundle
+        shell: bash
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+          rm -rf electron/dist
+          cp -r dist electron/dist
+
+      - name: Build Windows .exe (Portable + Setup)
+        shell: bash
+        run: |
+          cd electron
+          npm install
+          npx electron-builder --win --x64 --publish never
+
+      - name: Upload Windows .exe
+        uses: actions/upload-artifact@v6
+        with:
+          name: uranie-vr-windows-exe
+          path: |
+            electron/release/Uranie-VR-Portable.exe
+            electron/release/Uranie-VR-Setup.exe
           if-no-files-found: ignore

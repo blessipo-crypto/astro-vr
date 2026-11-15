@@ -9,3 +9,6 @@ coverage/
 android/
 *.apk
 *.keystore
+electron/dist/
+electron/release/
+electron/node_modules/
