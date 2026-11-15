@@ -142,6 +142,211 @@ const MODE_LABELS: Array<{ id: ChartMode; label: string }> = [
   { id: 'live', label: 'En direct' },
 ];
 
+const MONTHS_SHORT_FR = [
+  'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+  'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc',
+];
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => i);
+const YEARS_1900_2100 = Array.from({ length: 201 }, (_, i) => 1900 + i);
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function parseLocalDateTimeParts(val: string): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+} {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(val);
+  if (m) {
+    return {
+      year: Number(m[1]),
+      month: Number(m[2]),
+      day: Number(m[3]),
+      hour: Number(m[4]),
+      minute: Number(m[5]),
+    };
+  }
+  const now = new Date();
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+    hour: now.getHours(),
+    minute: now.getMinutes(),
+  };
+}
+
+function formatLocalDateTimeParts(p: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}): string {
+  return `${String(p.year).padStart(4, '0')}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
+interface QuestDateTimeControlProps {
+  idPrefix: string;
+  value: string;
+  onChange: (val: string) => void;
+  onResetNow?: () => void;
+  accent?: 'gold' | 'cyan';
+}
+
+const QuestDateTimeControl: React.FC<QuestDateTimeControlProps> = ({
+  idPrefix,
+  value,
+  onChange,
+  onResetNow,
+  accent = 'cyan',
+}) => {
+  const parts = parseLocalDateTimeParts(value);
+  const maxDays = new Date(parts.year, parts.month, 0).getDate();
+  const focusCls =
+    accent === 'gold'
+      ? 'focus:border-[#d4af37] hover:border-[#d4af37]/60'
+      : 'focus:border-[#38bdf8] hover:border-[#38bdf8]/60';
+
+  const commitParts = (patch: Partial<typeof parts>) => {
+    const y = Math.min(2100, Math.max(1900, patch.year ?? parts.year));
+    const mo = Math.min(12, Math.max(1, patch.month ?? parts.month));
+    const dim = new Date(y, mo, 0).getDate();
+    const d = Math.min(dim, Math.max(1, patch.day ?? parts.day));
+    const h = Math.min(23, Math.max(0, patch.hour ?? parts.hour));
+    const min = Math.min(59, Math.max(0, patch.minute ?? parts.minute));
+    onChange(formatLocalDateTimeParts({ year: y, month: mo, day: d, hour: h, minute: min }));
+  };
+
+  const stepMinutes = (deltaMinutes: number) => {
+    const dt = new Date(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
+    dt.setMinutes(dt.getMinutes() + deltaMinutes);
+    onChange(
+      formatLocalDateTimeParts({
+        year: Math.min(2100, Math.max(1900, dt.getFullYear())),
+        month: dt.getMonth() + 1,
+        day: dt.getDate(),
+        hour: dt.getHours(),
+        minute: dt.getMinutes(),
+      })
+    );
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1">
+        <select
+          id={`${idPrefix}-day`}
+          aria-label="Jour"
+          value={Math.min(parts.day, maxDays)}
+          onChange={(e) => commitParts({ day: Number(e.target.value) })}
+          className={`rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:outline-none cursor-pointer ${focusCls}`}
+        >
+          {Array.from({ length: maxDays }, (_, i) => i + 1).map((d) => (
+            <option key={d} value={d}>
+              {pad2(d)}
+            </option>
+          ))}
+        </select>
+
+        <select
+          id={`${idPrefix}-month`}
+          aria-label="Mois"
+          value={parts.month}
+          onChange={(e) => commitParts({ month: Number(e.target.value) })}
+          className={`rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 text-xs text-[#f3efe6] focus:outline-none cursor-pointer ${focusCls}`}
+        >
+          {MONTHS_SHORT_FR.map((label, idx) => (
+            <option key={label} value={idx + 1}>
+              {label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          id={`${idPrefix}-year`}
+          aria-label="Année"
+          value={parts.year}
+          onChange={(e) => commitParts({ year: Number(e.target.value) })}
+          className={`rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:outline-none cursor-pointer ${focusCls}`}
+        >
+          {YEARS_1900_2100.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+
+        <span className="text-slate-500 text-xs px-0.5">à</span>
+
+        <select
+          id={`${idPrefix}-hour`}
+          aria-label="Heure"
+          value={parts.hour}
+          onChange={(e) => commitParts({ hour: Number(e.target.value) })}
+          className={`rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:outline-none cursor-pointer ${focusCls}`}
+        >
+          {HOURS_24.map((h) => (
+            <option key={h} value={h}>
+              {pad2(h)}h
+            </option>
+          ))}
+        </select>
+
+        <select
+          id={`${idPrefix}-minute`}
+          aria-label="Minute"
+          value={parts.minute}
+          onChange={(e) => commitParts({ minute: Number(e.target.value) })}
+          className={`rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:outline-none cursor-pointer ${focusCls}`}
+        >
+          {MINUTES_60.map((m) => (
+            <option key={m} value={m}>
+              {pad2(m)}
+            </option>
+          ))}
+        </select>
+
+        {onResetNow && (
+          <button
+            type="button"
+            onClick={onResetNow}
+            title="Revenir à l'instant présent"
+            className="rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 text-slate-300 hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1">
+        {[
+          { label: '-1j', mins: -1440 },
+          { label: '-1h', mins: -60 },
+          { label: '-15m', mins: -15 },
+          { label: '+15m', mins: 15 },
+          { label: '+1h', mins: 60 },
+          { label: '+1j', mins: 1440 },
+        ].map((step) => (
+          <button
+            key={step.label}
+            type="button"
+            onClick={() => stepMinutes(step.mins)}
+            className="rounded border border-white/15 bg-[#0d1428] px-2 py-1 font-mono-tabular text-[11px] text-slate-200 hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          >
+            {step.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const ControlDock: React.FC<ControlDockProps> = ({
   mode,
   onModeChange,
@@ -650,7 +855,7 @@ export const ControlDock: React.FC<ControlDockProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2 md:grid-cols-12 items-end">
-              <div className="col-span-2 md:col-span-3">
+              <div className="col-span-2 md:col-span-2">
                 <label htmlFor="natal-name" className="block text-[11px] text-slate-400 mb-1">
                   Intitulé du thème
                 </label>
@@ -703,33 +908,94 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                 <label htmlFor="natal-year" className="block text-[11px] text-slate-400 mb-1">
                   Année de naissance
                 </label>
-                <input
+                <select
                   id="natal-year"
-                  type="number"
-                  min={1900}
-                  max={2100}
                   value={birthParts.year}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (Number.isFinite(v) && v >= 1900 && v <= 2100) updateBirthIso({ year: v });
-                  }}
-                  className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
-                />
+                  onChange={(e) => updateBirthIso({ year: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none cursor-pointer"
+                >
+                  {YEARS_1900_2100.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="col-span-1 md:col-span-2">
-                <label htmlFor="natal-time" className="block text-[11px] text-slate-400 mb-1">
+              <div className="col-span-2 md:col-span-3">
+                <label htmlFor="natal-hour" className="block text-[11px] text-slate-400 mb-1">
                   Heure de naissance
                 </label>
-                <input
-                  id="natal-time"
-                  type="time"
-                  value={birthParts.time}
-                  onChange={(e) => {
-                    if (e.target.value) updateBirthIso({ time: e.target.value });
-                  }}
-                  className="w-full rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
-                />
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label="Reculer d'une heure"
+                    onClick={() => {
+                      const [hh, mm] = birthParts.time.split(':').map(Number);
+                      const dt = new Date(birthParts.year, birthParts.month - 1, birthParts.day, hh || 0, mm || 0);
+                      dt.setHours(dt.getHours() - 1);
+                      updateBirthIso({
+                        year: dt.getFullYear(),
+                        month: dt.getMonth() + 1,
+                        day: dt.getDate(),
+                        time: `${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`,
+                      });
+                    }}
+                    className="rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 font-mono-tabular text-xs text-slate-200 hover:border-[#d4af37] hover:text-white cursor-pointer shrink-0"
+                  >
+                    -1h
+                  </button>
+                  <select
+                    id="natal-hour"
+                    aria-label="Heure de naissance"
+                    value={Number(birthParts.time.split(':')[0] || 0)}
+                    onChange={(e) => {
+                      const mm = birthParts.time.split(':')[1] || '00';
+                      updateBirthIso({ time: `${pad2(Number(e.target.value))}:${mm}` });
+                    }}
+                    className="flex-1 min-w-0 rounded-lg border border-white/15 bg-[#0d1428] px-1.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none cursor-pointer"
+                  >
+                    {HOURS_24.map((h) => (
+                      <option key={h} value={h}>
+                        {pad2(h)}h
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    id="natal-minute"
+                    aria-label="Minute de naissance"
+                    value={Number(birthParts.time.split(':')[1] || 0)}
+                    onChange={(e) => {
+                      const hh = birthParts.time.split(':')[0] || '00';
+                      updateBirthIso({ time: `${hh}:${pad2(Number(e.target.value))}` });
+                    }}
+                    className="flex-1 min-w-0 rounded-lg border border-white/15 bg-[#0d1428] px-1.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none cursor-pointer"
+                  >
+                    {MINUTES_60.map((m) => (
+                      <option key={m} value={m}>
+                        {pad2(m)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    aria-label="Avancer d'une heure"
+                    onClick={() => {
+                      const [hh, mm] = birthParts.time.split(':').map(Number);
+                      const dt = new Date(birthParts.year, birthParts.month - 1, birthParts.day, hh || 0, mm || 0);
+                      dt.setHours(dt.getHours() + 1);
+                      updateBirthIso({
+                        year: dt.getFullYear(),
+                        month: dt.getMonth() + 1,
+                        day: dt.getDate(),
+                        time: `${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`,
+                      });
+                    }}
+                    className="rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1.5 font-mono-tabular text-xs text-slate-200 hover:border-[#d4af37] hover:text-white cursor-pointer shrink-0"
+                  >
+                    +1h
+                  </button>
+                </div>
               </div>
 
               <div className="col-span-2 md:col-span-2">
@@ -1007,15 +1273,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                 {comparativePair === 'natal-vs-transit' && (
                   <>
                     <div>
-                      <label htmlFor="comp-tr-date" className="block text-[11px] text-slate-400 mb-1">
-                        Date de transit
-                      </label>
-                      <input
-                        id="comp-tr-date"
-                        type="datetime-local"
+                      <div className="text-[11px] text-slate-400 mb-1">
+                        Date & Heure de transit
+                      </div>
+                      <QuestDateTimeControl
+                        idPrefix="comp-tr"
                         value={transitDateInput}
-                        onChange={(e) => onTransitDateChange(e.target.value)}
-                        className="rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6]"
+                        onChange={onTransitDateChange}
+                        accent="cyan"
                       />
                     </div>
                     <div>
@@ -1062,30 +1327,20 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               mode === 'natal') && (
               <div className="flex flex-wrap items-end gap-3">
                 <div>
-                  <label htmlFor="transit-datetime" className="block text-[11px] text-slate-400 mb-1">
+                  <div className="text-[11px] text-slate-400 mb-1">
                     {mode === 'progressions'
                       ? 'Date cible de progression'
                       : mode === 'lunarReturn'
                         ? 'Mois de référence (Rév. Lunaire)'
                         : 'Date & Heure du ciel / transit'}
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      id="transit-datetime"
-                      type="datetime-local"
-                      value={transitDateInput}
-                      onChange={(e) => onTransitDateChange(e.target.value)}
-                      className="rounded-lg border border-white/15 bg-[#0d1428] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6] focus:border-[#38bdf8] focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={onResetTransitNow}
-                      title="Instant présent"
-                      className="rounded-lg border border-white/15 bg-[#0d1428] p-1.5 text-slate-300 hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
                   </div>
+                  <QuestDateTimeControl
+                    idPrefix="transit"
+                    value={transitDateInput}
+                    onChange={onTransitDateChange}
+                    onResetNow={onResetTransitNow}
+                    accent="cyan"
+                  />
                 </div>
 
                 {mode === 'lunarReturn' && (

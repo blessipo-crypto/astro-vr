@@ -1,6 +1,6 @@
 {
   "packageId": "app.uranie.vr.astrologie",
-  "host": "ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app",
+  "host": "blessipo-crypto.github.io",
   "name": "Uranie VR",
   "launcherName": "Uranie VR",
   "display": "fullscreen",
@@ -11,9 +11,9 @@
   "navigationDividerColorDark": "#05070E",
   "backgroundColor": "#05070E",
   "enableNotifications": false,
-  "startUrl": "/",
-  "iconUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/pwa-512x512.png",
-  "maskableIconUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/pwa-maskable-512x512.png",
+  "startUrl": "/astro-vr/",
+  "iconUrl": "https://blessipo-crypto.github.io/astro-vr/pwa-512x512.png",
+  "maskableIconUrl": "https://blessipo-crypto.github.io/astro-vr/pwa-maskable-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
@@ -23,7 +23,7 @@
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/manifest.webmanifest",
+  "webManifestUrl": "https://blessipo-crypto.github.io/astro-vr/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
     "appsFlyer": {
@@ -42,7 +42,7 @@
   "enableSiteSettingsShortcut": false,
   "isChromeOSOnly": false,
   "isMetaQuest": true,
-  "fullScopeUrl": "https://ais-pre-6nymgz2sdrmc3trecai5gx-880439402821.europe-west2.run.app/",
+  "fullScopeUrl": "https://blessipo-crypto.github.io/astro-vr/",
   "minSdkVersion": 29,
   "orientation": "landscape"
 }

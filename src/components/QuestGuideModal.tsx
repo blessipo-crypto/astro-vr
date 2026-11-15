@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { Check, Copy, Glasses, QrCode, Smartphone, Terminal, X } from 'lucide-react';
+import { Check, Copy, ExternalLink, Glasses, QrCode, Smartphone, Terminal, X } from 'lucide-react';
+
+const GITHUB_PAGES_URL = 'https://blessipo-crypto.github.io/astro-vr/';
 
 interface QuestGuideModalProps {
   open: boolean;
@@ -23,29 +25,65 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
 }) => {
   const [copiedKey, setCopiedKey] = useState<'url' | 'adb' | 'apk' | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [includeTheme, setIncludeTheme] = useState<boolean>(true);
+  const [urlSource, setUrlSource] = useState<'pages' | 'current'>('pages');
+  const [includeTheme, setIncludeTheme] = useState<boolean>(false);
 
   const originUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const targetUrl = includeTheme && shareUrl ? shareUrl : originUrl || shareUrl || '';
+  const isCurrentSameAsPages =
+    typeof window !== 'undefined' && window.location.href.startsWith(GITHUB_PAGES_URL);
+
+  const baseTargetUrl =
+    urlSource === 'pages' || !originUrl ? GITHUB_PAGES_URL : `${originUrl}/`;
+
+  const themeSuffix = (() => {
+    if (!includeTheme || !shareUrl) return '';
+    try {
+      const parsed = new URL(shareUrl);
+      const token = parsed.searchParams.get('theme');
+      return token ? `?theme=${token}` : '';
+    } catch {
+      return '';
+    }
+  })();
+
+  const targetUrl = `${baseTargetUrl}${themeSuffix}`;
 
   useEffect(() => {
     if (!open || !targetUrl) return;
     let active = true;
-    QRCode.toDataURL(targetUrl, {
-      width: 220,
-      margin: 2,
-      color: {
-        dark: '#05070e',
-        light: '#f8f3e6',
-      },
+
+    QRCode.toString(targetUrl, {
+      type: 'svg',
+      margin: 4,
       errorCorrectionLevel: 'M',
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
     })
-      .then((url) => {
-        if (active) setQrDataUrl(url);
+      .then((svgString) => {
+        if (!active) return;
+        const encoded = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+        setQrDataUrl(encoded);
       })
-      .catch(() => {
-        if (active) setQrDataUrl('');
-      });
+      .catch(() =>
+        QRCode.toDataURL(targetUrl, {
+          width: 512,
+          margin: 4,
+          errorCorrectionLevel: 'M',
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF',
+          },
+        })
+          .then((pngUrl) => {
+            if (active) setQrDataUrl(pngUrl);
+          })
+          .catch(() => {
+            if (active) setQrDataUrl('');
+          })
+      );
+
     return () => {
       active = false;
     };
@@ -54,7 +92,7 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
   if (!open) return null;
 
   const adbOpenCommand = `adb shell am start -a android.intent.action.VIEW -d "${targetUrl}" com.oculus.browser`;
-  const cliCommand = `npx @bubblewrap/cli init --manifest="${originUrl}/manifest.webmanifest" && npx @bubblewrap/cli build && adb install -r app-release-signed.apk`;
+  const cliCommand = `npx @bubblewrap/cli init --manifest="${GITHUB_PAGES_URL}manifest.webmanifest" && npx @bubblewrap/cli build && adb install -r app-release-signed.apk`;
 
   const copyText = async (text: string, key: 'url' | 'adb' | 'apk') => {
     try {
@@ -73,7 +111,7 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
           <div>
             <p className="text-xs font-medium text-[#d4af37]">Déploiement Meta Quest 3 · Horizon OS</p>
             <h2 className="font-display text-2xl font-semibold text-[#f8f3e6] mt-0.5">
-              Envoyer au casque sans retaper, VR/MR & APK
+              Vrai VR 360° / Passthrough, QR Code & APK
             </h2>
           </div>
           <button
@@ -87,33 +125,63 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
         </div>
 
         <div className="mt-5 space-y-5 text-sm leading-relaxed text-slate-300">
-          {/* Synchronisation rapide sans clavier virtuel */}
+          {/* Synchronisation rapide par QR code haute lisibilité */}
           <div className="rounded-lg border border-[#38bdf8]/35 bg-[#0b152b] p-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-[#f8f3e6] font-medium">
                 <QrCode className="w-4 h-4 text-[#38bdf8]" />
-                <span>Ouvrir sur votre Meta Quest sans retaper l’adresse</span>
+                <span>Ouvrir sur votre Meta Quest en 360° VR (sans taper)</span>
               </div>
-              {shareUrl && (
-                <label className="flex items-center gap-1.5 text-[11px] text-[#7dd3fc] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={includeTheme}
-                    onChange={(e) => setIncludeTheme(e.target.checked)}
-                    className="accent-[#38bdf8]"
-                  />
-                  <span>Inclure mon thème actuel</span>
-                </label>
-              )}
+
+              <div className="flex items-center gap-3 flex-wrap">
+                {!isCurrentSameAsPages && originUrl && (
+                  <div className="flex items-center rounded-md border border-white/15 bg-[#05070e] p-0.5 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setUrlSource('pages')}
+                      className={`rounded px-2 py-0.5 transition-colors cursor-pointer ${
+                        urlSource === 'pages'
+                          ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      GitHub Pages (Quest 3)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUrlSource('current')}
+                      className={`rounded px-2 py-0.5 transition-colors cursor-pointer ${
+                        urlSource === 'current'
+                          ? 'bg-[#d4af37] text-[#05070e] font-semibold'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      Aperçu local
+                    </button>
+                  </div>
+                )}
+
+                {shareUrl && (
+                  <label className="flex items-center gap-1.5 text-[11px] text-[#7dd3fc] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeTheme}
+                      onChange={(e) => setIncludeTheme(e.target.checked)}
+                      className="accent-[#38bdf8]"
+                    />
+                    <span>Inclure mon thème actuel (QR plus dense)</span>
+                  </label>
+                )}
+              </div>
             </div>
 
             <div className="mt-3 flex flex-col sm:flex-row items-center gap-4">
               {qrDataUrl && (
-                <div className="shrink-0 rounded-lg border border-[#d4af37]/40 bg-[#f8f3e6] p-2 shadow-md">
+                <div className="shrink-0 rounded-xl border-2 border-[#d4af37]/50 bg-white p-2 shadow-lg">
                   <img
                     src={qrDataUrl}
                     alt="QR code Uranie VR pour Meta Quest"
-                    className="w-32 h-32 block"
+                    className="w-44 h-44 sm:w-48 sm:h-48 block"
                   />
                 </div>
               )}
@@ -122,13 +190,19 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
                 <div className="flex items-start gap-2">
                   <Smartphone className="w-4 h-4 text-[#d4af37] shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-[#f8f3e6]">Via votre téléphone (Meta Horizon) :</strong>
+                    <strong className="text-[#f8f3e6]">
+                      Pour ouvrir en vrai VR 360° & Passthrough sur Meta Quest :
+                    </strong>
                     <ol className="mt-1 list-decimal list-inside space-y-0.5 text-slate-300">
-                      <li>Scannez ce QR code avec l’appareil photo du téléphone.</li>
                       <li>
-                        Touchez <strong>Partager → Meta Horizon → Ouvrir sur le casque</strong> (ou envoyez le lien sur Messenger / WhatsApp / E-mail ouvert dans le Quest).
+                        Scannez ce QR code avec l’appareil photo du téléphone (contraste pur noir/blanc).
                       </li>
-                      <li>Une fois ouvert, ajoutez la page en <strong>favori / PWA</strong> dans le navigateur du Quest.</li>
+                      <li>
+                        Touchez <strong>Partager → Meta Horizon → Ouvrir sur le casque</strong>, ou ouvrez le lien directement dans le <strong>Navigateur Meta Quest</strong>.
+                      </li>
+                      <li>
+                        Appuyez sur <strong>Entrer en VR</strong> (ou <strong>Réalité Mixte</strong>) et utilisez le <strong>joystick droit ou gauche</strong> pour faire défiler l’heure en VR.
+                      </li>
                     </ol>
                   </div>
                 </div>
@@ -153,6 +227,15 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
                     )}
                     <span>{copiedKey === 'url' ? 'Copié' : 'Copier URL'}</span>
                   </button>
+                  <a
+                    href={targetUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Ouvrir l'URL dans un onglet"
+                    className="rounded border border-white/15 bg-[#05070e] p-1.5 text-slate-300 hover:text-white shrink-0"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
 
                 <div>
@@ -184,10 +267,10 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
           <div className="rounded-lg border border-white/10 bg-[#0e1529] p-4">
             <div className="flex items-center gap-2 text-[#f8f3e6] font-medium">
               <Glasses className="w-4 h-4 text-[#38bdf8]" />
-              <span>Option 1 : VR & Réalité Mixte sur Meta Quest 3 (WebXR + PWA)</span>
+              <span>Pourquoi choisir l’APK WebXR (ou Navigateur Quest) plutôt que l’APK Capacitor ?</span>
             </div>
             <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-              Ce logiciel intègre nativement WebXR en <strong>Réalité Virtuelle</strong> (<span className="font-mono-tabular text-[#d4af37]">immersive-vr</span>) et en <strong>Réalité Mixte Passthrough couleur</strong> (<span className="font-mono-tabular text-[#38bdf8]">immersive-ar</span>) pour projeter votre sphère astrologique en hologramme au milieu de votre pièce, avec suivi des mains et manettes Quest Touch Plus.
+              Sur Horizon OS, la WebView Android utilisée par Capacitor n’expose pas WebXR (<span className="font-mono-tabular">immersive-vr</span>) et s’ouvre dans une fenêtre 2D plate. Pour la <strong>VR 360° complète</strong> et le <strong>Passthrough couleur</strong>, installez l’artefact <span className="font-mono-tabular text-[#38bdf8]">uranie-vr-quest3-webxr-apk</span> (lié à votre GitHub Pages) ou ouvrez <span className="font-mono-tabular text-[#7dd3fc]">{GITHUB_PAGES_URL}</span> dans le Navigateur Meta Quest.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {mrSupported && (
@@ -220,13 +303,10 @@ export const QuestGuideModal: React.FC<QuestGuideModalProps> = ({
           <div className="rounded-lg border border-white/10 bg-[#0e1529] p-4">
             <div className="flex items-center gap-2 text-[#f8f3e6] font-medium">
               <Terminal className="w-4 h-4 text-[#d4af37]" />
-              <span>Option 2 : APK autonome & compilation cloud GitHub Actions</span>
+              <span>Activation unique sur GitHub (Pages + APK WebXR)</span>
             </div>
             <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-              Le projet inclut désormais <span className="font-mono-tabular text-[#fde68a]">.github/workflows/build-apk.yml</span> (pour compiler automatiquement l’APK sur GitHub sans installer Android Studio sur votre PC), <span className="font-mono-tabular text-[#fde68a]">capacitor.config.ts</span> + <span className="font-mono-tabular text-[#fde68a]">scripts/build-standalone-apk.sh</span> (APK 100 % autonome hors-ligne), et <span className="font-mono-tabular">twa-manifest.json</span> (APK WebXR VR/Passthrough).
-            </p>
-            <p className="mt-2 text-xs text-slate-400">
-              Pour compiler en local sur votre ordinateur (APK WebXR ou <span className="font-mono-tabular">bash scripts/build-standalone-apk.sh</span> pour l’APK autonome) :
+              Dans votre dépôt GitHub <strong>blessipo-crypto/astro-vr</strong>, allez une seule fois dans <strong>Settings → Pages → Build and deployment → Source</strong> et sélectionnez <strong>GitHub Actions</strong>. Chaque push publiera automatiquement le site WebXR et l’APK <span className="font-mono-tabular text-[#fde68a]">uranie-vr-quest3-webxr.apk</span>.
             </p>
             <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-[#05070e] px-3 py-2.5">
               <code className="font-mono-tabular text-[11px] text-[#e7cfa0] break-all">

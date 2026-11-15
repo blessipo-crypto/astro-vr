@@ -470,6 +470,10 @@ export default function App() {
       onMRSupportChange: (supported) => setMrSupported(supported),
       onVRSessionChange: (active) => setInVR(active),
       onXRModeChange: (m) => setXrMode(m),
+      onVRTimeStep: (deltaMinutes) => {
+        setTimeSpeedDaysPerSec(0);
+        setTransitDate((prev) => new Date(prev.getTime() + deltaMinutes * 60_000));
+      },
     });
     sceneRef.current = scene;
 

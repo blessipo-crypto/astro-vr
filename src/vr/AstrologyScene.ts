@@ -40,6 +40,7 @@ export interface SceneCallbacks {
   onMRSupportChange: (supported: boolean) => void;
   onVRSessionChange: (inVR: boolean) => void;
   onXRModeChange: (mode: XRSessionModeKind) => void;
+  onVRTimeStep?: (deltaMinutes: number) => void;
 }
 
 interface PlanetNode {
@@ -184,6 +185,7 @@ export class AstrologyScene {
   private controllers: THREE.XRTargetRaySpace[] = [];
   private controllerRays: THREE.Line[] = [];
   private controllerReticles: THREE.Mesh[] = [];
+  private lastVrTimeStepMs = 0;
 
   private plaqueRenderer!: DiegeticPlaqueRenderer;
   private vrLecternGroup = new THREE.Group();
@@ -1701,6 +1703,23 @@ export class AstrologyScene {
           reticle.visible = true;
         } else {
           reticle.visible = false;
+        }
+      }
+
+      if (this.callbacks.onVRTimeStep) {
+        const nowMs = performance.now();
+        if (nowMs - this.lastVrTimeStepMs >= 180) {
+          for (const src of this.vrSession.inputSources) {
+            const axes = src.gamepad?.axes;
+            if (!axes || axes.length === 0) continue;
+            const axisX = axes.length >= 3 ? axes[2] : axes[0];
+            if (Math.abs(axisX) > 0.55) {
+              const stepMins = Math.abs(axisX) > 0.88 ? 60 : 15;
+              this.lastVrTimeStepMs = nowMs;
+              this.callbacks.onVRTimeStep(axisX > 0 ? stepMins : -stepMins);
+              break;
+            }
+          }
         }
       }
     }
