@@ -155,7 +155,17 @@ jobs:
           fi
 
           mkdir -p "$HOME/.bubblewrap"
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$HOME/.bubblewrap/config.json"
+          BW_CONFIG="$HOME/.bubblewrap/config.json"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$BW_CONFIG"
+          echo "Bubblewrap config:"
+          cat "$BW_CONFIG"
+          grep JAVA_VERSION "$JAVA_HOME/release" || true
+
+          if [ ! -d "$SDK_PATH/build-tools/36.1.0" ]; then
+            echo "ERROR: build-tools/36.1.0 missing in $SDK_PATH"
+            ls -la "$SDK_PATH/build-tools" 2>/dev/null || true
+            exit 1
+          fi
 
           if [ ! -f "./android.keystore" ]; then
             keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr -keyalg RSA -keysize 2048 -validity 10000 -storepass uranievr123 -keypass uranievr123 -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
@@ -177,9 +187,9 @@ jobs:
           fi
 
           echo "Running bubblewrap update..."
-          bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade < /dev/null
+          timeout 300 bubblewrap update --config="$BW_CONFIG" --manifest="./twa-manifest.json" --skipVersionUpgrade < /dev/null
           echo "Running bubblewrap build..."
-          bubblewrap build --skipVersionUpgrade < /dev/null
+          timeout 480 bubblewrap build --config="$BW_CONFIG" --skipVersionUpgrade < /dev/null
 
           if [ -f "app-release-signed.apk" ]; then
             cp app-release-signed.apk uranie-vr-quest3-webxr.apk
