@@ -1,4 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
+import { buildDetailedAspectInterpretation, getPlanetSignDeepMeaning } from './astroKnowledge';
 
 export type ElementType = 'Feu' | 'Terre' | 'Air' | 'Eau';
 export type ModalityType = 'Cardinal' | 'Fixe' | 'Mutable';
@@ -696,7 +697,7 @@ function computeHouses(
   });
 }
 
-function findHouseForLongitude(lon: number, cusps: HouseCusp[]): number {
+export function findHouseForLongitude(lon: number, cusps: HouseCusp[]): number {
   const target = normalizeDeg(lon);
   for (let i = 0; i < 12; i++) {
     const start = cusps[i].longitude;
@@ -708,10 +709,6 @@ function findHouseForLongitude(lon: number, cusps: HouseCusp[]): number {
     }
   }
   return 1;
-}
-
-function buildSignMeaning(planetName: string, sign: ZodiacSign, house: number): string {
-  return `${planetName} en ${sign.name} (${sign.element} · ${sign.modality}) colore son expression de ${sign.keywords.toLowerCase()}, agissant dans le champ de la Maison ${HOUSE_DESCRIPTIONS[house - 1].roman}.`;
 }
 
 export function calculateAstroChart(
@@ -747,7 +744,7 @@ export function calculateAstroChart(
       modalities[fmt.sign.modality] += weight;
     }
 
-    return {
+    const planetObj: PlanetPosition = {
       id: meta.id,
       name: meta.name,
       symbol: meta.symbol,
@@ -764,8 +761,10 @@ export function calculateAstroChart(
       visualRadius: meta.visualRadius,
       colorHex: meta.colorHex,
       role: meta.role,
-      signMeaning: buildSignMeaning(meta.name, fmt.sign, house),
+      signMeaning: '',
     };
+    planetObj.signMeaning = getPlanetSignDeepMeaning(planetObj, houses);
+    return planetObj;
   });
 
   // Compute aspects between main bodies (excluding northNode-to-outer clutter or keep all except northNode-node)
@@ -799,7 +798,15 @@ export function calculateAstroChart(
             harmony: asp.harmony,
             colorHex: asp.colorHex,
             cssColor: asp.cssColor,
-            interpretation: `${pA.name} ${asp.symbol} ${pB.name} (${orb.toFixed(1)}°) : ${asp.desc}`,
+            interpretation: buildDetailedAspectInterpretation(
+              pA.id,
+              pA.name,
+              pB.id,
+              pB.name,
+              asp.type,
+              asp.symbol,
+              orb
+            ),
           });
           break;
         }
@@ -1050,7 +1057,16 @@ export function calculateCompositeChart(
             harmony: asp.harmony,
             colorHex: asp.colorHex,
             cssColor: asp.cssColor,
-            interpretation: `${pA.name} ${asp.symbol} ${pB.name} composite (${orb.toFixed(1)}°) : ${asp.desc}`,
+            interpretation: buildDetailedAspectInterpretation(
+              pA.id,
+              pA.name,
+              pB.id,
+              pB.name,
+              asp.type,
+              asp.symbol,
+              orb,
+              `${pA.name} ${asp.symbol} ${pB.name} composite`
+            ),
           });
           break;
         }
@@ -1120,7 +1136,16 @@ export function calculateComparisonAspects(
             harmony: asp.harmony,
             colorHex: asp.colorHex,
             cssColor: asp.cssColor,
-            interpretation: `${outerP.name} (${outerRoleLabel}) ${asp.symbol} ${natalP.name} natal (${orb.toFixed(2)}°) : ${asp.desc}`,
+            interpretation: buildDetailedAspectInterpretation(
+              outerP.id,
+              outerP.name,
+              natalP.id,
+              natalP.name,
+              asp.type,
+              asp.symbol,
+              orb,
+              `${outerP.name} (${outerRoleLabel}) ${asp.symbol} ${natalP.name} natal`
+            ),
           });
           break;
         }

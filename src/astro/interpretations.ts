@@ -4,8 +4,23 @@ import {
   ComparativeAnalysis,
   ComparisonAspectInfo,
   ElementType,
+  findHouseForLongitude,
+  normalizeDeg,
   SolarReturnAnalysis,
+  ZODIAC_SIGNS,
 } from './astroEngine';
+import {
+  describeSlowTransitInHouse,
+  getDecanInfo,
+  getElementDeficitAdvice,
+  getHemisphereBalance,
+  getHouseArenaFocus,
+  getLunarPhaseInfo,
+  getPlanetDignity,
+  getPlanetTrait,
+  getSolarReturnSunHouseMeaning,
+  getWuXingDynamicAdvice,
+} from './astroKnowledge';
 import {
   calculateBaziSummary,
   evaluateAnimalHarmony,
@@ -86,8 +101,16 @@ export function generateChartInterpretation(params: {
   const mercury = baseChart.planets.find((p) => p.id === 'mercury')!;
   const venus = baseChart.planets.find((p) => p.id === 'venus')!;
   const mars = baseChart.planets.find((p) => p.id === 'mars')!;
+  const jupiter = baseChart.planets.find((p) => p.id === 'jupiter')!;
+  const saturn = baseChart.planets.find((p) => p.id === 'saturn')!;
+  const uranus = baseChart.planets.find((p) => p.id === 'uranus')!;
+  const neptune = baseChart.planets.find((p) => p.id === 'neptune')!;
+  const pluto = baseChart.planets.find((p) => p.id === 'pluto')!;
+  const northNode = baseChart.planets.find((p) => p.id === 'northNode')!;
+
   const domEl = getDominantElement(baseChart.elements);
   const baziBase = calculateBaziSummary(baseChart);
+  const lunarPhase = getLunarPhaseInfo(sun.longitude, moon.longitude);
 
   const ascLabel = getSignLabel(
     baseChart.ascendant,
@@ -104,10 +127,17 @@ export function generateChartInterpretation(params: {
   const sunLabel = getSignLabel(sun.longitude, sun.sign.name, sun.sign.symbol, tradition);
   const moonLabel = getSignLabel(moon.longitude, moon.sign.name, moon.sign.symbol, tradition);
 
+  const ascRuler =
+    baseChart.planets.find((p) => p.name.toLowerCase() === baseChart.ascSign.ruler.toLowerCase()) ??
+    null;
+  const mcRuler =
+    baseChart.planets.find((p) => p.name.toLowerCase() === baseChart.mcSign.ruler.toLowerCase()) ??
+    null;
+
   const baziSection: InterpretationSection = {
-    title: 'Transposition Chinoise & 4 Piliers (BaZi)',
+    title: 'Transposition Chinoise, 4 Piliers (BaZi) & Cycle Wu Xing',
     accent: 'amber',
-    body: `Sous l’optique chinoise, le pilier annuel est gouverné par le ${baziBase.yearPillar.label}, le mois solaire par ${baziBase.monthPillar.label} et l’heure solaire par ${baziBase.hourPillar.branch.name} (${baziBase.hourPillar.branch.hours}). L’élément Wu Xing dominant est ${baziBase.dominantWuXing}, exprimant ${WUXING_TEMPERAMENT[baziBase.dominantWuXing]}.`,
+    body: `Sous l’optique chinoise, l’année solaire est régie par le ${baziBase.yearPillar.label}, le mois solaire par ${baziBase.monthPillar.label} et l’heure solaire locale par ${baziBase.hourPillar.branch.name} (${baziBase.hourPillar.branch.hours}). L’élément Wu Xing dominant est ${baziBase.dominantWuXing}, exprimant ${WUXING_TEMPERAMENT[baziBase.dominantWuXing]}. ${getWuXingDynamicAdvice(baziBase.wuXingBalance, baziBase.dominantWuXing)}`,
     highlights: [
       `Soleil transposé : ${transposeLongitudeToChinese(sun.longitude).sign.name} (${transposeLongitudeToChinese(sun.longitude).sign.wuXing})`,
       `Lune transposée : ${transposeLongitudeToChinese(moon.longitude).sign.name} (${transposeLongitudeToChinese(moon.longitude).sign.wuXing})`,
@@ -115,17 +145,12 @@ export function generateChartInterpretation(params: {
     ],
   };
 
-  const jupiter = baseChart.planets.find((p) => p.id === 'jupiter')!;
-  const saturn = baseChart.planets.find((p) => p.id === 'saturn')!;
-  const uranus = baseChart.planets.find((p) => p.id === 'uranus')!;
-  const neptune = baseChart.planets.find((p) => p.id === 'neptune')!;
-  const pluto = baseChart.planets.find((p) => p.id === 'pluto')!;
-  const northNode = baseChart.planets.find((p) => p.id === 'northNode')!;
-
   if (mode === 'natal') {
-    const tightAspects = baseChart.aspects.slice(0, 4);
+    const tightAspects = baseChart.aspects.slice(0, 5);
     const sunHouse = baseChart.houses[sun.house - 1];
     const moonHouse = baseChart.houses[moon.house - 1];
+    const sunDecan = getDecanInfo(sun.sign, sun.degInSign);
+    const moonDecan = getDecanInfo(moon.sign, moon.degInSign);
     const dominantModality = (['Cardinal', 'Fixe', 'Mutable'] as const).reduce((best, cur) =>
       baseChart.modalities[cur] > baseChart.modalities[best] ? cur : best
     );
@@ -136,44 +161,78 @@ export function generateChartInterpretation(params: {
           ? 'une grande persévérance, de la constance et un fort pouvoir d’enracinement'
           : 'une souplesse d’adaptation, de la curiosité et une capacité de synthèse évolutive';
 
+    const southNodeLon = normalizeDeg(northNode.longitude + 180);
+    const southNodeSign = ZODIAC_SIGNS[(northNode.sign.index + 6) % 12];
+    const southNodeHouseNum = ((northNode.house - 1 + 6) % 12) + 1;
+    const southNodeHouse = baseChart.houses[southNodeHouseNum - 1];
+
+    const notableDignities = baseChart.planets
+      .filter((p) => p.id !== 'northNode')
+      .map((p) => ({ p, dig: getPlanetDignity(p.id, p.sign.index) }))
+      .filter((item) => item.dig.status !== 'Pérégrine');
+
+    const ascRulerSentence = ascRuler
+      ? ` Le Maître d’Ascendant, ${ascRuler.symbol} ${ascRuler.name} (${getPlanetDignity(ascRuler.id, ascRuler.sign.index).status}), se place en ${ascRuler.sign.name} (Maison ${baseChart.houses[ascRuler.house - 1].roman}), orientant concrètement le fil conducteur de votre destinée ${getHouseArenaFocus(ascRuler.house)}.`
+      : '';
+
+    const mcRulerSentence = mcRuler
+      ? ` Son maître ${mcRuler.symbol} ${mcRuler.name} en ${mcRuler.sign.name} (Maison ${baseChart.houses[mcRuler.house - 1].roman}) précise le levier concret de votre réussite sociale.`
+      : '';
+
     return {
-      headline: 'Interprétation Complète du Thème Natal',
+      headline: 'Interprétation Approfondie du Thème Natal',
       subtitle: `${sunLabel} · Lune ${moonLabel} · ASC ${ascLabel}`,
-      synthesis: `Ce thème natal s’organise autour d’une dominante ${domEl} et d’une modalité ${dominantModality}, révélant ${ELEMENT_TEMPERAMENT[domEl]} ainsi que ${modalityDesc}. L’alliance entre le Soleil en ${sunLabel} (Maison ${sunHouse.roman}) et la Lune en ${moonLabel} (Maison ${moonHouse.roman}) dessine le dialogue fondamental entre votre volonté consciente et votre sensibilité profonde.`,
+      synthesis: `Ce thème natal s’organise autour d’une dominante ${domEl} et d’une modalité ${dominantModality}, révélant ${ELEMENT_TEMPERAMENT[domEl]}, ainsi que ${modalityDesc}. Né sous une ${lunarPhase.name} (écart Soleil–Lune ${lunarPhase.angleDeg}°), ce ciel articule la volonté solaire en ${sunLabel} (Maison ${sunHouse.roman}) et l’instinct lunaire en ${moonLabel} (Maison ${moonHouse.roman}). ${getHemisphereBalance(baseChart)}`,
       sections: [
         {
-          title: 'Triade Fondamentale (Soleil · Lune · Ascendant)',
+          title: 'Triade Fondamentale & Maître d’Ascendant',
           accent: 'gold',
-          body: `Votre identité solaire en ${sunLabel} rayonne dans le secteur ${sunHouse.roman} (${sunHouse.title}), orientant votre quête d’accomplissement vers ${sun.sign.keywords.toLowerCase()}. La Lune en ${moonLabel} (Maison ${moonHouse.roman}) nourrit vos élans affectifs par ${moon.sign.keywords.toLowerCase()}, tandis que l’Ascendant en ${ascLabel} colore votre présence spontanée et votre premier contact au monde.`,
+          body: `Soleil en ${sunLabel} (${sunDecan.label}, Maison ${sunHouse.roman} · ${sunHouse.title}) — ${getPlanetTrait('sun', sun.sign.index)}, énergie investie ${getHouseArenaFocus(sun.house)}. Lune en ${moonLabel} (${moonDecan.label}, Maison ${moonHouse.roman} · ${moonHouse.title}) — ${getPlanetTrait('moon', moon.sign.index)}. Ascendant en ${ascLabel} : votre posture spontanée s’exprime par ${baseChart.ascSign.keywords.toLowerCase()}.${ascRulerSentence}`,
           highlights: [
-            `Soleil : ${sun.formattedDeg} ${sun.sign.name} · Maison ${sunHouse.roman}`,
-            `Lune : ${moon.formattedDeg} ${moon.sign.name} · Maison ${moonHouse.roman}`,
-            `Ascendant : ${baseChart.ascSign.name} · Milieu du Ciel : ${baseChart.mcSign.name}`,
+            `Soleil : ${sun.formattedDeg} ${sun.sign.name} · ${sunDecan.decanNumber}${sunDecan.decanNumber === 1 ? 'er' : 'e'} décan · Maison ${sunHouse.roman}`,
+            `Lune : ${moon.formattedDeg} ${moon.sign.name} · ${lunarPhase.name}`,
+            ascRuler
+              ? `Gouverneur du thème (${ascRuler.name}) : ${ascRuler.sign.name} M.${baseChart.houses[ascRuler.house - 1].roman}`
+              : `Ascendant : ${baseChart.ascSign.name}`,
           ],
         },
         {
-          title: 'Dynamique Mentale, Affective & Motrice',
+          title: 'Cycle Solaire-Lunaire, Mentale & Affective (Mercure · Vénus · Mars)',
           accent: 'cyan',
-          body: `Mercure en ${getSignLabel(mercury.longitude, mercury.sign.name, mercury.sign.symbol, tradition)} (Maison ${baseChart.houses[mercury.house - 1].roman}) façonne votre manière de penser et communiquer${mercury.retrograde ? ' avec une forte intériorité réflexive (℞)' : ''}. Vénus en ${getSignLabel(venus.longitude, venus.sign.name, venus.sign.symbol, tradition)} (Maison ${baseChart.houses[venus.house - 1].roman}) éclaire vos affinités de cœur et valeurs esthétiques, tandis que Mars en ${getSignLabel(mars.longitude, mars.sign.name, mars.sign.symbol, tradition)} (Maison ${baseChart.houses[mars.house - 1].roman}) canalise votre courage, votre désir et votre capacité de décision.`,
-        },
-        {
-          title: 'Élan Social, Sagesse & Chemin de Vie (Jupiter · Saturne · Nœud Nord)',
-          accent: 'amber',
-          body: `Jupiter en ${jupiter.sign.name} (Maison ${baseChart.houses[jupiter.house - 1].roman}) ouvre vos zones de chance, de générosité et d’expansion. Saturne en ${saturn.sign.name} (Maison ${baseChart.houses[saturn.house - 1].roman}) demande patience, rigueur et maîtrise durable. Le Nœud Nord en ${northNode.sign.name} (Maison ${baseChart.houses[northNode.house - 1].roman}) indique votre axe d’évolution privilégié dans cette existence.`,
+          body: `${lunarPhase.summary} Mercure en ${getSignLabel(mercury.longitude, mercury.sign.name, mercury.sign.symbol, tradition)} (Maison ${baseChart.houses[mercury.house - 1].roman}${mercury.retrograde ? ' ℞' : ''}) — ${getPlanetTrait('mercury', mercury.sign.index)}. Vénus en ${getSignLabel(venus.longitude, venus.sign.name, venus.sign.symbol, tradition)} (Maison ${baseChart.houses[venus.house - 1].roman}${venus.retrograde ? ' ℞' : ''}) — ${getPlanetTrait('venus', venus.sign.index)}. Mars en ${getSignLabel(mars.longitude, mars.sign.name, mars.sign.symbol, tradition)} (Maison ${baseChart.houses[mars.house - 1].roman}${mars.retrograde ? ' ℞' : ''}) — ${getPlanetTrait('mars', mars.sign.index)}.`,
           highlights: [
-            `Uranus en ${uranus.sign.name} (M.${baseChart.houses[uranus.house - 1].roman}) · Originalité & liberté`,
-            `Neptune en ${neptune.sign.name} (M.${baseChart.houses[neptune.house - 1].roman}) · Inspiration & idéal`,
-            `Pluton en ${pluto.sign.name} (M.${baseChart.houses[pluto.house - 1].roman}) · Pouvoir de transformation`,
+            `Mercure M.${baseChart.houses[mercury.house - 1].roman} · ${getPlanetDignity('mercury', mercury.sign.index).status}`,
+            `Vénus M.${baseChart.houses[venus.house - 1].roman} · ${getPlanetDignity('venus', venus.sign.index).status}`,
+            `Mars M.${baseChart.houses[mars.house - 1].roman} · ${getPlanetDignity('mars', mars.sign.index).status}`,
           ],
         },
         {
-          title: 'Vocation, Éléments & Aspects Clés du Natal',
+          title: 'Expansion, Structuration & Axe Karmique (☊ Nœud Nord ↔ ☋ Nœud Sud)',
+          accent: 'amber',
+          body: `Jupiter en ${jupiter.sign.name} (Maison ${baseChart.houses[jupiter.house - 1].roman}) — ${getPlanetTrait('jupiter', jupiter.sign.index)}. Saturne en ${saturn.sign.name} (Maison ${baseChart.houses[saturn.house - 1].roman}) — ${getPlanetTrait('saturn', saturn.sign.index)}. Sur l’axe nodal, votre Nœud Nord en ${northNode.sign.name} (Maison ${baseChart.houses[northNode.house - 1].roman}) vous invite à ${getPlanetTrait('northNode', northNode.sign.index)}, en équilibrant les acquis hérités de votre Nœud Sud en ${southNodeSign.symbol} ${southNodeSign.name} (Maison ${southNodeHouse.roman}, ${Math.floor(southNodeLon % 30)}°).`,
+          highlights: [
+            `Uranus en ${uranus.sign.name} (M.${baseChart.houses[uranus.house - 1].roman}) : ${getPlanetTrait('uranus', uranus.sign.index)}`,
+            `Neptune en ${neptune.sign.name} (M.${baseChart.houses[neptune.house - 1].roman}) : ${getPlanetTrait('neptune', neptune.sign.index)}`,
+            `Pluton en ${pluto.sign.name} (M.${baseChart.houses[pluto.house - 1].roman}) : ${getPlanetTrait('pluto', pluto.sign.index)}`,
+          ],
+        },
+        {
+          title: 'Vocation, Équilibre Élémentaire & Dignités Planétaires',
           accent: 'emerald',
-          body: `Le Milieu du Ciel en ${mcLabel} indique une réalisation sociale marquée par ${baseChart.mcSign.keywords.toLowerCase()}. Équilibre élémentaire : Feu ${baseChart.elements.Feu}, Terre ${baseChart.elements.Terre}, Air ${baseChart.elements.Air}, Eau ${baseChart.elements.Eau}. ${
+          body: `Le Milieu du Ciel en ${mcLabel} oriente votre accomplissement public vers ${baseChart.mcSign.keywords.toLowerCase()}.${mcRulerSentence} Éléments : Feu ${baseChart.elements.Feu}, Terre ${baseChart.elements.Terre}, Air ${baseChart.elements.Air}, Eau ${baseChart.elements.Eau}. ${getElementDeficitAdvice(baseChart.elements)}`,
+          highlights:
+            notableDignities.length > 0
+              ? notableDignities.map((d) => `${d.p.symbol} ${d.p.name} en ${d.p.sign.name} : ${d.dig.status}`)
+              : ['Répartition équilibrée sans planète en dignité ou faiblesse marquée.'],
+        },
+        {
+          title: 'Aspects Majeurs du Natal (Lecture Détaillée)',
+          accent: 'rose',
+          body:
             tightAspects.length > 0
-              ? `Configurations majeures : ${tightAspects.map((a) => `${a.planetAName} ${a.label.toLowerCase()} ${a.planetBName} (${a.orb}°)`).join(' ; ')}.`
-              : 'Les planètes dialoguent avec une large respiration angulaire.'
-          }`,
+              ? 'Les configurations angulaires ci-dessous structurent les dialogues intérieurs et les leviers dynamiques les plus précis de votre thème natal :'
+              : 'Les planètes évoluent avec une grande autonomie angulaire, sans aspect majeur très serré.',
+          highlights: tightAspects.map((a) => a.interpretation),
         },
         baziSection,
       ],
@@ -183,6 +242,7 @@ export function generateChartInterpretation(params: {
   if (mode === 'solarReturn' && outerChart && solarReturnAnalysis) {
     const srSun = outerChart.planets.find((p) => p.id === 'sun')!;
     const srMoon = outerChart.planets.find((p) => p.id === 'moon')!;
+    const srMercury = outerChart.planets.find((p) => p.id === 'mercury')!;
     const srVenus = outerChart.planets.find((p) => p.id === 'venus')!;
     const srMars = outerChart.planets.find((p) => p.id === 'mars')!;
     const srJupiter = outerChart.planets.find((p) => p.id === 'jupiter')!;
@@ -191,49 +251,53 @@ export function generateChartInterpretation(params: {
     const natalAscCh = transposeLongitudeToChinese(baseChart.ascendant).sign;
     const srAscCh = transposeLongitudeToChinese(outerChart.ascendant).sign;
     const ascHarmony = evaluateAnimalHarmony(natalAscCh, srAscCh);
-    const topAspects = comparisonAspects.slice(0, 5);
+    const srLunarPhase = getLunarPhaseInfo(srSun.longitude, srMoon.longitude);
+    const topAspects = comparisonAspects.slice(0, 6);
 
     return {
-      headline: `Interprétation de la Révolution Solaire ${outerChart.date.getFullYear()}`,
+      headline: `Interprétation Complète de la Révolution Solaire ${outerChart.date.getFullYear()}`,
       subtitle: `${outerChart.cityName} · ASC RS ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)} en M.${solarReturnAnalysis.ascInNatalHouse.roman} natale`,
-      synthesis: `Calculée pour votre lieu de résidence anniversaire (${outerChart.cityName}), cette Révolution Solaire place l’Ascendant annuel en ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)}, superposé à votre Maison ${solarReturnAnalysis.ascInNatalHouse.roman} natale (${solarReturnAnalysis.ascInNatalHouse.title}). Le climat annuel vous invite à investir ce domaine prioritaire avec l’élan de ${outerChart.ascSign.keywords.toLowerCase()}.`,
+      synthesis: `Calculée pour ${outerChart.cityName}, cette Révolution Solaire place l’Ascendant annuel en ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)}, superposé à votre Maison ${solarReturnAnalysis.ascInNatalHouse.roman} natale (${solarReturnAnalysis.ascInNatalHouse.title}). ${getSolarReturnSunHouseMeaning(solarReturnAnalysis.sunInSrHouse.house)} Le climat lunaire annuel correspond à une ${srLunarPhase.name}.`,
       sections: [
         {
-          title: 'Axe Annuel, Lieu de Résidence & Foyer Solaire',
+          title: 'Axe Annuel, Foyer Solaire & Maître de l’Année',
           accent: 'cyan',
-          body: `Le Soleil RS se positionne en Maison ${solarReturnAnalysis.sunInSrHouse.roman} de Révolution (${solarReturnAnalysis.sunInSrHouse.title}), pointant le cœur d’activité, de visibilité et de vitalité de votre année. Le Milieu du Ciel RS en ${getSignLabel(outerChart.midheaven, outerChart.mcSign.name, outerChart.mcSign.symbol, tradition)} active votre Maison ${solarReturnAnalysis.mcInNatalHouse.roman} natale (${solarReturnAnalysis.mcInNatalHouse.title}), orientant vos objectifs professionnels et publics.`,
+          body: `Le Soleil RS en Maison ${solarReturnAnalysis.sunInSrHouse.roman} de Révolution (${solarReturnAnalysis.sunInSrHouse.title}) concentre votre vitalité ${getHouseArenaFocus(solarReturnAnalysis.sunInSrHouse.house)}. Le Milieu du Ciel RS en ${getSignLabel(outerChart.midheaven, outerChart.mcSign.name, outerChart.mcSign.symbol, tradition)} active votre Maison ${solarReturnAnalysis.mcInNatalHouse.roman} natale (${solarReturnAnalysis.mcInNatalHouse.title}), liant votre réussite de l’année à ce secteur de naissance. Maître de l’Ascendant RS : ${solarReturnAnalysis.srAscRuler}${
+            solarReturnAnalysis.srAscRulerPlanet
+              ? ` en ${solarReturnAnalysis.srAscRulerPlanet.sign.name} (Maison ${outerChart.houses[solarReturnAnalysis.srAscRulerPlanet.house - 1].roman} RS · ${getPlanetDignity(solarReturnAnalysis.srAscRulerPlanet.id, solarReturnAnalysis.srAscRulerPlanet.sign.index).status}), qui indique précisément où s’orientent vos décisions`
+              : ''
+          }.`,
           highlights: [
             `ASC RS (${outerChart.ascSign.name}) → Maison ${solarReturnAnalysis.ascInNatalHouse.roman} natale`,
             `MC RS (${outerChart.mcSign.name}) → Maison ${solarReturnAnalysis.mcInNatalHouse.roman} natale`,
-            `Soleil RS → Maison ${solarReturnAnalysis.sunInSrHouse.roman} RS`,
+            `Soleil RS → Maison ${solarReturnAnalysis.sunInSrHouse.roman} RS (${getSolarReturnSunHouseMeaning(solarReturnAnalysis.sunInSrHouse.house)})`,
           ],
         },
         {
-          title: 'Climat Émotionnel, Affectif & Maître de l’Année',
+          title: 'Vie Émotionnelle, Mentale & Affective de l’Année',
           accent: 'gold',
-          body: `La Lune RS en ${getSignLabel(srMoon.longitude, srMoon.sign.name, srMoon.sign.symbol, tradition)} (Maison ${outerChart.houses[srMoon.house - 1].roman} RS) traduit le besoin intime et l’ambiance affective du cycle. Le maître de l’Ascendant annuel est ${solarReturnAnalysis.srAscRuler}${
-            solarReturnAnalysis.srAscRulerPlanet
-              ? ` (en ${solarReturnAnalysis.srAscRulerPlanet.sign.name}, Maison ${outerChart.houses[solarReturnAnalysis.srAscRulerPlanet.house - 1].roman} RS), indiquant où se concrétisent vos initiatives`
-              : ''
-          }. Vénus RS en ${srVenus.sign.name} (Maison ${outerChart.houses[srVenus.house - 1].roman} RS) et Mars RS en ${srMars.sign.name} (Maison ${outerChart.houses[srMars.house - 1].roman} RS) animent le terrain amoureux et la dynamique d’action.`,
+          body: `La Lune RS en ${getSignLabel(srMoon.longitude, srMoon.sign.name, srMoon.sign.symbol, tradition)} (Maison ${outerChart.houses[srMoon.house - 1].roman} RS) nourrit vos priorités intimes — ${getPlanetTrait('moon', srMoon.sign.index)}. Mercure RS en ${srMercury.sign.name} (M.${outerChart.houses[srMercury.house - 1].roman} RS${srMercury.retrograde ? ' ℞' : ''}) teinte vos démarches et échanges. Vénus RS en ${srVenus.sign.name} (M.${outerChart.houses[srVenus.house - 1].roman} RS) et Mars RS en ${srMars.sign.name} (M.${outerChart.houses[srMars.house - 1].roman} RS) orientent le climat sentimental et l’élan d’action.`,
+          highlights: [
+            `Phase lunaire RS : ${srLunarPhase.name} (${srLunarPhase.angleDeg}°)`,
+            ...solarReturnAnalysis.angularPlanets.map(
+              (a) => `Planète dominante aux angles : ${a.planet.symbol} ${a.planet.name} conjoint ${a.angleName} (${a.orb}°)`
+            ),
+          ],
         },
         {
-          title: 'Expansion, Défis & Résonances sur le Thème Natal',
+          title: 'Opportunités, Exigences & Résonances RS → Natal',
           accent: 'emerald',
-          body: `Jupiter RS en ${srJupiter.sign.name} (Maison ${outerChart.houses[srJupiter.house - 1].roman} RS) favorise les opportunités et l’ouverture, tandis que Saturne RS en ${srSaturn.sign.name} (Maison ${outerChart.houses[srSaturn.house - 1].roman} RS) demande organisation et constance. ${
-            solarReturnAnalysis.angularPlanets.length > 0
-              ? `Astres dominants aux angles RS : ${solarReturnAnalysis.angularPlanets.map((a) => `${a.planet.name} conjoint ${a.angleName} (${a.orb}°)`).join(', ')}. `
-              : 'Aucun astre n’est collé aux angles à moins de 8°, favorisant une année d’évolution progressive. '
-          }${
+          body: `Jupiter RS en ${srJupiter.sign.name} (Maison ${outerChart.houses[srJupiter.house - 1].roman} RS) soutient la croissance ${getHouseArenaFocus(srJupiter.house)}. Saturne RS en ${srSaturn.sign.name} (Maison ${outerChart.houses[srSaturn.house - 1].roman} RS) structure durablement ${getHouseArenaFocus(srSaturn.house)}. ${
             topAspects.length > 0
-              ? `Aspects RS → Natal marquants : ${topAspects.map((a) => `${a.outerPlanetName} RS ${a.label.toLowerCase()} ${a.natalPlanetName} natal (${a.orb}°)`).join(' ; ')}.`
-              : ''
+              ? 'Les aspects RS → Natal les plus exacts signalent les événements et prises de conscience majeurs de l’année :'
+              : 'Peu d’aspects serrés RS → Natal : année d’évolution intérieure et progressive.'
           }`,
+          highlights: topAspects.map((a) => a.interpretation),
         },
         {
-          title: 'Lecture Chinoise de l’Année Anniversaire',
+          title: 'Lecture Chinoise & Wu Xing de l’Année Anniversaire',
           accent: 'amber',
-          body: `L’année RS s’inscrit sous le signe de ${srBazi.yearPillar.label}. En transposant votre Ascendant natal (${natalAscCh.name}) face à l’Ascendant RS (${srAscCh.name}), on observe une relation « ${ascHarmony.label} » : ${ascHarmony.desc} Soleil RS en ${transposeLongitudeToChinese(srSun.longitude).sign.name} (${transposeLongitudeToChinese(srSun.longitude).sign.wuXing}).`,
+          body: `L’année anniversaire porte l’empreinte du pilier ${srBazi.yearPillar.label}. Entre votre Ascendant natal (${natalAscCh.name}) et l’Ascendant RS (${srAscCh.name}), le dialogue chinois indique « ${ascHarmony.label} » : ${ascHarmony.desc} ${getWuXingDynamicAdvice(srBazi.wuXingBalance, srBazi.dominantWuXing)}`,
         },
       ],
     };
@@ -243,36 +307,51 @@ export function generateChartInterpretation(params: {
     const slowOuter = outerChart.planets.filter((p) =>
       ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto'].includes(p.id)
     );
-    const activeTransitAspects = comparisonAspects.slice(0, 5);
-    const retroCount = outerChart.planets.filter((p) => p.retrograde).length;
+    const fastOuter = outerChart.planets.filter((p) =>
+      ['sun', 'moon', 'mercury', 'venus', 'mars'].includes(p.id)
+    );
+    const activeTransitAspects = comparisonAspects.slice(0, 6);
+    const retroPlanets = outerChart.planets.filter((p) => p.retrograde && p.id !== 'northNode');
+
+    const slowHouseCrossings = slowOuter.map((p) => {
+      const natalHouseNum = findHouseForLongitude(p.longitude, baseChart.houses);
+      const natalHouse = baseChart.houses[natalHouseNum - 1];
+      return describeSlowTransitInHouse(p, natalHouse);
+    });
 
     return {
-      headline: 'Interprétation des Transits sur le Thème Natal',
-      subtitle: `${comparisonAspects.length} aspects actifs · ${retroCount} astre(s) rétrograde(s)`,
-      synthesis: `Les transits actuels confrontent la carte du ciel en mouvement à vos repères de naissance. ${
+      headline: 'Interprétation Détaillée des Transits sur le Natal',
+      subtitle: `${comparisonAspects.length} aspects actifs · ${retroPlanets.length} astre(s) rétrograde(s)`,
+      synthesis: `Cette lecture superpose le ciel en mouvement à votre carte natale. ${
         activeTransitAspects.length > 0
-          ? `Le transit le plus serré concerne ${activeTransitAspects[0].outerPlanetName} en transit ${activeTransitAspects[0].label.toLowerCase()} ${activeTransitAspects[0].natalPlanetName} natal (${activeTransitAspects[0].orb}°), marquant la tonalité prioritaire du moment.`
-          : 'Aucun aspect majeur très serré ne vient bousculer vos planètes natales : période d’intégration calme.'
-      }`,
+          ? `Le déclencheur principal du moment est ${activeTransitAspects[0].interpretation}`
+          : 'Aucun aspect exact très serré n’active vos planètes de naissance : phase favorable au recul, à l’intégration et à la continuité.'
+      } ${retroPlanets.length > 0 ? `Rétrogradations en cours : ${retroPlanets.map((r) => `${r.symbol} ${r.name}`).join(', ')}.` : ''}`,
       sections: [
         {
-          title: 'Cycles Lents & Mutations de Fond',
+          title: 'Maisons Natales Traversées par les Planètes Lentes',
           accent: 'cyan',
-          body: slowOuter
-            .map((p) => {
-              const ch = transposeLongitudeToChinese(p.longitude).sign;
-              const lbl = tradition === 'chinese' ? `${ch.name} (${ch.wuXing})` : p.sign.name;
-              return `${p.name} en ${lbl}${p.retrograde ? ' ℞' : ''}`;
-            })
-            .join(' · ') + '. Les planètes lentes redessinent les grands chapitres de structuration (Saturne), d’expansion (Jupiter) et de métamorphose profonde (Uranus, Neptune, Pluton).',
+          body: 'Les planètes lentes modifient en profondeur les secteurs de votre thème natal qu’elles parcourent actuellement :',
+          highlights: slowHouseCrossings,
         },
         {
-          title: 'Aspects Clés en Cours sur le Natal',
+          title: 'Transits Actifs Précis sur Vos Planètes Natales',
           accent: 'gold',
           body:
             activeTransitAspects.length > 0
-              ? activeTransitAspects.map((a) => a.interpretation).join(' — ')
-              : 'Climat serein favorable au recul et à la consolidation de vos acquis natals.',
+              ? 'Voici les aspects de transit les plus serrés à l’instant choisi, classés par précision d’orbe :'
+              : 'Climat globalement fluide sans friction angulaire serrée sur votre thème natal.',
+          highlights: activeTransitAspects.map((a) => a.interpretation),
+        },
+        {
+          title: 'Rythme Quotidien (Planètes Rapides en Transit)',
+          accent: 'emerald',
+          body: fastOuter
+            .map((p) => {
+              const nh = baseChart.houses[findHouseForLongitude(p.longitude, baseChart.houses) - 1];
+              return `${p.symbol} ${p.name} en ${p.sign.name}${p.retrograde ? ' ℞' : ''} traverse votre M.${nh.roman} (${nh.title})`;
+            })
+            .join(' · '),
         },
         baziSection,
       ],
@@ -281,24 +360,35 @@ export function generateChartInterpretation(params: {
 
   if (mode === 'lunarReturn' && outerChart) {
     const lrAsc = getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition);
+    const lrSun = outerChart.planets.find((p) => p.id === 'sun')!;
     const lrMoon = outerChart.planets.find((p) => p.id === 'moon')!;
+    const lrVenus = outerChart.planets.find((p) => p.id === 'venus')!;
+    const lrMars = outerChart.planets.find((p) => p.id === 'mars')!;
+    const lrAscInNatalHouse = baseChart.houses[findHouseForLongitude(outerChart.ascendant, baseChart.houses) - 1];
+    const lrPhase = getLunarPhaseInfo(lrSun.longitude, lrMoon.longitude);
+
     return {
-      headline: 'Interprétation de la Révolution Lunaire',
-      subtitle: `Cycle de 27,3 jours · ASC RL ${lrAsc}`,
-      synthesis: `La Révolution Lunaire éclaire le climat émotionnel, quotidien et relationnel des quatre semaines à venir. Avec l’Ascendant mensuel en ${lrAsc}, vos réactions spontanées et besoins de sécurité prennent une coloration ${outerChart.ascSign.keywords.toLowerCase()}.`,
+      headline: 'Interprétation Détaillée de la Révolution Lunaire',
+      subtitle: `Cycle de 27,3 jours · ASC RL ${lrAsc} (M.${lrAscInNatalHouse.roman} nat.)`,
+      synthesis: `La Révolution Lunaire décrit votre climat émotionnel, relationnel et quotidien sur les 4 semaines à venir. L’Ascendant mensuel en ${lrAsc} se projette dans votre Maison ${lrAscInNatalHouse.roman} natale (${lrAscInNatalHouse.title}), activant ce domaine dès l’ouverture du mois lunaire.`,
       sections: [
         {
-          title: 'Besoins Émotionnels & Secteur Activé',
+          title: 'Besoins Intimes & Secteur Prioritaire du Mois',
           accent: 'cyan',
-          body: `La Lune de Révolution revient à son degré exact en Maison ${outerChart.houses[lrMoon.house - 1].roman} RL (${outerChart.houses[lrMoon.house - 1].title}), focalisant votre attention intime et vos habitudes de vie sur ce domaine durant tout le mois lunaire.`,
+          body: `La Lune de Révolution revient à son degré natal en Maison ${outerChart.houses[lrMoon.house - 1].roman} RL (${outerChart.houses[lrMoon.house - 1].title}), orientant votre sensibilité ${getHouseArenaFocus(lrMoon.house)}. Sous une ${lrPhase.name}, ${lrPhase.summary.toLowerCase()}`,
+          highlights: [
+            `Vénus RL en ${lrVenus.sign.name} (M.${outerChart.houses[lrVenus.house - 1].roman} RL) : climat affectif`,
+            `Mars RL en ${lrMars.sign.name} (M.${outerChart.houses[lrMars.house - 1].roman} RL) : rythme d’action`,
+          ],
         },
         {
-          title: 'Résonances avec le Thème Natal',
+          title: 'Résonances Mensuelles avec le Thème Natal',
           accent: 'gold',
           body:
             comparisonAspects.length > 0
-              ? comparisonAspects.slice(0, 4).map((a) => a.interpretation).join(' — ')
-              : 'Circulation douce entre les humeurs du mois et la structure natale.',
+              ? 'Les aspects ci-dessous montrent quels points de votre natal réagissent ce mois-ci :'
+              : 'Circulation douce entre l’humeur du mois lunaire et vos repères natals.',
+          highlights: comparisonAspects.slice(0, 5).map((a) => a.interpretation),
         },
       ],
     };
@@ -307,23 +397,33 @@ export function generateChartInterpretation(params: {
   if (mode === 'progressions' && outerChart) {
     const pSun = outerChart.planets.find((p) => p.id === 'sun')!;
     const pMoon = outerChart.planets.find((p) => p.id === 'moon')!;
+    const pVenus = outerChart.planets.find((p) => p.id === 'venus')!;
+    const pMars = outerChart.planets.find((p) => p.id === 'mars')!;
+    const progPhase = getLunarPhaseInfo(pSun.longitude, pMoon.longitude);
+
     return {
-      headline: 'Interprétation des Progressions Secondaires',
+      headline: 'Interprétation Approfondie des Progressions Secondaires',
       subtitle: `Soleil prog. ${getSignLabel(pSun.longitude, pSun.sign.name, pSun.sign.symbol, tradition)} · Lune prog. ${getSignLabel(pMoon.longitude, pMoon.sign.name, pMoon.sign.symbol, tradition)}`,
-      synthesis: `La méthode « un jour pour une année » mesure votre maturation psychologique intérieure. Le Soleil progressé en ${getSignLabel(pSun.longitude, pSun.sign.name, pSun.sign.symbol, tradition)} témoigne d’une évolution progressive de votre identité vers ${pSun.sign.keywords.toLowerCase()}.`,
+      synthesis: `La méthode symbolique « 1 jour après la naissance = 1 année de vie » révèle votre maturation psychologique intérieure. Actuellement dans une phase de ${progPhase.name} (angle progressé ${progPhase.angleDeg}°), votre Soleil progressé en ${getSignLabel(pSun.longitude, pSun.sign.name, pSun.sign.symbol, tradition)} oriente l’évolution lente de votre identité vers : ${getPlanetTrait('sun', pSun.sign.index)}.`,
       sections: [
         {
           title: 'Horloge Intérieure : Lune & Angles Progressés',
           accent: 'cyan',
-          body: `La Lune progressée parcourt un signe tous les ~2 ans et demi : actuellement en ${getSignLabel(pMoon.longitude, pMoon.sign.name, pMoon.sign.symbol, tradition)}, elle colore votre phase émotionnelle présente. L’Ascendant progressé en ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)} accompagne ce renouvellement de posture.`,
+          body: `La Lune progressée (qui change de signe environ tous les 2 ans et demi) traverse actuellement ${getSignLabel(pMoon.longitude, pMoon.sign.name, pMoon.sign.symbol, tradition)} en Maison ${outerChart.houses[pMoon.house - 1].roman} progressée — ${getPlanetTrait('moon', pMoon.sign.index)}. L’Ascendant progressé en ${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)} reflète l’ajustement progressif de votre rapport au monde.`,
+          highlights: [
+            `Phase Soleil–Lune progressée : ${progPhase.name}`,
+            `Vénus prog. : ${pVenus.formattedDeg} ${pVenus.sign.name}${pVenus.retrograde ? ' ℞' : ''}`,
+            `Mars prog. : ${pMars.formattedDeg} ${pMars.sign.name}${pMars.retrograde ? ' ℞' : ''}`,
+          ],
         },
         {
-          title: 'Aspects Intérieurs au Thème Natal',
+          title: 'Aspects Intérieurs Progressés → Thème Natal',
           accent: 'gold',
           body:
             comparisonAspects.length > 0
-              ? comparisonAspects.slice(0, 4).map((a) => a.interpretation).join(' — ')
-              : 'Période de mûrissement silencieux préparant les prochaines étapes d’évolution.',
+              ? 'Ces contacts progressés marquent des chapitres psychologiques durables de votre évolution :'
+              : 'Période de maturation intérieure silencieuse préparant les prochains changements de signe.',
+          highlights: comparisonAspects.slice(0, 5).map((a) => a.interpretation),
         },
       ],
     };
@@ -333,31 +433,54 @@ export function generateChartInterpretation(params: {
     const pB = outerChart;
     const sunChA = transposeLongitudeToChinese(sun.longitude).sign;
     const sunB = pB.planets.find((p) => p.id === 'sun')!;
+    const moonB = pB.planets.find((p) => p.id === 'moon')!;
+    const venusB = pB.planets.find((p) => p.id === 'venus')!;
+    const marsB = pB.planets.find((p) => p.id === 'mars')!;
     const sunChB = transposeLongitudeToChinese(sunB.longitude).sign;
+    const moonChA = transposeLongitudeToChinese(moon.longitude).sign;
+    const moonChB = transposeLongitudeToChinese(moonB.longitude).sign;
     const chRelation = evaluateAnimalHarmony(sunChA, sunChB);
+    const moonChRelation = evaluateAnimalHarmony(moonChA, moonChB);
+
+    const bSunInA = baseChart.houses[findHouseForLongitude(sunB.longitude, baseChart.houses) - 1];
+    const bMoonInA = baseChart.houses[findHouseForLongitude(moonB.longitude, baseChart.houses) - 1];
+    const bVenusInA = baseChart.houses[findHouseForLongitude(venusB.longitude, baseChart.houses) - 1];
+    const bMarsInA = baseChart.houses[findHouseForLongitude(marsB.longitude, baseChart.houses) - 1];
+
+    const harmoniousCount = comparisonAspects.filter(
+      (a) => a.harmony === 'harmonious' || a.harmony === 'fusion'
+    ).length;
+    const tenseCount = comparisonAspects.filter((a) => a.harmony === 'tense').length;
 
     return {
-      headline: 'Interprétation de la Synastrie Relationnelle',
+      headline: 'Interprétation Complète de la Synastrie Relationnelle',
       subtitle: `${baseChart.cityName} (Or) ↔ ${pB.cityName} (Cyan)`,
-      synthesis: `La synastrie met en regard deux univers intérieurs. On relève ${
-        comparisonAspects.filter((a) => a.harmony === 'harmonious' || a.harmony === 'fusion').length
-      } liens d’affinité fluide/fusion et ${
-        comparisonAspects.filter((a) => a.harmony === 'tense').length
-      } axes de tension dynamique qui stimulent l’évolution mutuelle du duo.`,
+      synthesis: `Cette synastrie compare deux thèmes de naissance dans leur dynamique affective, mentale et évolutive. On relève ${harmoniousCount} liens d’affinité fluide ou fusionnelle et ${tenseCount} axes de stimulation dynamique qui invitent chacun à grandir au contact de l’autre.`,
       sections: [
         {
-          title: 'Rencontre des Polarités (Soleil · Lune · Vénus)',
+          title: 'Superposition des Planètes de B dans Vos Maisons (A)',
           accent: 'gold',
-          body: `Le Soleil de A (${sunLabel}) dialogue avec celui de B en ${getSignLabel(sunB.longitude, sunB.sign.name, sunB.sign.symbol, tradition)}. ${
-            comparisonAspects.length > 0
-              ? `L’aspect inter-thème le plus puissant est : ${comparisonAspects[0].interpretation}.`
-              : 'Les échanges reposent davantage sur l’activation des maisons que sur les aspects serrés.'
-          }`,
+          body: `La façon dont B active les domaines concrets de A éclaire immédiatement la nature du lien :`,
+          highlights: [
+            `Soleil de B (${sunB.sign.name}) en Maison ${bSunInA.roman} de A (${bSunInA.title}) : éclaire ce secteur par sa présence`,
+            `Lune de B (${moonB.sign.name}) en Maison ${bMoonInA.roman} de A (${bMoonInA.title}) : crée une résonance émotionnelle intime`,
+            `Vénus de B (${venusB.sign.name}) en Maison ${bVenusInA.roman} de A (${bVenusInA.title}) : adoucit et séduit ce domaine`,
+            `Mars de B (${marsB.sign.name}) en Maison ${bMarsInA.roman} de A (${bMarsInA.title}) : stimule l’élan, le désir ou le défi`,
+          ],
         },
         {
-          title: 'Compatibilité Chinoise (San He / Liu He / Wu Xing)',
+          title: 'Aspects Inter-Thèmes Majeurs (Affinités & Défis)',
+          accent: 'cyan',
+          body:
+            comparisonAspects.length > 0
+              ? 'Les aspects les plus serrés entre A et B révèlent le cœur magnétique et psychologique de la relation :'
+              : 'Peu d’aspects angulaires serrés : le lien s’exprime avant tout par la complémentarité des Maisons et des éléments.',
+          highlights: comparisonAspects.slice(0, 6).map((a) => a.interpretation),
+        },
+        {
+          title: 'Compatibilité Chinoise (San He · Liu He · Wu Xing)',
           accent: 'amber',
-          body: `Sur le zodiaque chinois solaire, le Soleil de A (${sunChA.name}, ${sunChA.wuXing}) et celui de B (${sunChB.name}, ${sunChB.wuXing}) forment une relation « ${chRelation.label} » : ${chRelation.desc}`,
+          body: `Sur les Soleils transposés, A (${sunChA.name}, ${sunChA.wuXing}) et B (${sunChB.name}, ${sunChB.wuXing}) forment une relation « ${chRelation.label} » : ${chRelation.desc} Sur le plan émotionnel lunaire, A (${moonChA.name}) et B (${moonChB.name}) vivent une dynamique « ${moonChRelation.label} » (${moonChRelation.desc}).`,
         },
       ],
     };
@@ -365,15 +488,20 @@ export function generateChartInterpretation(params: {
 
   if (mode === 'composite') {
     const compVenus = baseChart.planets.find((p) => p.id === 'venus')!;
+    const compMars = baseChart.planets.find((p) => p.id === 'mars')!;
+    const compSaturn = baseChart.planets.find((p) => p.id === 'saturn')!;
+    const compPhase = getLunarPhaseInfo(sun.longitude, moon.longitude);
+
     return {
-      headline: 'Interprétation du Thème Composite',
+      headline: 'Interprétation Approfondie du Thème Composite',
       subtitle: `${baseChart.cityName} · ASC Composite ${ascLabel}`,
-      synthesis: `Calculé par mi-points exacts, le thème composite décrit la relation elle-même comme une entité vivante. Avec un Soleil composite en ${sunLabel} et une Lune en ${moonLabel}, le couple ou partenariat s’épanouit à travers ${sun.sign.keywords.toLowerCase()}.`,
+      synthesis: `Calculé par mi-points exacts, le thème composite décrit la relation elle-même comme une entité autonome. Avec un Soleil composite en ${sunLabel} (Maison ${baseChart.houses[sun.house - 1].roman}) et une Lune en ${moonLabel} (Maison ${baseChart.houses[moon.house - 1].roman}), le duo fonctionne sous une ${compPhase.name}.`,
       sections: [
         {
-          title: 'Mission & Cœur de la Relation',
+          title: 'Identité, Cœur & Dynamique du Couple / Partenariat',
           accent: 'gold',
-          body: `L’Ascendant composite en ${ascLabel} définit l’image et la tonalité de la relation face au monde extérieur. Vénus composite en ${getSignLabel(compVenus.longitude, compVenus.sign.name, compVenus.sign.symbol, tradition)} (Maison ${baseChart.houses[compVenus.house - 1].roman}) révèle ce qui cimente la tendresse et les valeurs communes.`,
+          body: `L’Ascendant composite en ${ascLabel} façonne l’image que la relation projette au monde. Le Soleil composite exprime : ${getPlanetTrait('sun', sun.sign.index)}, tandis que Vénus composite en ${getSignLabel(compVenus.longitude, compVenus.sign.name, compVenus.sign.symbol, tradition)} (Maison ${baseChart.houses[compVenus.house - 1].roman}) révèle la manière d’aimer et les valeurs partagées. Mars composite en ${compMars.sign.name} (Maison ${baseChart.houses[compMars.house - 1].roman}) canalise les projets communs et Saturne en ${compSaturn.sign.name} (M.${baseChart.houses[compSaturn.house - 1].roman}) en indique la durée et les engagements.`,
+          highlights: baseChart.aspects.slice(0, 4).map((a) => a.interpretation),
         },
         baziSection,
       ],
@@ -388,16 +516,13 @@ export function generateChartInterpretation(params: {
     return {
       headline: 'Interprétation du Comparatif Double Roue',
       subtitle: `${baseChart.cityName} vs ${outerChart.cityName}`,
-      synthesis: `Cette lecture croisée juxtapose la carte de base (${ascLabel}) à la carte comparée (${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)}). L’Ascendant comparé se projette en Maison ${comparativeAnalysis.ascInBaseHouseRoman} de base avec un décalage angulaire de ${comparativeAnalysis.ascShiftDeg}°, orientant l’énergie vers le secteur ${baseChart.houses[Number(comparativeAnalysis.ascInBaseHouseRoman === 'I' ? 0 : 0)] ? comparativeAnalysis.ascInBaseHouseRoman : ''}.`,
+      synthesis: `Cette lecture croisée confronte la carte de base (${ascLabel}) à la carte comparée (${getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition)}). L’Ascendant comparé tombe en Maison ${comparativeAnalysis.ascInBaseHouseRoman} de base (décalage angulaire de ${comparativeAnalysis.ascShiftDeg}°), et le Milieu du Ciel comparé active votre Maison ${comparativeAnalysis.mcInBaseHouseRoman} de base.`,
       sections: [
         {
-          title: 'Équilibre des Forces Comparées',
+          title: 'Équilibre des Forces & Aspects Comparés',
           accent: 'cyan',
-          body: `On dénombre ${comparativeAnalysis.harmoniousCount} aspects harmoniques, ${comparativeAnalysis.fusionCount} conjonctions de convergence et ${comparativeAnalysis.tenseCount} tensions créatrices entre les deux roues. ${
-            comparisonAspects.length > 0
-              ? `Point focal prioritaire : ${comparisonAspects[0].interpretation}.`
-              : ''
-          }`,
+          body: `On dénombre ${comparativeAnalysis.harmoniousCount} aspects harmoniques, ${comparativeAnalysis.fusionCount} conjonctions de convergence et ${comparativeAnalysis.tenseCount} tensions créatrices entre les deux roues.`,
+          highlights: comparisonAspects.slice(0, 5).map((a) => a.interpretation),
         },
         {
           title: 'Comparatif sur Zodiaque Chinois (Rameaux & Wu Xing)',
@@ -409,27 +534,29 @@ export function generateChartInterpretation(params: {
   }
 
   // Live sky / fallback
-  const retroPlanets = baseChart.planets.filter((p) => p.retrograde);
+  const retroPlanets = baseChart.planets.filter((p) => p.retrograde && p.id !== 'northNode');
   return {
-    headline: 'Interprétation du Ciel en Direct',
-    subtitle: `${baseChart.cityName} · ASC ${ascLabel} · ${sunLabel}`,
-    synthesis: `Climat astronomique et symbolique de l’instant : le Soleil traverse ${sunLabel} tandis que la Lune éclaire ${moonLabel}. L’équilibre élémentaire actuel privilégie l’élément ${domEl}, colorant l’atmosphère collective par ${ELEMENT_TEMPERAMENT[domEl]}.`,
+    headline: 'Interprétation Détaillée du Ciel en Direct',
+    subtitle: `${baseChart.cityName} · ASC ${ascLabel} · ${lunarPhase.name}`,
+    synthesis: `Climat astronomique et symbolique de l’instant : le Soleil traverse ${sunLabel} tandis que la Lune éclaire ${moonLabel} (${lunarPhase.name}, ${lunarPhase.angleDeg}°). L’équilibre élémentaire actuel privilégie l’élément ${domEl}, colorant l’atmosphère collective par ${ELEMENT_TEMPERAMENT[domEl]}.`,
     sections: [
       {
-        title: 'Configurations Collectives & Rétrogradations',
+        title: 'Luminaires, Mouvements Rétrogrades & Ambiance du Moment',
         accent: 'cyan',
-        body:
+        body: `${lunarPhase.summary} ${
           retroPlanets.length > 0
-            ? `Astres actuellement rétrogrades (phase d’intériorisation et de révision) : ${retroPlanets.map((r) => `${r.symbol} ${r.name} en ${r.sign.name}`).join(', ')}.`
-            : 'Toutes les planètes avancent en mouvement direct : élan fluide favorable aux lancements et décisions claires.',
+            ? `Astres actuellement rétrogrades (invitation à l’intériorisation et à la révision) : ${retroPlanets.map((r) => `${r.symbol} ${r.name} en ${r.sign.name}`).join(', ')}.`
+            : 'Toutes les planètes avancent en mouvement direct : élan fluide favorable aux lancements et décisions claires.'
+        }`,
       },
       {
         title: 'Aspects Majeurs du Jour',
         accent: 'gold',
         body:
           baseChart.aspects.length > 0
-            ? baseChart.aspects.slice(0, 4).map((a) => a.interpretation).join(' — ')
+            ? 'Configurations planétaires exactes marquant la journée :'
             : 'Le ciel du jour présente une configuration dégagée.',
+        highlights: baseChart.aspects.slice(0, 5).map((a) => a.interpretation),
       },
       baziSection,
     ],

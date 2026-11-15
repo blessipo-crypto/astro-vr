@@ -8,7 +8,7 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -233,3 +233,37 @@ jobs:
             electron/release/Uranie-VR-Portable.exe
             electron/release/Uranie-VR-Setup.exe
           if-no-files-found: ignore
+
+  publish-release:
+    name: Publier Téléchargements Directs (GitHub Releases)
+    needs: [build-standalone-apk, build-quest-webxr-apk, build-windows-exe]
+    if: always()
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: ./release-assets
+          merge-multiple: true
+
+      - name: List downloaded assets
+        run: ls -lh ./release-assets || true
+
+      - name: Create or update GitHub Release (latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Uranie VR — Téléchargements PC & Meta Quest
+          make_latest: true
+          body: |
+            Téléchargements directs générés automatiquement :
+            - **PC Windows (Portable, sans installation)** : `Uranie-VR-Portable.exe`
+            - **PC Windows (Installateur avec raccourcis)** : `Uranie-VR-Setup.exe`
+            - **Meta Quest WebXR (VR + Passthrough via GitHub Pages)** : `uranie-vr-quest3-webxr.apk`
+            - **Meta Quest Autonome Hors-Ligne** : `uranie-vr-autonome.apk`
+
+            Version WebXR en ligne : https://blessipo-crypto.github.io/astro-vr/
+          files: |
+            ./release-assets/*.exe
+            ./release-assets/*.apk

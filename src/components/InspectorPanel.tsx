@@ -21,6 +21,11 @@ import {
 } from '../astro/chineseAstrology';
 import { generateChartInterpretation } from '../astro/interpretations';
 import {
+  getDecanInfo,
+  getHouseCuspInterpretation,
+  getPlanetDignity,
+} from '../astro/astroKnowledge';
+import {
   buildChineseOppositesAndComplements,
   buildSignAffinityProfile,
   buildWesternOppositesTable,
@@ -234,17 +239,22 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     ? 'text-[#fb923c]'
                     : sec.accent === 'emerald'
                       ? 'text-emerald-300'
-                      : 'text-[#e7cfa0]';
+                      : sec.accent === 'rose'
+                        ? 'text-rose-300'
+                        : 'text-[#e7cfa0]';
               return (
-                <div key={sec.title} className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-1.5">
+                <div key={sec.title} className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-2">
                   <h3 className={`font-semibold ${titleColor}`}>{sec.title}</h3>
-                  <p className="leading-relaxed text-slate-300">{sec.body}</p>
+                  <p className="leading-relaxed text-slate-200">{sec.body}</p>
                   {sec.highlights && sec.highlights.length > 0 && (
-                    <div className="pt-1 space-y-0.5 font-mono-tabular text-[11px] text-slate-400">
+                    <ul className="pt-1 space-y-1.5 text-[11px] leading-relaxed text-slate-300 border-t border-white/5">
                       {sec.highlights.map((h) => (
-                        <div key={h}>· {h}</div>
+                        <li key={h} className="flex items-start gap-1.5">
+                          <span className="text-[#d4af37] shrink-0">•</span>
+                          <span>{h}</span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
                 </div>
               );
@@ -653,6 +663,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       : [];
 
     const signAffinity = buildSignAffinityProfile(p.sign, p.name);
+    const dignity = getPlanetDignity(p.id, p.sign.index);
+    const decan = getDecanInfo(p.sign, p.degInSign);
 
     return (
       <aside
@@ -728,8 +740,23 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </div>
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-slate-300">{p.role}</p>
-        <p className="mt-2.5 text-xs leading-relaxed text-slate-400">{p.signMeaning}</p>
+        <div className="mt-2.5 rounded-lg border border-[#d4af37]/25 bg-[#0f162b] px-3 py-2 text-[11px] space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-[#e7cfa0]">{decan.label}</span>
+            <span
+              className="rounded px-1.5 py-0.5 text-[10px] font-semibold border border-white/10"
+              style={{ color: dignity.badgeColor }}
+            >
+              {dignity.status}
+            </span>
+          </div>
+          <p className="text-slate-300 leading-relaxed">{dignity.explanation}</p>
+        </div>
+
+        <p className="mt-3 text-xs leading-relaxed text-[#f3efe6]">{p.signMeaning}</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+          Fonction archétypale : {p.role}. {decan.nuance}
+        </p>
 
         {compAspects.length > 0 && (
           <div className="mt-4 border-t border-white/10 pt-3">
@@ -742,7 +769,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => onHighlightAspect(asp.id)}
-                    className="w-full text-left rounded-lg border border-sky-400/15 bg-sky-950/25 px-3 py-2 hover:border-sky-400/50 transition-colors cursor-pointer"
+                    className="w-full text-left rounded-lg border border-sky-400/15 bg-sky-950/25 px-3 py-2 hover:border-sky-400/50 transition-colors cursor-pointer space-y-1"
                   >
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-medium text-[#f3efe6]">
@@ -752,6 +779,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       </span>
                       <span className="font-mono-tabular text-slate-400">{asp.orb.toFixed(2)}°</span>
                     </div>
+                    <div className="text-[11px] leading-relaxed text-slate-300">{asp.interpretation}</div>
                   </button>
                 </li>
               ))}
@@ -777,7 +805,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         onHighlightAspect(asp.id);
                         onSelectPlanet(otherId, isOuter ? 'outer' : 'base');
                       }}
-                      className="w-full text-left rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2 hover:border-[#d4af37]/35 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                      className="w-full text-left rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2 hover:border-[#d4af37]/35 hover:bg-white/[0.06] transition-colors cursor-pointer space-y-1"
                     >
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-medium text-[#f3efe6]">
@@ -785,6 +813,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         </span>
                         <span className="font-mono-tabular text-slate-400">{asp.orb.toFixed(1)}°</span>
                       </div>
+                      <div className="text-[11px] leading-relaxed text-slate-300">{asp.interpretation}</div>
                     </button>
                   </li>
                 );
@@ -837,7 +866,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </span>
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-slate-300">{hs.meaning}</p>
+        <p className="mt-3 text-xs leading-relaxed text-[#f3efe6]">{hs.meaning}</p>
+        <p className="mt-2 text-xs leading-relaxed text-slate-300">
+          {getHouseCuspInterpretation(hs, baseChart.planets)}
+        </p>
 
         {occupants.length > 0 && (
           <div className="mt-4 border-t border-white/10 pt-3">

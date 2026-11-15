@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.uranie.vr.astrologie',
-  appName: 'Uranie VR',
+  appId: 'app.uranie.vr.autonome',
+  appName: 'Uranie VR Autonome',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

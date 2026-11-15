@@ -515,9 +515,11 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
               <h3 className="font-bold text-slate-900 mb-1">{sec.title}</h3>
               <p className="text-slate-700 text-[11px] leading-relaxed">{sec.body}</p>
               {sec.highlights && sec.highlights.length > 0 && (
-                <div className="mt-1 text-[10px] text-slate-600 font-mono">
-                  {sec.highlights.join(' · ')}
-                </div>
+                <ul className="mt-1.5 space-y-1 text-[10px] leading-snug text-slate-700 list-disc pl-3.5">
+                  {sec.highlights.map((h) => (
+                    <li key={h}>{h}</li>
+                  ))}
+                </ul>
               )}
             </div>
           ))}
