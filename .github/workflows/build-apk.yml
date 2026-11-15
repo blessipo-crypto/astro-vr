@@ -115,28 +115,55 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Build Meta Quest TWA APK
+        env:
+          CI: 'true'
+          BUBBLEWRAP_KEYSTORE_PASSWORD: uranievr123
+          BUBBLEWRAP_KEY_PASSWORD: uranievr123
         run: |
+          set -e
           npm install --legacy-peer-deps
           npm run build
           npm install -g @bubblewrap/cli
+
           SDK_PATH="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SDKMANAGER=""
+          if [ -x "$SDK_PATH/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SDKMANAGER="$SDK_PATH/cmdline-tools/latest/bin/sdkmanager"
+          elif [ -x "$SDK_PATH/tools/bin/sdkmanager" ]; then
+            SDKMANAGER="$SDK_PATH/tools/bin/sdkmanager"
+          elif [ -x "$SDK_PATH/bin/sdkmanager" ]; then
+            SDKMANAGER="$SDK_PATH/bin/sdkmanager"
+          fi
+
+          if [ ! -d "$SDK_PATH/tools" ] && [ ! -d "$SDK_PATH/bin" ] && [ -d "$SDK_PATH/cmdline-tools/latest/bin" ]; then
+            ln -sfn "$SDK_PATH/cmdline-tools/latest/bin" "$SDK_PATH/bin"
+          fi
+
+          if [ -n "$SDKMANAGER" ]; then
+            echo "Accepting Android SDK licenses and installing build-tools;36.1.0..."
+            yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" --licenses >/dev/null 2>&1 || true
+            yes | "$SDKMANAGER" --sdk_root="$SDK_PATH" "build-tools;36.1.0" "platforms;android-36"
+          fi
+
           mkdir -p "$HOME/.bubblewrap"
           printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$HOME/.bubblewrap/config.json"
-          if [ -x "$SDK_PATH/cmdline-tools/latest/bin/sdkmanager" ]; then
-            yes | "$SDK_PATH/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-          fi
+
           if [ ! -f "./android.keystore" ]; then
             keytool -genkeypair -v -keystore ./android.keystore -alias uranie-vr -keyalg RSA -keysize 2048 -validity 10000 -storepass uranievr123 -keypass uranievr123 -dname "CN=Uranie VR, OU=Observatoire, O=Uranie, L=Paris, S=IDF, C=FR"
           fi
+
           python3 -m http.server 8787 -d dist >/dev/null 2>&1 &
           SERVER_PID=$!
           trap "kill $SERVER_PID 2>/dev/null || true" EXIT
           sleep 2
-          if ! curl -sfI "https://blessipo-crypto.github.io/astro-vr/pwa-512x512.png" >/dev/null 2>&1; then
-            node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync("twa-manifest.json","utf8"));m.iconUrl="http://127.0.0.1:8787/pwa-512x512.png";m.maskableIconUrl="http://127.0.0.1:8787/pwa-maskable-512x512.png";fs.writeFileSync("twa-manifest.json",JSON.stringify(m,null,2));'
+
+          if ! curl -sfI "https://blessipo-crypto.github.io/astro-vr/manifest.webmanifest" >/dev/null 2>&1; then
+            echo "GitHub Pages not yet reachable, using local HTTP fallback for icons and webManifest..."
+            node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync("twa-manifest.json","utf8"));m.iconUrl="http://127.0.0.1:8787/pwa-512x512.png";m.maskableIconUrl="http://127.0.0.1:8787/pwa-maskable-512x512.png";m.webManifestUrl="http://127.0.0.1:8787/manifest.webmanifest";fs.writeFileSync("twa-manifest.json",JSON.stringify(m,null,2));'
           fi
+
           bubblewrap update --manifest="./twa-manifest.json" --skipVersionUpgrade < /dev/null
-          printf "uranievr123\nuranievr123\n" | bubblewrap build --skipVersionUpgrade --skipPwaValidation
+          bubblewrap build --skipVersionUpgrade < /dev/null
           if [ -f "app-release-signed.apk" ]; then
             cp app-release-signed.apk uranie-vr-quest3-webxr.apk
           fi
