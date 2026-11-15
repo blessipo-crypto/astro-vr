@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Glasses, Info, ScanEye, Share2 } from 'lucide-react';
+import { Clock, Glasses, HelpCircle, Info, ScanEye, Share2 } from 'lucide-react';
 import {
   analyzeComparison,
   analyzeSolarReturn,
@@ -22,7 +22,7 @@ import {
 } from './astro/astroEngine';
 import { transposeLongitudeToChinese, ZodiacTradition } from './astro/chineseAstrology';
 import { buildShareThemeUrl, readSharedThemeFromUrl } from './astro/shareTheme';
-import { ComparativePairKind, ControlDock } from './components/ControlDock';
+import { ComparativePairKind, ControlDock, DockTab } from './components/ControlDock';
 import {
   Chart2DCanvas,
   WHEEL_2D_STYLES,
@@ -275,6 +275,10 @@ export default function App() {
       return true;
     }
   });
+  const [autoStartIntroAudio, setAutoStartIntroAudio] = useState<boolean>(false);
+  const [requestedDockTab, setRequestedDockTab] = useState<{ tab: DockTab; nonce: number } | null>(
+    null
+  );
   const [sharePrintOpen, setSharePrintOpen] = useState<boolean>(false);
   const [snapshotDataUrl, setSnapshotDataUrl] = useState<string | null>(null);
   const [contextLost, setContextLost] = useState<boolean>(false);
@@ -1119,12 +1123,27 @@ export default function App() {
           </div>
           <button
             type="button"
-            onClick={() => setAboutOpen(true)}
-            title="Présentation du programme et des créateurs"
+            onClick={() => {
+              setAutoStartIntroAudio(true);
+              setAboutOpen(true);
+            }}
+            title="Présentation du programme, voix explicative et musique ésotérique"
             className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#0d1428]/90 px-2.5 py-1.5 text-xs font-medium text-[#e7cfa0] hover:border-[#d4af37]/60 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Info className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>Présentation</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDockCollapsed(false);
+              setRequestedDockTab((prev) => ({ tab: 'help', nonce: (prev?.nonce ?? 0) + 1 }));
+            }}
+            title="Ouvrir l’onglet d’aide interactive pas-à-pas"
+            className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/40 bg-[#0d1428]/90 px-2.5 py-1.5 text-xs font-medium text-[#7dd3fc] hover:border-[#38bdf8] hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#38bdf8]" />
+            <span>Aide</span>
           </button>
           <div
             role="group"
@@ -1390,6 +1409,12 @@ export default function App() {
         }}
         onOpenAscendantCalculator={() => setAscendantModalOpen(true)}
         onOpenQuestGuide={() => setQuestModalOpen(true)}
+        onOpenSharePrint={handleOpenSharePrint}
+        onOpenAudioIntro={() => {
+          setAutoStartIntroAudio(true);
+          setAboutOpen(true);
+        }}
+        requestedTab={requestedDockTab}
       />
 
       <AscendantCalculatorModal
@@ -1415,6 +1440,7 @@ export default function App() {
         open={aboutOpen}
         onClose={() => {
           setAboutOpen(false);
+          setAutoStartIntroAudio(false);
           try {
             localStorage.setItem('uranie_vr_intro_seen_v1', '1');
           } catch {
@@ -1425,6 +1451,7 @@ export default function App() {
         mrSupported={mrSupported}
         onEnterVR={() => void sceneRef.current?.enterVR()}
         onEnterMR={() => void sceneRef.current?.enterMR()}
+        autoStartAudio={autoStartIntroAudio}
       />
 
       <SharePrintModal

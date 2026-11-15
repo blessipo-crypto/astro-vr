@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
   Compass,
   Glasses,
+  HelpCircle,
   Layers,
   ListTree,
   Pause,
@@ -50,8 +51,9 @@ import {
   Wheel2DOrientation,
   Wheel2DStyle,
 } from './Chart2DCanvas';
+import { InteractiveHelpTab } from './InteractiveHelpTab';
 
-type DockTab = 'natal' | 'derived' | 'aspects' | 'settings';
+export type DockTab = 'natal' | 'derived' | 'aspects' | 'settings' | 'help';
 
 export type ComparativePairKind =
   | 'natal-vs-sr'
@@ -148,6 +150,9 @@ interface ControlDockProps {
   onOpenFullSummary: () => void;
   onOpenAscendantCalculator: () => void;
   onOpenQuestGuide: () => void;
+  onOpenSharePrint: () => void;
+  onOpenAudioIntro: () => void;
+  requestedTab?: { tab: DockTab; nonce: number } | null;
 }
 
 const MODE_LABELS: Array<{ id: ChartMode; label: string }> = [
@@ -446,8 +451,16 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onOpenFullSummary,
   onOpenAscendantCalculator,
   onOpenQuestGuide,
+  onOpenSharePrint,
+  onOpenAudioIntro,
+  requestedTab,
 }) => {
   const [activeTab, setActiveTab] = useState<DockTab>('natal');
+  useEffect(() => {
+    if (requestedTab) {
+      setActiveTab(requestedTab.tab);
+    }
+  }, [requestedTab]);
   const [useCustomCoords, setUseCustomCoords] = useState<boolean>(
     Boolean(draftProfile.customCityName && draftProfile.customLat !== undefined)
   );
@@ -750,6 +763,18 @@ export const ControlDock: React.FC<ControlDockProps> = ({
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Réglages</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('help')}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                activeTab === 'help'
+                  ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
+                  : 'text-[#7dd3fc] hover:bg-[#38bdf8]/10 hover:text-white'
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Aide</span>
             </button>
           </div>
 
@@ -2110,6 +2135,33 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB 5: Aide interactive disponible à tout moment */}
+        {activeTab === 'help' && (
+          <InteractiveHelpTab
+            actions={{
+              onSwitchTab: (tab) => setActiveTab(tab),
+              onFocusNatalName: () => {
+                const el = document.getElementById('natal-name');
+                el?.focus();
+              },
+              onSetMode: (nextMode) => onModeChange(nextMode),
+              onSetViewDimension: (dim) => onViewDimensionChange(dim),
+              onEnableAllSkyAnimations: () =>
+                onSkyAnimationsChange({
+                  shootingStars: true,
+                  nebulae: true,
+                  aurora: true,
+                }),
+              onOpenAscendantCalculator,
+              onOpenFullSummary,
+              onOpenQuestGuide,
+              onOpenSharePrint,
+              onOpenAudioIntro,
+              viewDimension,
+            }}
+          />
         )}
       </div>
     </div>

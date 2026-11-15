@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Compass,
   Edit3,
@@ -7,13 +7,26 @@ import {
   Info,
   Mail,
   Monitor,
+  Music,
+  Pause,
+  Play,
   RotateCcw,
   Save,
   ScanEye,
   Sparkles,
+  Square,
   User,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react';
+import {
+  esotericIntroMusic,
+  INTRO_NARRATION_CHAPTERS,
+  isSpeechSynthesisSupported,
+  pickFrenchVoice,
+  stopFrenchSpeech,
+} from '../vr/audio';
 
 const CREATOR_STORAGE_KEY = 'uranie_vr_creator_profile_v1';
 const ALWAYS_SHOW_INTRO_KEY = 'uranie_vr_intro_always_v1';
@@ -44,6 +57,7 @@ interface AboutCreatorModalProps {
   mrSupported: boolean;
   onEnterVR: () => void;
   onEnterMR: () => void;
+  autoStartAudio?: boolean;
 }
 
 export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
@@ -53,6 +67,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
   mrSupported,
   onEnterVR,
   onEnterMR,
+  autoStartAudio = false,
 }) => {
   const [creator, setCreator] = useState<CreatorProfile>(() => {
     try {
@@ -77,9 +92,195 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
     }
   });
 
+  // Guided Voice & Esoteric Music state
+  const [tourPlaying, setTourPlaying] = useState<boolean>(false);
+  const [activeChapterIdx, setActiveChapterIdx] = useState<number>(0);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(true);
+  const [musicActive, setMusicActive] = useState<boolean>(false);
+  const [needsUserClickForAudio, setNeedsUserClickForAudio] = useState<boolean>(false);
+
+  const speechSupported = isSpeechSynthesisSupported();
+  const tourActiveRef = useRef<boolean>(false);
+  const runTokenRef = useRef<number>(0);
+  const voiceEnabledRef = useRef<boolean>(voiceEnabled);
+  voiceEnabledRef.current = voiceEnabled;
+
   useEffect(() => {
     setDraftCreator(creator);
   }, [creator, open]);
+
+  // Preload browser speech voices when modal mounts
+  useEffect(() => {
+    if (!speechSupported) return;
+    const warmUp = () => {
+      window.speechSynthesis.getVoices();
+    };
+    warmUp();
+    window.speechSynthesis.addEventListener?.('voiceschanged', warmUp);
+    return () => {
+      window.speechSynthesis.removeEventListener?.('voiceschanged', warmUp);
+    };
+  }, [speechSupported]);
+
+  const stopAllAudio = useCallback(() => {
+    tourActiveRef.current = false;
+    runTokenRef.current += 1;
+    stopFrenchSpeech();
+    esotericIntroMusic.setDucked(false);
+    esotericIntroMusic.stop();
+    setTourPlaying(false);
+    setMusicActive(false);
+  }, []);
+
+  const speakChapterAt = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= INTRO_NARRATION_CHAPTERS.length) {
+        tourActiveRef.current = false;
+        setTourPlaying(false);
+        esotericIntroMusic.setDucked(false);
+        return;
+      }
+
+      const token = ++runTokenRef.current;
+      tourActiveRef.current = true;
+      setTourPlaying(true);
+      setActiveChapterIdx(index);
+
+      if (!voiceEnabledRef.current || !speechSupported) {
+        // Music-only chapter timer so visual progress advances smoothly even if voice is muted
+        esotericIntroMusic.setDucked(false);
+        window.setTimeout(() => {
+          if (runTokenRef.current !== token || !tourActiveRef.current) return;
+          speakChapterAt(index + 1);
+        }, 7000);
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel();
+        const chapter = INTRO_NARRATION_CHAPTERS[index];
+        const utter = new SpeechSynthesisUtterance(chapter.text);
+        const frVoice = pickFrenchVoice();
+        if (frVoice) {
+          utter.voice = frVoice;
+          utter.lang = frVoice.lang;
+        } else {
+          utter.lang = 'fr-FR';
+        }
+        utter.rate = 0.96;
+        utter.pitch = 0.98;
+        utter.volume = 1.0;
+
+        utter.onstart = () => {
+          if (runTokenRef.current !== token) return;
+          setNeedsUserClickForAudio(false);
+          esotericIntroMusic.setDucked(true);
+        };
+
+        utter.onend = () => {
+          if (runTokenRef.current !== token || !tourActiveRef.current) return;
+          if (index + 1 < INTRO_NARRATION_CHAPTERS.length) {
+            window.setTimeout(() => {
+              if (runTokenRef.current !== token || !tourActiveRef.current) return;
+              speakChapterAt(index + 1);
+            }, 450);
+          } else {
+            tourActiveRef.current = false;
+            setTourPlaying(false);
+            esotericIntroMusic.setDucked(false);
+          }
+        };
+
+        utter.onerror = (ev) => {
+          if (runTokenRef.current !== token) return;
+          if (ev.error === 'not-allowed') {
+            setNeedsUserClickForAudio(true);
+            tourActiveRef.current = false;
+            setTourPlaying(false);
+            esotericIntroMusic.setDucked(false);
+          }
+        };
+
+        window.speechSynthesis.speak(utter);
+      } catch {
+        setTourPlaying(false);
+        tourActiveRef.current = false;
+      }
+    },
+    [speechSupported]
+  );
+
+  const handleStartGuidedTour = useCallback(
+    async (startIdx = 0) => {
+      setNeedsUserClickForAudio(false);
+      if (musicEnabled) {
+        const ok = await esotericIntroMusic.start();
+        setMusicActive(ok);
+        if (!ok) {
+          setNeedsUserClickForAudio(true);
+        }
+      }
+      speakChapterAt(startIdx);
+    },
+    [musicEnabled, speakChapterAt]
+  );
+
+  const handlePauseGuidedTour = useCallback(() => {
+    tourActiveRef.current = false;
+    runTokenRef.current += 1;
+    stopFrenchSpeech();
+    esotericIntroMusic.setDucked(false);
+    setTourPlaying(false);
+  }, []);
+
+  const handleToggleMusic = useCallback(async () => {
+    const next = !musicEnabled;
+    setMusicEnabled(next);
+    if (!next) {
+      esotericIntroMusic.stop();
+      setMusicActive(false);
+    } else {
+      const ok = await esotericIntroMusic.start();
+      setMusicActive(ok);
+      esotericIntroMusic.setDucked(tourPlaying && voiceEnabled);
+    }
+  }, [musicEnabled, tourPlaying, voiceEnabled]);
+
+  const handleToggleVoice = useCallback(() => {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    voiceEnabledRef.current = next;
+    if (!next) {
+      runTokenRef.current += 1;
+      stopFrenchSpeech();
+      esotericIntroMusic.setDucked(false);
+    } else if (tourPlaying) {
+      speakChapterAt(activeChapterIdx);
+    }
+  }, [voiceEnabled, tourPlaying, activeChapterIdx, speakChapterAt]);
+
+  // Auto-start when opened via explicit click (autoStartAudio) or clean stop on close
+  useEffect(() => {
+    if (!open) {
+      stopAllAudio();
+      return;
+    }
+
+    if (autoStartAudio) {
+      void handleStartGuidedTour(0);
+    } else if (musicEnabled) {
+      // Attempt ambient music if browser already has user gesture; otherwise offer instant click button
+      void esotericIntroMusic.start().then((ok) => {
+        setMusicActive(ok);
+        if (!ok) setNeedsUserClickForAudio(true);
+      });
+    }
+
+    return () => {
+      stopAllAudio();
+    };
+  }, [open, autoStartAudio, stopAllAudio]);
 
   if (!open) return null;
 
@@ -113,6 +314,8 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
     }
   };
 
+  const currentChapter = INTRO_NARRATION_CHAPTERS[activeChapterIdx] ?? INTRO_NARRATION_CHAPTERS[0];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
       <div className="w-full max-w-3xl rounded-xl border border-[#d4af37]/35 bg-[#090e1d] p-6 text-[#f3efe6] shadow-2xl max-h-[90vh] overflow-y-auto cosmic-scroll">
@@ -121,7 +324,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
           <div>
             <div className="flex items-center gap-2 text-xs font-medium text-[#d4af37]">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Observatoire Astrologique 3D & WebXR · Meta Quest & PC</span>
+              <span>Observatoire Astrologique 2D, 3D & WebXR · Meta Quest & PC</span>
             </div>
             <h2 className="font-display text-3xl font-semibold text-[#f8f3e6] mt-1">
               Bienvenue dans Uranie VR
@@ -129,7 +332,10 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              stopAllAudio();
+              onClose();
+            }}
             aria-label="Fermer la page de présentation"
             className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
           >
@@ -137,36 +343,152 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
           </button>
         </div>
 
-        <div className="mt-5 space-y-5 text-sm leading-relaxed text-slate-300">
+        <div className="mt-4 space-y-5 text-sm leading-relaxed text-slate-300">
+          {/* Lecteur Audio d'Introduction : Voix explicative + Musique ésotérique */}
+          <div className="rounded-xl border border-[#d4af37]/40 bg-gradient-to-br from-[#121a35] via-[#0c1328] to-[#090d1b] p-4 shadow-lg">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#fde68a]">
+                  <Volume2 className="w-4 h-4 text-[#d4af37]" />
+                  <span>Visite guidée vocale · Ambiance sonore ésotérique (136,1 Hz)</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Écoutez la présentation complète de toutes les possibilités d’Uranie VR sur fond musical harmonique.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {!tourPlaying ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleStartGuidedTour(activeChapterIdx)}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 py-1.5 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>
+                      {needsUserClickForAudio
+                        ? 'Lancer la voix & musique'
+                        : activeChapterIdx > 0
+                          ? 'Reprendre la visite'
+                          : 'Écouter la présentation'}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePauseGuidedTour}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8] bg-[#38bdf8]/20 px-3 py-1.5 text-xs font-semibold text-[#e0f2fe] hover:bg-[#38bdf8]/30 transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    <Pause className="w-3.5 h-3.5" />
+                    <span>Pause voix</span>
+                  </button>
+                )}
+
+                {(tourPlaying || musicActive) && (
+                  <button
+                    type="button"
+                    onClick={stopAllAudio}
+                    title="Arrêter voix et musique"
+                    className="flex items-center gap-1 rounded-lg border border-white/15 bg-[#090e1d] px-2.5 py-1.5 text-xs text-slate-300 hover:border-rose-400/50 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Square className="w-3 h-3" />
+                    <span>Stop</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleToggleVoice}
+                  title="Activer ou couper la voix de narration"
+                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    voiceEnabled && speechSupported
+                      ? 'border-[#38bdf8]/50 bg-[#38bdf8]/15 text-[#bae6fd]'
+                      : 'border-white/10 bg-[#090e1d] text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {voiceEnabled && speechSupported ? (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <VolumeX className="w-3.5 h-3.5" />
+                  )}
+                  <span>Voix</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void handleToggleMusic()}
+                  title="Activer ou couper la musique ésotérique"
+                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    musicEnabled
+                      ? 'border-[#d4af37]/55 bg-[#d4af37]/15 text-[#fde68a]'
+                      : 'border-white/10 bg-[#090e1d] text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Music className="w-3.5 h-3.5" />
+                  <span>Musique {musicActive ? '· On' : ''}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Chapitres cliquables */}
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {INTRO_NARRATION_CHAPTERS.map((chap, idx) => {
+                const isCurrent = idx === activeChapterIdx;
+                return (
+                  <button
+                    key={chap.id}
+                    type="button"
+                    onClick={() => void handleStartGuidedTour(idx)}
+                    className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                      isCurrent
+                        ? tourPlaying
+                          ? 'border-[#38bdf8] bg-[#38bdf8]/20 text-white'
+                          : 'border-[#d4af37]/70 bg-[#d4af37]/15 text-[#fde68a]'
+                        : 'border-white/10 bg-[#090e1d]/80 text-slate-300 hover:border-white/30 hover:text-white'
+                    }`}
+                  >
+                    {idx + 1}. {chap.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Texte / Sous-titre du chapitre en cours */}
+            <div className="mt-2.5 rounded-lg border border-white/10 bg-[#070b17]/85 px-3 py-2 text-xs text-slate-200 leading-relaxed">
+              <span className="font-semibold text-[#f3d67a] mr-1.5">{currentChapter.title} :</span>
+              <span>{currentChapter.text}</span>
+            </div>
+          </div>
+
           {/* Présentation du programme */}
           <div className="rounded-xl border border-white/10 bg-[#0d1428] p-4">
             <div className="flex items-center gap-2 font-medium text-[#f8f3e6]">
               <Compass className="w-4 h-4 text-[#d4af37]" />
-              <span>Présentation du programme</span>
+              <span>Toutes les possibilités du programme</span>
             </div>
             <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-              <strong>Uranie VR</strong> est un observatoire astrologique et astronomique immersif en temps réel. Tous les calculs planétaires s’exécutent localement et hors-ligne avec une précision astronomique : thème natal, transits en direct, révolutions solaires et lunaires, progressions secondaires, synastrie, thème composite ainsi que les correspondances zodiacales occidentales et chinoises.
+              <strong>Uranie VR</strong> est un observatoire astrologique et astronomique immersif en temps réel. Tous les calculs planétaires s’exécutent localement et hors-ligne avec une précision astronomique : thème natal (par prénom, date, heure et lieu/code postal), calculateur d’<strong>Ascendant seul</strong>, transits en direct animés, révolutions solaires et lunaires, progressions secondaires, synastrie, thème composite, comparatifs double-roue ainsi que les correspondances zodiacales occidentales et chinoises.
             </p>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="rounded-lg border border-[#38bdf8]/25 bg-[#081124] p-3">
                 <div className="flex items-center gap-1.5 font-semibold text-[#7dd3fc]">
                   <Glasses className="w-4 h-4" />
-                  <span>Expérience Meta Quest 3</span>
+                  <span>Expérience Meta Quest 3 (VR & MR)</span>
                 </div>
                 <ul className="mt-1.5 space-y-1 text-slate-300 list-disc list-inside">
                   <li>VR 360° complète & Réalité Mixte Passthrough couleur.</li>
                   <li>Pointez planètes et maisons à la manette et cliquez avec la gâchette.</li>
-                  <li>Poussez le joystick gauche/droite en VR pour faire défiler l’heure.</li>
+                  <li>Animations dans le ciel : étoiles filantes, nébuleuses et aurores boréales.</li>
                 </ul>
               </div>
               <div className="rounded-lg border border-[#d4af37]/25 bg-[#0f1526] p-3">
                 <div className="flex items-center gap-1.5 font-semibold text-[#f3d67a]">
                   <Monitor className="w-4 h-4" />
-                  <span>Expérience PC (Windows / Web)</span>
+                  <span>Expérience PC (Vue 2D & 3D + Aide)</span>
                 </div>
                 <ul className="mt-1.5 space-y-1 text-slate-300 list-disc list-inside">
-                  <li>Navigation 3D fluide à la souris (orbite, zoom, sélection directe).</li>
-                  <li>Compatible PCVR (Quest Link, Air Link, SteamVR) via WebXR.</li>
+                  <li>Mode <strong>2D PC</strong> haute lisibilité avec <strong>8 roues</strong> et 3 orientations, ou vue <strong>3D</strong>.</li>
+                  <li>Onglet <strong>Réglages</strong> centralisé et onglet <strong>Aide interactive</strong> disponible à tout moment.</li>
                   <li>Export PDF complet et partage de thème par lien ou QR code.</li>
                 </ul>
               </div>
@@ -350,6 +672,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  stopAllAudio();
                   onClose();
                   onEnterMR();
                 }}
@@ -363,6 +686,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  stopAllAudio();
                   onClose();
                   onEnterVR();
                 }}
@@ -374,7 +698,10 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
             )}
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                stopAllAudio();
+                onClose();
+              }}
               className="flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-4 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer"
             >
               <Info className="w-4 h-4" />
