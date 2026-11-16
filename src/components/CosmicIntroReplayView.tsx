@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Home,
   Maximize2,
   Minimize2,
   Pause,
@@ -8,6 +9,7 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
+  X,
 } from 'lucide-react';
 import {
   computeSplashFrame,
@@ -230,6 +232,24 @@ export const CosmicIntroReplayView: React.FC<CosmicIntroReplayViewProps> = ({
     }
     audioRef.current?.syncToTime(0, true);
   }, []);
+
+  const handleExitImmediately = useCallback(() => {
+    setIsPlaying(false);
+    isPlayingRef.current = false;
+    audioRef.current?.dispose();
+    audioRef.current = null;
+    onEnterUniverse();
+  }, [onEnterUniverse]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleExitImmediately();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleExitImmediately]);
 
   const handleEnterClick = useCallback(() => {
     if (exiting) return;
@@ -565,27 +585,43 @@ export const CosmicIntroReplayView: React.FC<CosmicIntroReplayViewProps> = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              handleEnterClick();
+              handleExitImmediately();
             }}
-            className="rounded-full border border-white/15 bg-[#0b1022]/65 backdrop-blur-xl px-3.5 py-1.5 text-[11px] font-medium tracking-wider uppercase text-slate-300/85 hover:border-amber-300/45 hover:text-amber-100 transition-all cursor-pointer"
+            title="Quitter l’animation et revenir immédiatement à l’accueil"
+            className="flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-[#0b1022]/80 backdrop-blur-xl px-3.5 py-1.5 text-[11px] font-medium tracking-wider uppercase text-amber-100 hover:border-amber-300/75 hover:bg-amber-400/15 hover:text-white transition-all cursor-pointer"
           >
-            Passer l’intro
+            <Home className="h-3.5 w-3.5 text-amber-300" />
+            <span>Quitter l’animation</span>
           </button>
         </div>
       )}
 
       {cinemaMode && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setCinemaMode(false);
-          }}
-          className="fixed top-4 right-4 z-40 flex items-center gap-1.5 rounded-full border border-white/15 bg-[#0b1022]/60 backdrop-blur-xl px-3 py-1.5 text-[11px] text-slate-300/80 hover:text-amber-100 transition-all cursor-pointer"
-        >
-          <Minimize2 className="h-3 w-3" />
-          <span>Afficher contrôles</span>
-        </button>
+        <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCinemaMode(false);
+            }}
+            className="flex items-center gap-1.5 rounded-full border border-white/15 bg-[#0b1022]/65 backdrop-blur-xl px-3 py-1.5 text-[11px] text-slate-300/85 hover:text-amber-100 transition-all cursor-pointer"
+          >
+            <Minimize2 className="h-3 w-3" />
+            <span>Afficher contrôles</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleExitImmediately();
+            }}
+            title="Quitter l’animation et revenir à l’accueil"
+            className="flex items-center gap-1 rounded-full border border-amber-300/40 bg-[#0b1022]/75 backdrop-blur-xl px-3 py-1.5 text-[11px] font-medium text-amber-100 hover:border-amber-300/75 hover:bg-amber-400/15 transition-all cursor-pointer"
+          >
+            <X className="h-3 w-3 text-amber-300" />
+            <span>Quitter</span>
+          </button>
+        </div>
       )}
 
       {/* Layer 1 & 2: Sacred Geometry SVG Centerpiece + Identity + CTA */}
@@ -965,9 +1001,20 @@ export const CosmicIntroReplayView: React.FC<CosmicIntroReplayViewProps> = ({
                 </span>
               </div>
             </div>
-            <span className="font-mono-tabular text-[11px] text-amber-200/90 shrink-0">
-              {formatTimecode(elapsedSec)} / {formatTimecode(COSMIC_SPLASH_DURATION_SEC)}
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-mono-tabular text-[11px] text-amber-200/90">
+                {formatTimecode(elapsedSec)} / {formatTimecode(COSMIC_SPLASH_DURATION_SEC)}
+              </span>
+              <button
+                type="button"
+                onClick={handleExitImmediately}
+                title="Quitter l’animation et revenir immédiatement à l’accueil (Échap)"
+                className="flex items-center gap-1 rounded-full border border-amber-300/35 bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-100 hover:border-amber-300/70 hover:bg-amber-400/20 transition-all cursor-pointer"
+              >
+                <X className="h-3 w-3 text-amber-300" />
+                <span>Accueil</span>
+              </button>
+            </div>
           </div>
 
           {/* Interactive 4-Movement Timeline Scrubber */}

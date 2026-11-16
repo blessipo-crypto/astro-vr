@@ -2188,6 +2188,13 @@ export default function App() {
         lockExports={exportsLocked}
         lockQuit={quitLocked}
         onOpenAdmin={() => setCosmicTab('admin')}
+        isIntroActive={cosmicTab === 'intro'}
+        onOpenIntroReplay={() => {
+          if (esotericIntroMusic.isPlaying()) {
+            esotericIntroMusic.stop();
+          }
+          setCosmicTab('intro');
+        }}
       />
 
       {lockBannerMsg && !adminSecurity.screenLocked && (

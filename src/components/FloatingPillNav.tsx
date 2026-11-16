@@ -51,7 +51,7 @@ const PILL_ITEMS: Array<{
   { id: 'library', label: 'Bibliothèque des Astres', shortLabel: 'Bibliothèque', icon: BookMarked },
   { id: 'tutorial', label: 'Didacticiel', shortLabel: 'Didacticiel', icon: GraduationCap },
   { id: 'help', label: 'Aide / Fonctions', shortLabel: 'Aide', icon: HelpCircle },
-  { id: 'intro', label: 'Revoir l’animation', shortLabel: 'Animation', icon: Film },
+  { id: 'intro', label: 'Revoir l’animation', shortLabel: 'Intro', icon: Film },
   { id: 'admin', label: 'Admin / Sécurité', shortLabel: 'Admin', icon: ShieldCheck },
 ];
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Compass,
+  Film,
   Glasses,
   Info,
   Lock,
@@ -45,6 +46,8 @@ export interface ChartSelectorBarProps {
   lockExports?: boolean;
   lockQuit?: boolean;
   onOpenAdmin?: () => void;
+  onOpenIntroReplay?: () => void;
+  isIntroActive?: boolean;
 }
 
 const CHART_ENGINE_ITEMS: Array<{ id: ChartMode; label: string }> = [
@@ -87,6 +90,8 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
   lockExports = false,
   lockQuit = false,
   onOpenAdmin,
+  onOpenIntroReplay,
+  isIntroActive = false,
 }) => {
   const isReturnMode =
     mode === 'solarReturn' || mode === 'lunarReturn' || mode === 'planetaryReturn';
@@ -123,6 +128,22 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
             <Info className="h-3 w-3 text-amber-300/80" />
             <span className="hidden md:inline">Atelier</span>
           </button>
+
+          {onOpenIntroReplay && (
+            <button
+              type="button"
+              onClick={onOpenIntroReplay}
+              title="Revoir la séquence cinématique d’introduction (1m 40s)"
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                isIntroActive
+                  ? 'border-amber-300/60 bg-amber-400/20 text-amber-100 shadow-[0_0_14px_rgba(251,191,36,0.28)]'
+                  : 'border-amber-200/25 bg-amber-400/[0.06] text-amber-100/90 hover:border-amber-300/50 hover:bg-amber-400/15 hover:text-white'
+              }`}
+            >
+              <Film className="h-3 w-3 text-amber-300" />
+              <span className="hidden md:inline">Revoir l’intro</span>
+            </button>
+          )}
         </div>
 
         {/* Center: Primary Chart Engine Selector */}
