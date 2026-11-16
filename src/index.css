@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
+@theme {
+  --font-display: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', 'Montserrat', 'Lato', system-ui, -apple-system, sans-serif;
+}
+
 @layer base {
   :root {
     --font-display: 'Cinzel', 'Cormorant Garamond', 'Playfair Display', Cochin, Georgia, serif;
-    --font-sans: 'Montserrat', 'Lato', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', 'Montserrat', 'Lato', system-ui, -apple-system, sans-serif;
     --font-glyph: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   }
@@ -16,15 +23,26 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #05070e;
+    background-color: #07070C;
     color: #f3efe6;
     font-family: var(--font-sans), var(--font-glyph);
     font-variant-emoji: text;
+    color-scheme: dark;
+  }
+
+  select option,
+  select optgroup {
+    background-color: #0b0c16;
+    color: #f3efe6;
   }
 }
 
 .font-display {
   font-family: var(--font-display);
+}
+
+.font-serif {
+  font-family: var(--font-serif);
 }
 
 .font-glyph {
@@ -43,7 +61,7 @@ svg text {
   font-variant-emoji: text;
 }
 
-/* Custom subtle scrollbars for inspection drawer */
+/* Custom subtle scrollbars for inspection drawer & modals */
 .cosmic-scroll::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -54,12 +72,12 @@ svg text {
 }
 
 .cosmic-scroll::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.25);
-  border-radius: 3px;
+  background: rgba(252, 211, 77, 0.22);
+  border-radius: 9999px;
 }
 
 .cosmic-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.45);
+  background: rgba(252, 211, 77, 0.44);
 }
 
 .print-only {

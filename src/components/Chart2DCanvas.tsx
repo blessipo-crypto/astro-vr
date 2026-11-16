@@ -669,8 +669,8 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
       } ${inspectorOpen ? 'lg:pr-[465px]' : ''}`}
       style={{
         background: palette.isLight
-          ? 'radial-gradient(circle at center, #1e293b 0%, #0b1120 75%, #05070e 100%)'
-          : 'radial-gradient(circle at center, #0e1630 0%, #060a16 70%, #03050c 100%)',
+          ? 'radial-gradient(circle at center, rgba(30,41,59,0.55) 0%, rgba(7,7,12,0.88) 72%, rgba(7,7,12,0.96) 100%)'
+          : 'radial-gradient(circle at center, rgba(25,22,52,0.45) 0%, rgba(7,7,12,0.85) 70%, rgba(7,7,12,0.96) 100%)',
       }}
     >
       <Sky2DBackdrop skyAnimations={skyAnimations} />
@@ -678,8 +678,8 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
       {/* 2D Wheel Selector Bar (PC Study Mode) */}
       <div className="relative z-10 mx-auto w-full max-w-5xl px-4 pt-1 pb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-medium text-[#e7cfa0] mr-1 flex items-center gap-1">
-            <Compass className="w-3.5 h-3.5 text-[#d4af37]" />
+          <span className="text-[11px] font-medium text-amber-200/85 mr-1 flex items-center gap-1">
+            <Compass className="w-3.5 h-3.5 text-amber-300/80" />
             <span>Roue 2D :</span>
           </span>
           {WHEEL_2D_STYLES.map((st) => {
@@ -690,10 +690,10 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                 type="button"
                 title={st.description}
                 onClick={() => onWheel2DStyleChange(st.id)}
-                className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap shrink-0 ${
                   active
-                    ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#fffbeb]'
-                    : 'border-white/10 bg-[#0d1428]/85 text-slate-300 hover:border-white/30 hover:text-white'
+                    ? 'border-amber-300/50 bg-amber-400/15 text-amber-100 shadow-[0_0_14px_rgba(245,158,11,0.2)]'
+                    : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-amber-300/30 hover:text-white'
                 }`}
               >
                 <span
@@ -715,7 +715,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
             aria-label="Orientation de la roue 2D"
             value={wheel2DOrientation}
             onChange={(e) => onWheel2DOrientationChange(e.target.value as Wheel2DOrientation)}
-            className="rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1 text-[11px] text-[#f3efe6] cursor-pointer focus:border-[#d4af37] focus:outline-none"
+            className="rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white cursor-pointer focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
           >
             <option value="ascendant">ASC à gauche (Classique)</option>
             <option value="aries0">0° Bélier à gauche (Naturel)</option>
@@ -726,7 +726,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
             aria-label="Style des glyphes"
             value={signStyle}
             onChange={(e) => onSignStyleChange(e.target.value as ZodiacSignStyle)}
-            className="rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1 text-[11px] text-[#fde68a] cursor-pointer focus:border-[#d4af37] focus:outline-none"
+            className="rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-amber-200 cursor-pointer focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
           >
             {ZODIAC_SIGN_STYLES.map((s) => (
               <option key={s.id} value={s.id}>
@@ -738,10 +738,10 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
           <button
             type="button"
             onClick={() => setShowDecans((v) => !v)}
-            className={`rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap shrink-0 ${
               showDecanRing
-                ? 'border-[#d4af37]/50 bg-[#d4af37]/15 text-[#fde68a]'
-                : 'border-white/15 bg-[#0d1428] text-slate-300 hover:text-white'
+                ? 'border-amber-300/45 bg-amber-400/15 text-amber-100'
+                : 'border-white/15 bg-white/[0.04] text-slate-300 hover:border-amber-300/30 hover:text-white'
             }`}
           >
             Décans
@@ -750,10 +750,10 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
           <button
             type="button"
             onClick={() => setShowDegreesOnWheel((v) => !v)}
-            className={`rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap shrink-0 ${
               showDegreesOnWheel
-                ? 'border-[#38bdf8]/50 bg-[#38bdf8]/15 text-[#7dd3fc]'
-                : 'border-white/15 bg-[#0d1428] text-slate-300 hover:text-white'
+                ? 'border-sky-300/45 bg-sky-400/15 text-sky-200'
+                : 'border-white/15 bg-white/[0.04] text-slate-300 hover:border-amber-300/30 hover:text-white'
             }`}
           >
             Degrés
@@ -764,9 +764,9 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
               type="button"
               onClick={() => onHighlightAspect(null)}
               title="Réinitialiser la mise en évidence d’aspect"
-              className="flex items-center gap-1 rounded-lg border border-white/15 bg-[#0d1428] px-2 py-1 text-[11px] text-slate-300 hover:text-white cursor-pointer"
+              className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-300 hover:border-amber-300/30 hover:text-white transition-all cursor-pointer"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3 h-3 text-amber-300/80" />
               <span>Aspects</span>
             </button>
           )}
@@ -774,7 +774,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
           <button
             type="button"
             onClick={onSwitchTo3D}
-            className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/50 bg-[#121931] px-2.5 py-1 text-[11px] font-semibold text-[#f3d67a] hover:bg-[#d4af37] hover:text-[#05070e] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 px-3.5 py-1 text-[11px] font-semibold tracking-wide text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap shrink-0"
           >
             <Box className="w-3.5 h-3.5" />
             <span>Vue 3D / VR</span>
@@ -1451,17 +1451,17 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
           </svg>
 
           {/* Compact Corner Summary Card on Wide PC Screens */}
-          <div className="hidden xl:flex flex-col gap-1.5 fixed left-5 top-20 z-10 w-60 rounded-xl border border-[#d4af37]/25 bg-[#080d1b]/90 p-3 text-xs text-slate-200 pointer-events-auto">
-            <div className="font-display text-sm font-semibold tracking-wide text-[#e7cfa0]">
+          <div className="hidden xl:flex flex-col gap-2 fixed left-5 top-20 z-10 w-64 rounded-3xl border border-white/10 bg-[#090a14]/82 bg-white/[0.03] backdrop-blur-xl p-4 text-xs text-slate-200 shadow-2xl shadow-black/50 hover:border-amber-300/30 transition-all duration-300 pointer-events-auto">
+            <div className="font-display text-xs font-semibold tracking-widest uppercase bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent">
               Carte 2D · {baseChart.cityName}
             </div>
-            <div className="text-[11px] text-slate-400">
+            <div className="text-[11px] leading-relaxed text-slate-300">
               Cliquer une planète, une maison ou un aspect ouvre son interprétation.
             </div>
-            <div className="border-t border-white/10 pt-1.5 space-y-1 text-[11px]">
+            <div className="border-t border-white/10 pt-2 space-y-1 text-[11px]">
               <div>
                 <span className="text-slate-400">Ascendant : </span>
-                <span className="font-semibold text-[#fbbf24]">
+                <span className="font-semibold text-amber-200">
                   {tradition === 'chinese'
                     ? `${transposeLongitudeToChinese(baseChart.ascendant).sign.branchHanzi}${transposeLongitudeToChinese(baseChart.ascendant).sign.hanzi} ${transposeLongitudeToChinese(baseChart.ascendant).sign.name}`
                     : `${baseChart.ascSign.symbol} ${baseChart.ascSign.name}`}
@@ -1470,7 +1470,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
               {sun && (
                 <div>
                   <span className="text-slate-400">Soleil : </span>
-                  <span className="font-semibold text-[#f8f3e6]">
+                  <span className="font-semibold text-slate-100">
                     {sun.formattedDeg} {sun.sign.name}
                   </span>
                 </div>
@@ -1478,7 +1478,7 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
               {moon && (
                 <div>
                   <span className="text-slate-400">Lune : </span>
-                  <span className="font-semibold text-[#f8f3e6]">
+                  <span className="font-semibold text-slate-100">
                     {moon.formattedDeg} {moon.sign.name}
                   </span>
                 </div>

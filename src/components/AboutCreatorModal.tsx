@@ -332,16 +332,25 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
   const currentChapter = INTRO_NARRATION_CHAPTERS[activeChapterIdx] ?? INTRO_NARRATION_CHAPTERS[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-3xl rounded-xl border border-[#d4af37]/35 bg-[#090e1d] p-6 text-[#f3efe6] shadow-2xl max-h-[90vh] overflow-y-auto cosmic-scroll">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#07070C]/85 backdrop-blur-xl p-4 overflow-hidden">
+      {/* Ambient Celestial Glow Orbs */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-24 left-1/4 h-[420px] w-[420px] rounded-full bg-purple-900/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-indigo-900/15 blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 h-[320px] w-[320px] rounded-full bg-amber-500/5 blur-[120px]" />
+      </div>
+
+      <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0c0c16]/90 bg-white/[0.03] backdrop-blur-xl p-6 sm:p-7 text-[#f3efe6] shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto cosmic-scroll">
         {/* En-tête */}
         <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-medium text-[#d4af37]">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Observatoire Astrologique 2D, 3D & WebXR · Meta Quest & PC</span>
+            <div className="flex items-center gap-2 text-xs font-medium text-amber-200/80">
+              <Sparkles className="w-4 h-4 text-amber-300/80" />
+              <span className="font-serif italic text-sm tracking-wide">
+                Observatoire Astrologique 2D, 3D &amp; WebXR · Meta Quest &amp; PC
+              </span>
             </div>
-            <h2 className="font-display text-3xl font-semibold text-[#f8f3e6] mt-1">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase mt-1.5">
               Bienvenue dans Uranie VR
             </h2>
           </div>
@@ -352,35 +361,35 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
               onClose();
             }}
             aria-label="Fermer la page de présentation"
-            className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/[0.03] p-2 text-slate-300 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mt-4 space-y-5 text-sm leading-relaxed text-slate-300">
+        <div className="mt-5 space-y-5 text-sm leading-relaxed text-slate-200">
           {/* Lecteur Audio d'Introduction : Voix explicative + Musique ésotérique */}
-          <div className="rounded-xl border border-[#d4af37]/40 bg-gradient-to-br from-[#121a35] via-[#0c1328] to-[#090d1b] p-4 shadow-lg">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 shadow-2xl shadow-black/50 hover:border-amber-300/30 transition-all duration-300">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#fde68a]">
-                  <Volume2 className="w-4 h-4 text-[#d4af37]" />
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-200">
+                  <Volume2 className="w-4 h-4 text-amber-300/80" />
                   <span>
                     Visite guidée vocale ·{' '}
                     {MUSIC_STYLES.find((s) => s.id === musicStyle)?.label ?? 'Nocturne Astral'} (432 Hz)
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="font-serif italic text-sm text-slate-300 mt-0.5">
                   Écoutez la présentation complète d’Uranie VR sur une ambiance céleste stéréo apaisante.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {!tourPlaying ? (
                   <button
                     type="button"
                     onClick={() => void handleStartGuidedTour(activeChapterIdx)}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 py-1.5 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer whitespace-nowrap"
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-5 py-2 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap"
                   >
                     <Play className="w-3.5 h-3.5" />
                     <span>
@@ -395,9 +404,9 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   <button
                     type="button"
                     onClick={handlePauseGuidedTour}
-                    className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8] bg-[#38bdf8]/20 px-3 py-1.5 text-xs font-semibold text-[#e0f2fe] hover:bg-[#38bdf8]/30 transition-colors cursor-pointer whitespace-nowrap"
+                    className="flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-500/20 px-4 py-2 text-xs font-semibold text-indigo-100 hover:border-amber-300/30 transition-all duration-300 cursor-pointer whitespace-nowrap"
                   >
-                    <Pause className="w-3.5 h-3.5" />
+                    <Pause className="w-3.5 h-3.5 text-amber-300/80" />
                     <span>Pause voix</span>
                   </button>
                 )}
@@ -407,7 +416,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                     type="button"
                     onClick={stopAllAudio}
                     title="Arrêter voix et musique"
-                    className="flex items-center gap-1 rounded-lg border border-white/15 bg-[#090e1d] px-2.5 py-1.5 text-xs text-slate-300 hover:border-rose-400/50 hover:text-white transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-slate-200 hover:border-rose-400/50 hover:text-white transition-all duration-300 cursor-pointer"
                   >
                     <Square className="w-3 h-3" />
                     <span>Stop</span>
@@ -418,14 +427,14 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   type="button"
                   onClick={handleToggleVoice}
                   title="Activer ou couper la voix de narration"
-                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap ${
                     voiceEnabled && speechSupported
-                      ? 'border-[#38bdf8]/50 bg-[#38bdf8]/15 text-[#bae6fd]'
-                      : 'border-white/10 bg-[#090e1d] text-slate-400 hover:text-white'
+                      ? 'border-amber-300/30 bg-white/[0.06] text-amber-100'
+                      : 'border-white/10 bg-white/[0.02] text-slate-400 hover:text-white'
                   }`}
                 >
                   {voiceEnabled && speechSupported ? (
-                    <Volume2 className="w-3.5 h-3.5" />
+                    <Volume2 className="w-3.5 h-3.5 text-amber-300/80" />
                   ) : (
                     <VolumeX className="w-3.5 h-3.5" />
                   )}
@@ -436,20 +445,20 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   type="button"
                   onClick={() => void handleToggleMusic()}
                   title="Activer ou couper la musique d’ambiance"
-                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap ${
                     musicEnabled
-                      ? 'border-[#d4af37]/55 bg-[#d4af37]/15 text-[#fde68a]'
-                      : 'border-white/10 bg-[#090e1d] text-slate-400 hover:text-white'
+                      ? 'border-amber-300/30 bg-white/[0.06] text-amber-200'
+                      : 'border-white/10 bg-white/[0.02] text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Music className="w-3.5 h-3.5" />
+                  <Music className="w-3.5 h-3.5 text-amber-300/80" />
                   <span>Musique {musicActive ? '· On' : ''}</span>
                 </button>
               </div>
             </div>
 
             {/* Sélecteur d'ambiance musicale */}
-            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] text-slate-400 mr-1">Ambiance :</span>
               {MUSIC_STYLES.map((st) => {
                 const active = musicStyle === st.id;
@@ -472,10 +481,10 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                         setMusicActive(ok);
                       }
                     }}
-                    className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap ${
                       active
-                        ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#fde68a]'
-                        : 'border-white/10 bg-[#090e1d]/75 text-slate-300 hover:border-white/25 hover:text-white'
+                        ? 'border-amber-300/45 bg-amber-400/15 text-amber-100'
+                        : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-amber-300/30 hover:text-white'
                     }`}
                   >
                     {st.label}
@@ -493,12 +502,12 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                     key={chap.id}
                     type="button"
                     onClick={() => void handleStartGuidedTour(idx)}
-                    className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap ${
                       isCurrent
                         ? tourPlaying
-                          ? 'border-[#38bdf8] bg-[#38bdf8]/20 text-white'
-                          : 'border-[#d4af37]/70 bg-[#d4af37]/15 text-[#fde68a]'
-                        : 'border-white/10 bg-[#090e1d]/80 text-slate-300 hover:border-white/30 hover:text-white'
+                          ? 'border-indigo-300/60 bg-indigo-500/20 text-white'
+                          : 'border-amber-300/45 bg-amber-400/15 text-amber-100'
+                        : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-amber-300/30 hover:text-white'
                     }`}
                   >
                     {idx + 1}. {chap.shortLabel}
@@ -508,84 +517,84 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
             </div>
 
             {/* Texte / Sous-titre du chapitre en cours */}
-            <div className="mt-2.5 rounded-lg border border-white/10 bg-[#070b17]/85 px-3 py-2 text-xs text-slate-200 leading-relaxed">
-              <span className="font-semibold text-[#f3d67a] mr-1.5">{currentChapter.title} :</span>
+            <div className="mt-3.5 rounded-2xl border border-white/10 bg-[#07070C]/60 px-4 py-3 text-xs text-slate-200 leading-relaxed">
+              <span className="font-semibold text-amber-200 mr-1.5">{currentChapter.title} :</span>
               <span>{currentChapter.text}</span>
             </div>
           </div>
 
           {/* Présentation du programme */}
-          <div className="rounded-xl border border-white/10 bg-[#0d1428] p-4">
-            <div className="flex items-center gap-2 font-medium text-[#f8f3e6]">
-              <Compass className="w-4 h-4 text-[#d4af37]" />
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 shadow-2xl shadow-black/50 hover:border-amber-300/30 transition-all duration-300">
+            <div className="flex items-center gap-2 font-display text-sm font-semibold tracking-widest uppercase bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent">
+              <Compass className="w-4 h-4 text-amber-300/80 shrink-0" />
               <span>Toutes les possibilités du programme</span>
             </div>
-            <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-              <strong>Uranie VR</strong> est un observatoire astrologique et astronomique immersif en temps réel. Tous les calculs planétaires s’exécutent localement et hors-ligne avec une précision astronomique : thème natal (par prénom, date, heure et lieu/code postal), calculateur d’<strong>Ascendant seul</strong>, transits en direct animés, révolutions solaires et lunaires, progressions secondaires, synastrie, thème composite, comparatifs double-roue ainsi que les correspondances zodiacales occidentales et chinoises.
+            <p className="mt-2.5 text-xs sm:text-sm text-slate-200 leading-relaxed">
+              <strong className="text-amber-100">Uranie VR</strong> est un observatoire astrologique et astronomique immersif en temps réel. Tous les calculs planétaires s’exécutent localement et hors-ligne avec une précision astronomique : thème natal (par prénom, date, heure et lieu/code postal), calculateur d’<strong className="text-amber-100">Ascendant seul</strong>, transits en direct animés, révolutions solaires et lunaires, progressions secondaires, synastrie, thème composite, comparatifs double-roue ainsi que les correspondances zodiacales occidentales et chinoises.
             </p>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg border border-[#38bdf8]/25 bg-[#081124] p-3">
-                <div className="flex items-center gap-1.5 font-semibold text-[#7dd3fc]">
-                  <Glasses className="w-4 h-4" />
-                  <span>Expérience Meta Quest 3 (VR & MR)</span>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-amber-300/30 transition-all duration-300">
+                <div className="flex items-center gap-2 font-semibold text-amber-100">
+                  <Glasses className="w-4 h-4 text-amber-300/80" />
+                  <span>Expérience Meta Quest 3 (VR &amp; MR)</span>
                 </div>
-                <ul className="mt-1.5 space-y-1 text-slate-300 list-disc list-inside">
-                  <li>VR 360° complète & Réalité Mixte Passthrough couleur.</li>
+                <ul className="mt-2 space-y-1.5 text-slate-200 leading-relaxed list-disc list-inside">
+                  <li>VR 360° complète &amp; Réalité Mixte Passthrough couleur.</li>
                   <li>Pointez planètes et maisons à la manette et cliquez avec la gâchette.</li>
                   <li>Animations dans le ciel : étoiles filantes, nébuleuses et aurores boréales.</li>
                 </ul>
               </div>
-              <div className="rounded-lg border border-[#d4af37]/25 bg-[#0f1526] p-3">
-                <div className="flex items-center gap-1.5 font-semibold text-[#f3d67a]">
-                  <Monitor className="w-4 h-4" />
-                  <span>Expérience PC (Vue 2D & 3D + Aide)</span>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-amber-300/30 transition-all duration-300">
+                <div className="flex items-center gap-2 font-semibold text-amber-100">
+                  <Monitor className="w-4 h-4 text-amber-300/80" />
+                  <span>Expérience PC (Vue 2D &amp; 3D + Aide)</span>
                 </div>
-                <ul className="mt-1.5 space-y-1 text-slate-300 list-disc list-inside">
+                <ul className="mt-2 space-y-1.5 text-slate-200 leading-relaxed list-disc list-inside">
                   <li>Mode <strong>2D PC</strong> haute lisibilité avec <strong>8 roues</strong> et 3 orientations, ou vue <strong>3D</strong>.</li>
                   <li>Onglet <strong>Réglages</strong> centralisé et onglet <strong>Aide interactive</strong> disponible à tout moment.</li>
-                  <li>Export PDF complet et partage de thème par lien ou QR code.</li>
+                  <li>Export PDF complet, WhatsApp et partage par lien ou QR code.</li>
                 </ul>
               </div>
             </div>
           </div>
 
           {/* Fiche Créateurs du programme */}
-          <div className="rounded-xl border border-[#d4af37]/35 bg-gradient-to-br from-[#101830] to-[#0a1022] p-4">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 shadow-2xl shadow-black/50 hover:border-amber-300/30 transition-all duration-300">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 font-medium text-[#f8f3e6]">
-                <User className="w-4 h-4 text-[#d4af37]" />
+              <div className="flex items-center gap-2 font-display text-sm font-semibold tracking-widest uppercase bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent">
+                <User className="w-4 h-4 text-amber-300/80 shrink-0" />
                 <span>Créateurs du programme</span>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingCreator((v) => !v)}
-                className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/35 bg-[#090e1d] px-3 py-1.5 text-xs font-medium text-[#f3d67a] hover:bg-[#d4af37]/15 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-medium text-amber-100 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
               >
-                <Edit3 className="w-3.5 h-3.5" />
+                <Edit3 className="w-3.5 h-3.5 text-amber-300/80" />
                 <span>{editingCreator ? 'Annuler' : 'Modifier la présentation'}</span>
               </button>
             </div>
 
             {!editingCreator ? (
-              <div className="mt-3 space-y-2.5">
+              <div className="mt-3.5 space-y-3">
                 <div>
-                  <div className="font-display text-2xl font-semibold text-[#f8f3e6]">
+                  <div className="font-display text-xl sm:text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-wider uppercase">
                     {creator.name}
                   </div>
-                  <div className="text-xs font-medium text-[#38bdf8]">{creator.role}</div>
+                  <div className="font-serif italic text-sm text-indigo-200 mt-0.5">{creator.role}</div>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line">
                   {creator.bio}
                 </p>
                 {creator.dedication && (
-                  <div className="rounded-lg border border-[#d4af37]/30 bg-[#090e1d]/80 px-3.5 py-2.5 text-xs sm:text-sm italic text-[#f3d67a] leading-relaxed">
+                  <div className="rounded-2xl border border-white/10 bg-[#07070C]/60 px-4 py-3 font-serif text-sm sm:text-base italic text-amber-100/90 leading-relaxed">
                     « {creator.dedication} »
                   </div>
                 )}
                 <div className="pt-1 flex flex-wrap items-center gap-4 text-xs text-slate-300">
                   {creator.contact && (
-                    <span className="inline-flex items-center gap-1.5 text-[#e7cfa0]">
-                      <Mail className="w-3.5 h-3.5 text-[#d4af37]" />
+                    <span className="inline-flex items-center gap-1.5 text-amber-100/90">
+                      <Mail className="w-3.5 h-3.5 text-amber-300/80" />
                       <span>{creator.contact}</span>
                     </span>
                   )}
@@ -594,16 +603,16 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                       href={creator.projectUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 text-[#7dd3fc] hover:underline"
+                      className="inline-flex items-center gap-1.5 text-indigo-200 hover:text-amber-200 transition-colors"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Code source & mises à jour</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-amber-300/80" />
+                      <span>Code source &amp; mises à jour</span>
                     </a>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="mt-3 space-y-3 text-xs">
+              <div className="mt-3.5 space-y-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
                     <label htmlFor="creator-name" className="block text-[11px] text-slate-400 mb-1">
@@ -614,7 +623,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                       type="text"
                       value={draftCreator.name}
                       onChange={(e) => setDraftCreator((p) => ({ ...p, name: e.target.value }))}
-                      className="w-full rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-2 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                      className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                     />
                   </div>
                   <div>
@@ -626,7 +635,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                       type="text"
                       value={draftCreator.role}
                       onChange={(e) => setDraftCreator((p) => ({ ...p, role: e.target.value }))}
-                      className="w-full rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-2 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                      className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -640,7 +649,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                     rows={3}
                     value={draftCreator.bio}
                     onChange={(e) => setDraftCreator((p) => ({ ...p, bio: e.target.value }))}
-                    className="w-full rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-2 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                    className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                   />
                 </div>
 
@@ -653,7 +662,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                     rows={2}
                     value={draftCreator.dedication}
                     onChange={(e) => setDraftCreator((p) => ({ ...p, dedication: e.target.value }))}
-                    className="w-full rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-2 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                    className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                   />
                 </div>
 
@@ -667,7 +676,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                       type="text"
                       value={draftCreator.contact}
                       onChange={(e) => setDraftCreator((p) => ({ ...p, contact: e.target.value }))}
-                      className="w-full rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-2 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                      className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                     />
                   </div>
                   <div>
@@ -681,7 +690,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                       onChange={(e) =>
                         setDraftCreator((p) => ({ ...p, projectUrl: e.target.value }))
                       }
-                      className="w-full rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-2 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                      className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -690,7 +699,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleResetCreator}
-                    className="flex items-center gap-1 rounded-lg border border-white/15 bg-[#05070e] px-2.5 py-1.5 text-xs text-slate-300 hover:text-white cursor-pointer"
+                    className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-slate-300 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Réinitialiser</span>
@@ -698,7 +707,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSaveCreator}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3.5 py-1.5 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] cursor-pointer"
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-6 py-2.5 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>Enregistrer la fiche</span>
@@ -716,12 +725,12 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
               type="checkbox"
               checked={alwaysShowOnStart}
               onChange={(e) => handleToggleAlwaysShow(e.target.checked)}
-              className="accent-[#d4af37]"
+              className="accent-amber-400"
             />
             <span>Afficher cette présentation à chaque ouverture</span>
           </label>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             {mrSupported && (
               <button
                 type="button"
@@ -730,9 +739,9 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   onClose();
                   onEnterMR();
                 }}
-                className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/50 bg-[#0c162d] px-3.5 py-2 text-xs font-semibold text-[#7dd3fc] hover:bg-[#38bdf8]/20 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2.5 text-xs font-semibold text-indigo-100 hover:border-amber-300/30 transition-all duration-300 cursor-pointer"
               >
-                <ScanEye className="w-4 h-4" />
+                <ScanEye className="w-4 h-4 text-amber-300/80" />
                 <span>Réalité Mixte</span>
               </button>
             )}
@@ -744,9 +753,9 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                   onClose();
                   onEnterVR();
                 }}
-                className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/50 bg-[#121931] px-3.5 py-2 text-xs font-semibold text-[#f3d67a] hover:bg-[#d4af37]/20 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2.5 text-xs font-semibold text-amber-100 hover:border-amber-300/30 transition-all duration-300 cursor-pointer"
               >
-                <Glasses className="w-4 h-4" />
+                <Glasses className="w-4 h-4 text-amber-300/80" />
                 <span>Entrer en VR 360°</span>
               </button>
             )}
@@ -756,7 +765,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                 stopAllAudio();
                 onClose();
               }}
-              className="flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-4 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer"
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-8 py-3.5 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all cursor-pointer"
             >
               <Info className="w-4 h-4" />
               <span>Accéder à l’observatoire</span>

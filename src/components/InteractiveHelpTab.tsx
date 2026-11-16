@@ -333,12 +333,12 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
   return (
     <div className="mt-3 max-h-[46vh] overflow-y-auto cosmic-scroll pr-1 space-y-3">
       {/* 1. Assistant interactif pas à pas */}
-      <div className="rounded-lg border border-[#38bdf8]/35 bg-gradient-to-br from-[#0e1933] to-[#090f20] p-3">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-3.5 shadow-xl shadow-black/40 hover:border-amber-300/30 transition-all duration-300">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#38bdf8]" />
-            <span className="text-xs font-semibold text-[#e0f2fe]">
-              Assistant interactif pas-à-pas ({stepIdx + 1}/{GUIDED_STEPS.length})
+            <Sparkles className="w-4 h-4 text-amber-300/80" />
+            <span className="font-display text-xs tracking-wider uppercase font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent">
+              Assistant pas-à-pas ({stepIdx + 1}/{GUIDED_STEPS.length})
             </span>
           </div>
 
@@ -347,10 +347,10 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
               <button
                 type="button"
                 onClick={() => handleSpeakStep(currentStep)}
-                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer ${
                   speakingStepId === currentStep.id
-                    ? 'border-[#38bdf8] bg-[#38bdf8]/20 text-white'
-                    : 'border-white/15 bg-[#080d1c] text-[#7dd3fc] hover:border-[#38bdf8]/60'
+                    ? 'border-sky-300/60 bg-sky-400/20 text-white'
+                    : 'border-white/15 bg-white/[0.04] text-sky-200 hover:border-amber-300/35'
                 }`}
               >
                 {speakingStepId === currentStep.id ? (
@@ -364,16 +364,16 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
             <button
               type="button"
               onClick={actions.onOpenAudioIntro}
-              className="flex items-center gap-1 rounded-md border border-[#d4af37]/45 bg-[#121931] px-2 py-1 text-[11px] font-medium text-[#fde68a] hover:bg-[#d4af37]/20 transition-colors cursor-pointer"
+              className="flex items-center gap-1 rounded-full border border-amber-300/35 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-amber-200 hover:border-amber-300/60 hover:bg-amber-400/15 transition-all duration-300 cursor-pointer"
             >
-              <Play className="w-3 h-3" />
+              <Play className="w-3 h-3 text-amber-300/80" />
               <span>Visite audio + musique</span>
             </button>
           </div>
         </div>
 
         {/* Sélecteur d'étapes numérotées */}
-        <div className="mt-2 flex flex-wrap items-center gap-1">
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {GUIDED_STEPS.map((st, idx) => (
             <button
               key={st.id}
@@ -383,10 +383,10 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
                 setSpeakingStepId(null);
                 setStepIdx(idx);
               }}
-              className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer ${
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all duration-300 cursor-pointer ${
                 idx === stepIdx
-                  ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
-                  : 'bg-[#080d1c] text-slate-300 border border-white/10 hover:text-white'
+                  ? 'bg-gradient-to-r from-amber-500/85 via-amber-400/85 to-yellow-500/85 text-slate-950 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                  : 'bg-white/[0.04] text-slate-300 border border-white/10 hover:border-amber-300/30 hover:text-white'
               }`}
             >
               Étape {idx + 1}
@@ -394,10 +394,10 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
           ))}
         </div>
 
-        <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#070b17]/80 p-3">
+        <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3.5">
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-[#f8f3e6]">{currentStep.title}</div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">{currentStep.detail}</p>
+            <div className="text-xs font-semibold text-amber-100">{currentStep.title}</div>
+            <p className="text-[11px] text-slate-200 leading-relaxed">{currentStep.detail}</p>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -410,14 +410,14 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
                 setStepIdx((i) => Math.max(0, i - 1));
               }}
               aria-label="Étape précédente"
-              className="rounded-md border border-white/15 bg-[#0d1428] p-1.5 text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer"
+              className="rounded-full border border-white/15 bg-white/[0.04] p-1.5 text-slate-300 hover:border-amber-300/30 hover:text-white disabled:opacity-40 transition-all cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => currentStep.runAction(actions)}
-              className="flex items-center gap-1.5 rounded-md bg-[#d4af37] px-3 py-1.5 text-[11px] font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 px-4 py-1.5 text-[11px] font-semibold tracking-wide text-slate-950 shadow-[0_0_18px_rgba(245,158,11,0.28)] hover:shadow-[0_0_26px_rgba(245,158,11,0.48)] hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap"
             >
               <span>{currentStep.actionLabel}</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -431,7 +431,7 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
                 setStepIdx((i) => Math.min(GUIDED_STEPS.length - 1, i + 1));
               }}
               aria-label="Étape suivante"
-              className="rounded-md border border-white/15 bg-[#0d1428] p-1.5 text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer"
+              className="rounded-full border border-white/15 bg-white/[0.04] p-1.5 text-slate-300 hover:border-amber-300/30 hover:text-white disabled:opacity-40 transition-all cursor-pointer"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -440,17 +440,17 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
       </div>
 
       {/* 2. Recherche & Fiches d'aide cliquables */}
-      <div className="rounded-lg border border-white/10 bg-[#0d1428]/75 p-3 space-y-2.5">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-3.5 space-y-2.5 shadow-xl shadow-black/40">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-1 min-w-[230px]">
             <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-amber-300/70 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Rechercher une aide (ex : voix, ascendant, 2D, animations, quest...)"
-                className="w-full rounded-lg border border-white/15 bg-[#070b18] pl-8 pr-3 py-1.5 text-xs text-[#f3efe6] placeholder:text-slate-500 focus:border-[#38bdf8] focus:outline-none"
+                className="w-full rounded-xl border border-white/15 bg-white/[0.04] pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
               />
             </div>
             {showVoiceDictation && (
@@ -477,10 +477,10 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
                 key={catKey}
                 type="button"
                 onClick={() => setCategory(catKey)}
-                className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap ${
                   category === catKey
-                    ? 'bg-[#d4af37] text-[#05070e] font-semibold'
-                    : 'bg-[#080d1c] text-slate-300 border border-white/10 hover:text-white'
+                    ? 'bg-gradient-to-r from-amber-500/85 via-amber-400/85 to-yellow-500/85 text-slate-950 font-semibold'
+                    : 'bg-white/[0.04] text-slate-300 border border-white/10 hover:border-amber-300/30 hover:text-white'
                 }`}
               >
                 {catLabel}
@@ -489,58 +489,58 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
             <button
               type="button"
               onClick={() => setShowGlossary((v) => !v)}
-              className={`flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap ${
                 showGlossary
-                  ? 'border-[#38bdf8] bg-[#38bdf8]/20 text-[#e0f2fe]'
-                  : 'border-white/15 bg-[#080d1c] text-slate-300 hover:text-white'
+                  ? 'border-sky-300/50 bg-sky-400/20 text-sky-100'
+                  : 'border-white/15 bg-white/[0.04] text-slate-300 hover:border-amber-300/30 hover:text-white'
               }`}
             >
-              <BookOpen className="w-3 h-3" />
+              <BookOpen className="w-3 h-3 text-amber-300/80" />
               <span>Lexique</span>
             </button>
           </div>
         </div>
 
         {showGlossary && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border border-[#38bdf8]/25 bg-[#070d1c] p-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-2xl border border-sky-300/20 bg-white/[0.03] p-3">
             {QUICK_GLOSSARY.map((item) => (
               <div key={item.term} className="text-[11px]">
-                <div className="font-semibold text-[#7dd3fc]">{item.term}</div>
-                <div className="text-slate-300">{item.def}</div>
+                <div className="font-semibold text-amber-200">{item.term}</div>
+                <div className="text-slate-200 leading-relaxed">{item.def}</div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {filteredTopics.map((topic) => (
             <div
               key={topic.id}
-              className="flex flex-col justify-between gap-2 rounded-lg border border-white/10 bg-[#080d1c] p-2.5 hover:border-[#d4af37]/35 transition-colors"
+              className="flex flex-col justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 hover:border-amber-300/30 transition-all duration-300"
             >
               <div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#f3efe6]">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-100">
                   {topic.category === 'vr' ? (
-                    <Glasses className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+                    <Glasses className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
                   ) : topic.category === 'display' ? (
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
                   ) : topic.category === 'export' ? (
-                    <Share2 className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+                    <Share2 className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
                   ) : topic.category === 'cycles' ? (
-                    <ListTree className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+                    <ListTree className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
                   ) : (
-                    <Compass className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+                    <Compass className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
                   )}
                   <span>{topic.title}</span>
                 </div>
-                <p className="mt-1 text-[11px] text-slate-300 leading-relaxed">{topic.answer}</p>
+                <p className="mt-1.5 text-[11px] text-slate-200 leading-relaxed">{topic.answer}</p>
               </div>
 
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => topic.runAction(actions)}
-                  className="flex items-center gap-1 rounded-md border border-[#38bdf8]/40 bg-[#0e1933] px-2.5 py-1 text-[11px] font-medium text-[#7dd3fc] hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-amber-200 hover:border-amber-300/40 hover:bg-amber-400/10 hover:text-white transition-all duration-300 cursor-pointer"
                 >
                   <span>{topic.actionLabel}</span>
                   <ArrowRight className="w-3 h-3" />
@@ -549,7 +549,7 @@ export const InteractiveHelpTab: React.FC<InteractiveHelpTabProps> = ({
             </div>
           ))}
           {filteredTopics.length === 0 && (
-            <div className="col-span-full flex items-center gap-2 rounded-lg border border-white/10 bg-[#080d1c] p-3 text-xs text-slate-400">
+            <div className="col-span-full flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-slate-400">
               <HelpCircle className="w-4 h-4 text-slate-500" />
               <span>Aucun sujet ne correspond à « {query} ». Essayez un mot plus court ou cliquez sur Tout.</span>
             </div>

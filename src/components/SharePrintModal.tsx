@@ -174,16 +174,22 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Convertir en PDF, imprimer ou partager le thème"
-      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-[#07070C]/85 backdrop-blur-xl p-4 overflow-hidden"
     >
-      <div className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-[#d4af37]/35 bg-[#0a1020] text-[#f3efe6] shadow-2xl overflow-hidden">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-24 left-1/4 h-[420px] w-[420px] rounded-full bg-purple-900/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-indigo-900/15 blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 h-[320px] w-[320px] rounded-full bg-amber-500/5 blur-[120px]" />
+      </div>
+
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-white/10 bg-[#0c0c16]/90 bg-white/[0.03] backdrop-blur-xl text-[#f3efe6] shadow-2xl shadow-black/50 overflow-hidden">
         {/* Top Modal Header */}
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4 shrink-0">
           <div>
-            <h2 className="font-display text-2xl font-semibold text-[#f8f3e6]">
-              Exporter PDF, Imprimer & Partager
+            <h2 className="font-display text-xl sm:text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
+              Exporter PDF, Imprimer &amp; Partager
             </h2>
-            <p className="text-xs text-slate-300 mt-0.5">
+            <p className="font-serif italic text-sm text-slate-300 mt-0.5">
               Téléchargez le dossier complet en PDF, imprimez, ou envoyez vers WhatsApp / e-mail.
             </p>
           </div>
@@ -191,20 +197,20 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/[0.03] p-2 text-slate-300 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Action Bar: Real PDF Export + Print + HTML + WhatsApp + Mail */}
-        <div className="border-b border-white/10 bg-[#0d152a] px-6 py-3.5 space-y-3 shrink-0">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="border-b border-white/10 bg-white/[0.02] px-6 py-4 space-y-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
               onClick={() => void handleConvertAndDownloadPdf()}
               disabled={pdfBusy}
-              className="flex items-center gap-2 rounded-lg bg-[#d4af37] px-4 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] disabled:opacity-60 transition-colors cursor-pointer"
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-6 py-2.5 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] disabled:opacity-60 transition-all cursor-pointer"
             >
               {pdfBusy ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -225,18 +231,18 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
             <button
               type="button"
               onClick={handleDirectPrint}
-              className="flex items-center gap-2 rounded-lg border border-white/20 bg-[#121c36] px-3.5 py-2 text-xs font-medium text-slate-100 hover:border-[#d4af37] hover:text-white transition-colors cursor-pointer"
+              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-100 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
             >
-              <Printer className="w-4 h-4 text-[#e7cfa0]" />
+              <Printer className="w-4 h-4 text-amber-300/80" />
               <span>Imprimer</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownloadHtml}
-              className="flex items-center gap-2 rounded-lg border border-white/15 bg-[#121c36] px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-[#38bdf8] hover:text-white transition-colors cursor-pointer"
+              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-200 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
             >
-              <Download className="w-4 h-4 text-[#38bdf8]" />
+              <Download className="w-4 h-4 text-amber-300/80" />
               <span>Fiche HTML</span>
             </button>
 
@@ -244,7 +250,7 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border border-emerald-400/45 bg-emerald-500/15 px-3.5 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 transition-colors"
+              className="flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 text-xs font-semibold text-emerald-200 hover:border-amber-300/30 hover:bg-emerald-500/25 transition-all duration-300"
             >
               <MessageCircle className="w-4 h-4" />
               <span>Envoyer vers WhatsApp</span>
@@ -252,9 +258,9 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
 
             <a
               href={mailtoHref}
-              className="flex items-center gap-2 rounded-lg border border-white/15 bg-[#121c36] px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-[#d4af37] hover:text-white transition-colors"
+              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-200 hover:border-amber-300/30 hover:text-white transition-all duration-300"
             >
-              <Mail className="w-4 h-4 text-[#e7cfa0]" />
+              <Mail className="w-4 h-4 text-amber-300/80" />
               <span>E-mail</span>
             </a>
 
@@ -262,9 +268,9 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               <button
                 type="button"
                 onClick={() => void handleNativeShare()}
-                className="flex items-center gap-2 rounded-lg border border-[#38bdf8]/40 bg-[#0d2238] px-3.5 py-2 text-xs font-medium text-[#7dd3fc] hover:bg-[#38bdf8]/20 transition-colors cursor-pointer"
+                className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-medium text-indigo-100 hover:border-amber-300/30 transition-all duration-300 cursor-pointer"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-4 h-4 text-amber-300/80" />
                 <span>Partager</span>
               </button>
             )}
@@ -284,26 +290,26 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               readOnly
               value={reportProps.shareUrl}
               onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 rounded-lg border border-white/15 bg-[#060b16] px-3 py-1.5 font-mono-tabular text-[11px] text-[#7dd3fc] focus:border-[#38bdf8] focus:outline-none"
+              className="flex-1 bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 font-mono-tabular text-[11px] text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
             />
             <button
               type="button"
               onClick={() => void handleCopyLink()}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-300 cursor-pointer whitespace-nowrap shrink-0 ${
                 copied
-                  ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300'
-                  : 'border-[#38bdf8]/40 bg-[#121c36] text-[#7dd3fc] hover:bg-[#38bdf8]/20'
+                  ? 'border-emerald-400/50 bg-emerald-500/20 text-emerald-200'
+                  : 'border-white/15 bg-white/[0.05] text-amber-100 hover:border-amber-300/30'
               }`}
             >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5 text-amber-300/80" />}
               <span>{copied ? 'Lien copié !' : 'Copier le lien'}</span>
             </button>
           </div>
         </div>
 
         {/* Scrollable A4 White Paper Preview */}
-        <div className="flex-1 overflow-y-auto cosmic-scroll bg-slate-200 p-5">
-          <div ref={dossierRef} className="mx-auto max-w-[794px] rounded-md bg-white p-7 shadow-xl">
+        <div className="flex-1 overflow-y-auto cosmic-scroll bg-[#07070C]/80 p-5">
+          <div ref={dossierRef} className="mx-auto max-w-[794px] rounded-2xl bg-white p-7 shadow-2xl shadow-black/60">
             <PrintableChartReport {...reportProps} />
           </div>
         </div>

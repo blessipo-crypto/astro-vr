@@ -1,5 +1,5 @@
 export type TitleFontId = 'cinzel' | 'cormorant' | 'playfair' | 'cochin';
-export type BodyFontId = 'montserrat' | 'lato';
+export type BodyFontId = 'plus-jakarta' | 'montserrat' | 'lato';
 export type GlyphFontId = 'noto-symbols' | 'astrological';
 
 export interface FontOption<T extends string> {
@@ -43,6 +43,13 @@ export const TITLE_FONT_OPTIONS: FontOption<TitleFontId>[] = [
 
 export const BODY_FONT_OPTIONS: FontOption<BodyFontId>[] = [
   {
+    id: 'plus-jakarta',
+    label: 'Plus Jakarta Sans',
+    description: 'Interface contemporaine & lecture cosmique épurée',
+    stack: `'Plus Jakarta Sans', 'Montserrat', system-ui, -apple-system, sans-serif`,
+    canvasName: `"Plus Jakarta Sans", "Montserrat", sans-serif`,
+  },
+  {
     id: 'montserrat',
     label: 'Montserrat',
     description: 'Sans-serif moderne, ultra lisible sur roue & tableaux',
@@ -53,8 +60,8 @@ export const BODY_FONT_OPTIONS: FontOption<BodyFontId>[] = [
     id: 'lato',
     label: 'Lato',
     description: 'Lecture fluide des longs paragraphes & degrés',
-    stack: `'Lato', 'Montserrat', system-ui, -apple-system, sans-serif`,
-    canvasName: `"Lato", "Montserrat", sans-serif`,
+    stack: `'Lato', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif`,
+    canvasName: `"Lato", "Plus Jakarta Sans", sans-serif`,
   },
 ];
 
@@ -83,7 +90,7 @@ export interface TypographyPreferences {
 
 export const DEFAULT_TYPOGRAPHY: TypographyPreferences = {
   titleFont: 'cinzel',
-  bodyFont: 'montserrat',
+  bodyFont: 'plus-jakarta',
   glyphFont: 'noto-symbols',
 };
 

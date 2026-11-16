@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, X } from 'lucide-react';
+import { Compass, Moon, Printer, Sparkles, Stars, Sun, X } from 'lucide-react';
 import {
   AspectInfo,
   AstroChart,
@@ -123,30 +123,31 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
       <aside
         aria-label="Interprétations, comparatif, affinités et transposition chinoise"
-        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[445px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-14.5rem)] overflow-y-auto cosmic-scroll rounded-xl border border-[#d4af37]/30 bg-[#080d1b]/95 p-5 text-[#f3efe6] shadow-2xl"
+        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[455px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-14.5rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-white/10 bg-[#090a14]/85 bg-gradient-to-b from-white/[0.05] to-white/[0.02] backdrop-blur-xl p-5 text-slate-100 shadow-2xl shadow-black/50"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3.5">
           <div>
-            <div className="text-xs text-[#e7cfa0]">
-              {outerChart ? `Comparatif · ${baseChart.cityName}` : `Synthèse · ${baseChart.cityName}`}
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-amber-200/80">
+              <Stars className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
+              <span>{outerChart ? `Comparatif · ${baseChart.cityName}` : `Synthèse · ${baseChart.cityName}`}</span>
             </div>
-            <h2 className="font-display text-2xl font-semibold text-[#f8f3e6] mt-0.5">
+            <h2 className="font-display text-xl sm:text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase mt-1">
               {interpretation.headline}
             </h2>
-            <div className="text-[11px] font-mono-tabular text-[#7dd3fc] mt-0.5">
+            <div className="text-xs font-serif italic text-indigo-200/90 mt-0.5">
               {interpretation.subtitle}
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {onOpenSharePrint && (
               <button
                 type="button"
                 onClick={onOpenSharePrint}
                 title="Imprimer en PDF ou partager par lien"
                 aria-label="Imprimer en PDF ou partager par lien"
-                className="flex items-center gap-1 rounded-lg border border-[#d4af37]/35 bg-[#d4af37]/15 px-2 py-1.5 text-[11px] font-medium text-[#f3d67a] hover:bg-[#d4af37]/25 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-amber-200 hover:border-amber-300/60 hover:bg-amber-400/15 transition-all duration-300 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5" />
+                <Printer className="w-3.5 h-3.5 text-amber-300/80" />
                 <span>PDF / Lien</span>
               </button>
             )}
@@ -154,7 +155,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Fermer le panneau"
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+              className="rounded-full border border-white/10 bg-white/[0.03] p-1.5 text-slate-400 hover:border-amber-300/30 hover:bg-white/10 hover:text-white transition-all duration-300 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -162,14 +163,14 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </div>
 
         {/* Clean 4-tab selector inside Inspector */}
-        <div className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-[#0d1428] p-1">
+        <div className="mt-3.5 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
           <button
             type="button"
             onClick={() => setSummaryTab('interpretation')}
-            className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+            className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
               summaryTab === 'interpretation'
-                ? 'bg-[#d4af37] text-[#05070e] font-semibold'
-                : 'text-slate-300 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500/85 via-amber-400/85 to-yellow-500/85 text-slate-950 font-semibold shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             Interprétation
@@ -177,10 +178,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <button
             type="button"
             onClick={() => setSummaryTab('table')}
-            className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+            className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
               summaryTab === 'table'
-                ? 'bg-[#38bdf8] text-[#05070e] font-semibold'
-                : 'text-slate-300 hover:text-white'
+                ? 'bg-sky-400/90 text-slate-950 font-semibold shadow-[0_0_15px_rgba(56,189,248,0.28)]'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             {outerChart ? 'Comparatif' : 'Positions'}
@@ -188,10 +189,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <button
             type="button"
             onClick={() => setSummaryTab('affinities')}
-            className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+            className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
               summaryTab === 'affinities'
-                ? 'bg-emerald-400 text-[#05070e] font-semibold'
-                : 'text-slate-300 hover:text-white'
+                ? 'bg-emerald-400/90 text-slate-950 font-semibold shadow-[0_0_15px_rgba(52,211,153,0.25)]'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             Axes & Affinités
@@ -199,10 +200,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <button
             type="button"
             onClick={() => setSummaryTab('chinese')}
-            className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+            className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
               summaryTab === 'chinese'
-                ? 'bg-[#e0533c] text-white font-semibold'
-                : 'text-slate-300 hover:text-white'
+                ? 'bg-gradient-to-r from-rose-500/90 to-amber-500/85 text-white font-semibold shadow-[0_0_15px_rgba(244,63,94,0.28)]'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             Chinois 龍
@@ -211,46 +212,57 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
         {/* SUB-TAB 1: Complete French Interpretations for ALL Themes + Exhaustive Natal & RS Details */}
         {summaryTab === 'interpretation' && (
-          <div className="mt-3.5 space-y-3 text-xs">
-            <div className="rounded-lg border border-[#d4af37]/30 bg-[#10172b] p-3.5 leading-relaxed text-[#f3efe6]">
-              {interpretation.synthesis}
+          <div className="mt-4 space-y-3.5 text-xs">
+            <div className="rounded-2xl border border-amber-300/20 bg-white/[0.03] backdrop-blur-xl p-4 leading-relaxed text-slate-200 shadow-lg shadow-black/30 hover:border-amber-300/30 transition-all duration-300">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-300/80 mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300/80" />
+                <span>Essence du thème</span>
+              </div>
+              <p className="leading-relaxed text-slate-200">{interpretation.synthesis}</p>
             </div>
 
             {mode === 'solarReturn' && solarReturnAnalysis && outerChart && (
-              <div className="rounded-lg border border-[#38bdf8]/30 bg-[#0c162d] p-3 space-y-1.5">
-                <div className="font-semibold text-[#7dd3fc]">
-                  Retour Solaire exact :{' '}
-                  <span className="font-mono-tabular">
-                    {solarReturnExactDate
-                      ? new Intl.DateTimeFormat('fr-FR', {
-                          dateStyle: 'medium',
-                          timeStyle: 'medium',
-                        }).format(solarReturnExactDate)
-                      : '—'}
+              <div className="rounded-2xl border border-indigo-300/20 bg-white/[0.03] backdrop-blur-xl p-3.5 space-y-2 hover:border-amber-300/30 transition-all duration-300">
+                <div className="flex items-center gap-1.5 font-semibold text-amber-200">
+                  <Sun className="w-3.5 h-3.5 text-amber-300/80" />
+                  <span>
+                    Retour Solaire exact :{' '}
+                    <span className="font-mono-tabular text-sky-200">
+                      {solarReturnExactDate
+                        ? new Intl.DateTimeFormat('fr-FR', {
+                            dateStyle: 'medium',
+                            timeStyle: 'medium',
+                          }).format(solarReturnExactDate)
+                        : '—'}
+                    </span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 font-mono-tabular text-[11px] text-slate-300">
-                  <div>
-                    ASC RS : <span className="font-glyph">{outerChart.ascSign.symbol}</span> {outerChart.ascSign.name} (M.{solarReturnAnalysis.ascInNatalHouse.roman} nat.)
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+                    ASC RS : <span className="font-glyph text-amber-200">{outerChart.ascSign.symbol}</span> {outerChart.ascSign.name} (M.{solarReturnAnalysis.ascInNatalHouse.roman} nat.)
                   </div>
-                  <div>
-                    MC RS : <span className="font-glyph">{outerChart.mcSign.symbol}</span> {outerChart.mcSign.name} (M.{solarReturnAnalysis.mcInNatalHouse.roman} nat.)
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+                    MC RS : <span className="font-glyph text-amber-200">{outerChart.mcSign.symbol}</span> {outerChart.mcSign.name} (M.{solarReturnAnalysis.mcInNatalHouse.roman} nat.)
                   </div>
-                  <div>Soleil RS : Maison {solarReturnAnalysis.sunInSrHouse.roman} RS</div>
-                  <div>Maître ASC : {solarReturnAnalysis.srAscRuler}</div>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+                    Soleil RS : Maison {solarReturnAnalysis.sunInSrHouse.roman} RS
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+                    Maître ASC : <span className="text-amber-200">{solarReturnAnalysis.srAscRuler}</span>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Exhaustive Sub-navigation for Natal & Solar Return (Planètes, Maisons, Aspects) */}
             {(interpretation.detailedPlanets || interpretation.detailedHouses || interpretation.detailedAspects) && (
-              <div className="grid grid-cols-4 gap-1 rounded-lg border border-white/10 bg-[#0c1324] p-1">
+              <div className="grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
                 <button
                   type="button"
                   onClick={() => setInterpFilter('overview')}
-                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                  className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
                     interpFilter === 'overview'
-                      ? 'bg-white/15 text-[#f8f3e6] font-semibold'
+                      ? 'bg-white/15 text-amber-100 font-semibold border border-amber-300/25'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -259,9 +271,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setInterpFilter('planets')}
-                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                  className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
                     interpFilter === 'planets'
-                      ? 'bg-[#d4af37]/25 text-[#f3d67a] font-semibold'
+                      ? 'bg-amber-400/20 text-amber-200 font-semibold border border-amber-300/35'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -270,9 +282,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setInterpFilter('houses')}
-                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                  className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
                     interpFilter === 'houses'
-                      ? 'bg-[#38bdf8]/25 text-[#7dd3fc] font-semibold'
+                      ? 'bg-sky-400/20 text-sky-200 font-semibold border border-sky-300/35'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -281,9 +293,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setInterpFilter('aspects')}
-                  className={`rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer truncate ${
+                  className={`rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-all duration-300 cursor-pointer truncate ${
                     interpFilter === 'aspects'
-                      ? 'bg-emerald-400/20 text-emerald-300 font-semibold'
+                      ? 'bg-emerald-400/20 text-emerald-200 font-semibold border border-emerald-300/35'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -297,32 +309,39 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               (!interpretation.detailedPlanets && !interpretation.detailedHouses && !interpretation.detailedAspects)) && (
               <div className="space-y-3">
                 {(interpretation.detailedPlanets || interpretation.detailedHouses || interpretation.detailedAspects) && (
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setInterpFilter('planets')}
-                      className="rounded-lg border border-[#d4af37]/25 bg-[#d4af37]/10 px-2.5 py-2 text-left hover:bg-[#d4af37]/20 transition-colors cursor-pointer"
+                      className="rounded-2xl border border-amber-300/20 bg-white/[0.03] px-3 py-2.5 text-left hover:border-amber-300/40 hover:bg-amber-400/10 transition-all duration-300 cursor-pointer"
                     >
-                      <div className="text-[11px] font-semibold text-[#f3d67a]">11 Planètes</div>
-                      <div className="text-[10px] text-slate-300">Signe · Décan · Maison</div>
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-200">
+                        <Sun className="w-3 h-3 text-amber-300/80" />
+                        <span>11 Planètes</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">Signe · Décan · Maison</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setInterpFilter('houses')}
-                      className="rounded-lg border border-[#38bdf8]/25 bg-[#38bdf8]/10 px-2.5 py-2 text-left hover:bg-[#38bdf8]/20 transition-colors cursor-pointer"
+                      className="rounded-2xl border border-sky-300/20 bg-white/[0.03] px-3 py-2.5 text-left hover:border-amber-300/35 hover:bg-sky-400/10 transition-all duration-300 cursor-pointer"
                     >
-                      <div className="text-[11px] font-semibold text-[#7dd3fc]">12 Maisons</div>
-                      <div className="text-[10px] text-slate-300">Cuspides · Maîtres</div>
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-sky-200">
+                        <Compass className="w-3 h-3 text-amber-300/80" />
+                        <span>12 Maisons</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">Cuspides · Maîtres</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setInterpFilter('aspects')}
-                      className="rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-2 text-left hover:bg-emerald-400/20 transition-colors cursor-pointer"
+                      className="rounded-2xl border border-emerald-300/20 bg-white/[0.03] px-3 py-2.5 text-left hover:border-amber-300/35 hover:bg-emerald-400/10 transition-all duration-300 cursor-pointer"
                     >
-                      <div className="text-[11px] font-semibold text-emerald-300">
-                        {(interpretation.detailedAspects?.length ?? 0) + (interpretation.secondaryAspects?.length ?? 0)} Aspects
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-200">
+                        <Sparkles className="w-3 h-3 text-amber-300/80" />
+                        <span>{(interpretation.detailedAspects?.length ?? 0) + (interpretation.secondaryAspects?.length ?? 0)} Aspects</span>
                       </div>
-                      <div className="text-[10px] text-slate-300">Analyse complète</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">Analyse complète</div>
                     </button>
                   </div>
                 )}
@@ -330,27 +349,36 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 {interpretation.sections.map((sec) => {
                   const titleColor =
                     sec.accent === 'cyan'
-                      ? 'text-[#38bdf8]'
+                      ? 'text-sky-200'
                       : sec.accent === 'amber'
-                        ? 'text-[#fb923c]'
+                        ? 'text-amber-200'
                         : sec.accent === 'emerald'
-                          ? 'text-emerald-300'
+                          ? 'text-emerald-200'
                           : sec.accent === 'rose'
-                            ? 'text-rose-300'
-                            : 'text-[#e7cfa0]';
+                            ? 'text-rose-200'
+                            : 'text-amber-100';
                   return (
-                    <div key={sec.title} className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-2">
-                      <h3 className={`font-semibold ${titleColor}`}>{sec.title}</h3>
+                    <div
+                      key={sec.title}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4 space-y-2.5 hover:border-amber-300/30 transition-all duration-300"
+                    >
+                      <h3 className={`flex items-center gap-1.5 font-display text-xs tracking-wider uppercase font-semibold ${titleColor}`}>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
+                        <span>{sec.title}</span>
+                      </h3>
                       <p className="leading-relaxed text-slate-200">{sec.body}</p>
                       {sec.highlights && sec.highlights.length > 0 && (
-                        <ul className="pt-1 space-y-1.5 text-[11px] leading-relaxed text-slate-300 border-t border-white/5">
+                        <div className="pt-2 space-y-1.5 border-t border-white/10">
                           {sec.highlights.map((h) => (
-                            <li key={h} className="flex items-start gap-1.5">
-                              <span className="text-[#d4af37] shrink-0">•</span>
+                            <div
+                              key={h}
+                              className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-slate-200"
+                            >
+                              <Stars className="w-3 h-3 text-amber-300/80 shrink-0 mt-0.5" />
                               <span>{h}</span>
-                            </li>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       )}
                     </div>
                   );
@@ -360,53 +388,55 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
             {/* VIEW 2: Detailed Planets */}
             {interpFilter === 'planets' && interpretation.detailedPlanets && (
-              <div className="space-y-2.5">
-                <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                  <span>Lecture complète des {interpretation.detailedPlanets.length} astres ({interpretation.detailedContextLabel})</span>
-                  <span className="text-[#e7cfa0]">Cliquer pour centrer</span>
+              <div className="space-y-3">
+                <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
+                  <span>Lecture des {interpretation.detailedPlanets.length} astres ({interpretation.detailedContextLabel})</span>
+                  <span className="text-amber-200/80">Cliquer pour centrer</span>
                 </div>
                 {interpretation.detailedPlanets.map((dp) => (
                   <div
                     key={`${dp.layer}-${dp.planetId}`}
-                    className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-1.5"
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-3.5 space-y-2 hover:border-amber-300/30 transition-all duration-300"
                   >
                     <button
                       type="button"
                       onClick={() => onSelectPlanet(dp.planetId, dp.layer)}
-                      className="w-full flex items-center justify-between gap-2 text-left hover:text-[#f3d67a] transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-between gap-2 text-left hover:text-amber-200 transition-colors cursor-pointer"
                     >
-                      <span className="font-semibold text-sm text-[#f8f3e6] flex items-center gap-1.5">
-                        <span className="font-glyph text-base text-[#e7cfa0]">{dp.symbol}</span>
+                      <span className="font-display tracking-wide text-sm text-amber-100 flex items-center gap-2">
+                        <span className="font-glyph text-base text-amber-300/90">{dp.symbol}</span>
                         <span>{dp.name}</span>
-                        {dp.retrograde && <span className="text-amber-400 text-xs">℞</span>}
+                        {dp.retrograde && <span className="text-amber-300 text-xs">℞</span>}
                       </span>
-                      <span className="font-mono-tabular text-[11px] text-[#7dd3fc]">
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono-tabular text-[11px] text-sky-200">
                         {dp.formattedDeg} <span className="font-glyph">{dp.signSymbol}</span> {dp.signName}
                       </span>
                     </button>
 
-                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400">
-                      <span className="text-slate-200 font-medium">Maison {dp.houseRoman}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10.5px]">
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-slate-200 font-medium">
+                        Maison {dp.houseRoman}
+                      </span>
                       {dp.natalHouseRoman && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="text-[#7dd3fc]">Active M.{dp.natalHouseRoman} natale</span>
-                        </>
+                        <span className="rounded-full border border-sky-300/25 bg-sky-400/10 px-2 py-0.5 text-sky-200">
+                          Active M.{dp.natalHouseRoman} natale
+                        </span>
                       )}
                       {dp.planetId !== 'northNode' && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span style={{ color: dp.dignityColor }} className="font-medium">
-                            {dp.dignityStatus}
-                          </span>
-                        </>
+                        <span
+                          style={{ color: dp.dignityColor }}
+                          className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-medium"
+                        >
+                          {dp.dignityStatus}
+                        </span>
                       )}
-                      <span aria-hidden="true">·</span>
-                      <span>{dp.decanLabel.split('·')[0].trim()}</span>
+                      <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-slate-300">
+                        {dp.decanLabel.split('·')[0].trim()}
+                      </span>
                     </div>
 
                     {dp.ruledHouses.length > 0 && (
-                      <div className="text-[11px] text-[#e7cfa0]">
+                      <div className="text-[11px] text-amber-200/90">
                         Maître de : Maison{dp.ruledHouses.length > 1 ? 's' : ''} {dp.ruledHouses.join(', ')}
                       </div>
                     )}
@@ -415,9 +445,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       {dp.summary}
                     </p>
 
-                    <div className="text-[10.5px] font-mono-tabular text-slate-400 pt-1 border-t border-white/5 flex items-center justify-between">
+                    <div className="text-[10.5px] font-mono-tabular text-slate-400 pt-1.5 border-t border-white/10 flex items-center justify-between">
                       <span>Chinois : {dp.chineseLabel}</span>
-                      <span>{dp.aspectCount} aspect{dp.aspectCount > 1 ? 's' : ''}</span>
+                      <span className="text-amber-200/75">{dp.aspectCount} aspect{dp.aspectCount > 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 ))}
@@ -426,45 +456,45 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
             {/* VIEW 3: Detailed 12 Houses */}
             {interpFilter === 'houses' && interpretation.detailedHouses && (
-              <div className="space-y-2.5">
-                <div className="text-[11px] text-slate-400 flex items-center justify-between">
+              <div className="space-y-3">
+                <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
                   <span>Analyse des 12 Maisons ({interpretation.detailedContextLabel})</span>
                   {interpretation.detailedHouses.some((h) => h.canTargetHouse !== false) && (
-                    <span className="text-[#7dd3fc]">Cliquer pour cibler</span>
+                    <span className="text-sky-200">Cliquer pour cibler</span>
                   )}
                 </div>
                 {interpretation.detailedHouses.map((dh) => (
                   <div
                     key={dh.house}
-                    className="rounded-lg border border-white/10 bg-white/[0.025] p-3 space-y-1.5"
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-3.5 space-y-2 hover:border-amber-300/30 transition-all duration-300"
                   >
                     <div className="flex items-start justify-between gap-2">
                       {dh.canTargetHouse !== false && onSelectHouse ? (
                         <button
                           type="button"
                           onClick={() => onSelectHouse(dh.house)}
-                          className="text-left font-semibold text-[#f8f3e6] hover:text-[#7dd3fc] transition-colors cursor-pointer"
+                          className="text-left font-display tracking-wide font-semibold text-amber-100 hover:text-sky-200 transition-colors cursor-pointer"
                         >
                           Maison {dh.roman} · {dh.title}
                         </button>
                       ) : (
-                        <div className="font-semibold text-[#f8f3e6]">
+                        <div className="font-display tracking-wide font-semibold text-amber-100">
                           Maison {dh.roman} · {dh.title}
                         </div>
                       )}
-                      <span className="font-mono-tabular text-[11px] text-[#e7cfa0] shrink-0">
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono-tabular text-[11px] text-amber-200 shrink-0">
                         {dh.formattedDeg} <span className="font-glyph">{dh.signSymbol}</span> {dh.signName}
                       </span>
                     </div>
 
                     {dh.superposedNatalHouse && (
-                      <div className="text-[11px] font-medium text-[#7dd3fc]">
+                      <div className="inline-block rounded-full border border-sky-300/25 bg-sky-400/10 px-2.5 py-0.5 text-[11px] font-medium text-sky-200">
                         {dh.superposedNatalHouse}
                       </div>
                     )}
 
                     <div className="text-[11px] text-slate-300">
-                      Gouverneur : <span className="text-slate-100">{dh.rulerLocation}</span>
+                      Gouverneur : <span className="text-amber-100 font-medium">{dh.rulerLocation}</span>
                     </div>
 
                     {dh.occupants.length > 0 && (
@@ -480,10 +510,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                 occ.layer ?? (mode === 'solarReturn' || mode === 'lunarReturn' ? 'outer' : 'base')
                               )
                             }
-                            className={`rounded border px-1.5 py-0.5 text-[10.5px] transition-colors cursor-pointer ${
+                            className={`rounded-full border px-2.5 py-0.5 text-[10.5px] transition-all duration-300 cursor-pointer ${
                               occ.layer === 'outer'
-                                ? 'border-[#38bdf8]/35 bg-[#38bdf8]/10 text-[#7dd3fc] hover:bg-[#38bdf8]/25'
-                                : 'border-[#d4af37]/30 bg-[#d4af37]/10 text-[#f3d67a] hover:bg-[#d4af37]/25'
+                                ? 'border-sky-300/30 bg-sky-400/10 text-sky-200 hover:border-amber-300/40 hover:bg-sky-400/20'
+                                : 'border-amber-300/30 bg-amber-400/10 text-amber-200 hover:border-amber-300/60 hover:bg-amber-400/20'
                             }`}
                           >
                             <span className="font-glyph">{occ.symbol}</span> {occ.name} ({occ.formattedDeg})
@@ -504,7 +534,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             {interpFilter === 'aspects' && (
               <div className="space-y-3">
                 {/* Harmony Filter */}
-                <div className="grid grid-cols-4 gap-1 rounded-lg bg-[#0c1324] p-1">
+                <div className="grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
                   {(
                     [
                       { id: 'all', label: 'Tous' },
@@ -517,9 +547,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       key={f.id}
                       type="button"
                       onClick={() => setAspectHarmonyFilter(f.id)}
-                      className={`rounded px-1.5 py-1 text-[10.5px] font-medium transition-colors cursor-pointer ${
+                      className={`rounded-xl px-1.5 py-1 text-[10.5px] font-medium transition-all duration-300 cursor-pointer ${
                         aspectHarmonyFilter === f.id
-                          ? 'bg-[#d4af37] text-[#05070e] font-semibold'
+                          ? 'bg-gradient-to-r from-amber-500/85 via-amber-400/85 to-yellow-500/85 text-slate-950 font-semibold'
                           : 'text-slate-300 hover:text-white'
                       }`}
                     >
@@ -540,8 +570,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
                   return (
                     <>
-                      <div className="space-y-2">
-                        <div className="text-[11px] font-semibold text-[#e7cfa0] flex items-center justify-between">
+                      <div className="space-y-2.5">
+                        <div className="text-[11px] font-semibold text-amber-200 flex items-center justify-between px-1">
                           <span>
                             {outerChart
                               ? `Aspects ${outerLabel} → Base (${primaryList.length})`
@@ -550,7 +580,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           <span className="font-normal text-slate-400">Cliquer pour tracer</span>
                         </div>
                         {primaryList.length === 0 ? (
-                          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] text-slate-400">
+                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 text-[11px] text-slate-400">
                             Aucun aspect dans cette catégorie d’harmonie.
                           </div>
                         ) : (
@@ -559,17 +589,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               key={asp.id}
                               type="button"
                               onClick={() => onHighlightAspect(asp.id)}
-                              className="w-full text-left rounded-lg border border-white/10 bg-white/[0.025] p-2.5 hover:border-[#d4af37]/45 hover:bg-white/[0.05] transition-colors cursor-pointer space-y-1"
+                              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 hover:border-amber-300/35 hover:bg-white/[0.05] transition-all duration-300 cursor-pointer space-y-1.5"
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-semibold text-[#f8f3e6] font-glyph">
+                                <span className="font-semibold text-amber-100 font-glyph">
                                   {asp.title}
                                 </span>
-                                <span className="font-mono-tabular text-[11px] shrink-0" style={{ color: asp.cssColor }}>
+                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono-tabular text-[11px] shrink-0" style={{ color: asp.cssColor }}>
                                   {asp.aspectLabel} · {asp.orb.toFixed(2)}°
                                 </span>
                               </div>
-                              <div className="text-[10px] text-slate-400">
+                              <div className="inline-block rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] text-slate-300">
                                 Nature : {harmonyLabel(asp.harmony)}
                               </div>
                               <p className="text-[11.5px] leading-relaxed text-slate-200">
@@ -581,25 +611,25 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       </div>
 
                       {(interpretation.secondaryAspects?.length ?? 0) > 0 && (
-                        <div className="space-y-2 border-t border-white/10 pt-3">
-                          <div className="text-[11px] font-semibold text-[#7dd3fc]">
+                        <div className="space-y-2.5 border-t border-white/10 pt-3">
+                          <div className="text-[11px] font-semibold text-sky-200 px-1">
                             {interpretation.secondaryAspectsLabel ?? `Aspects internes ${outerLabel} (${secondaryList.length})`}
                           </div>
                           {secondaryList.length === 0 ? (
-                            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] text-slate-400">
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-[11px] text-slate-400">
                               Aucun aspect interne dans cette catégorie.
                             </div>
                           ) : (
                             secondaryList.map((asp) => (
                               <div
                                 key={asp.id}
-                                className="rounded-lg border border-sky-400/20 bg-sky-950/15 p-2.5 space-y-1"
+                                className="rounded-2xl border border-sky-300/20 bg-white/[0.03] p-3.5 space-y-1.5 hover:border-amber-300/30 transition-all duration-300"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-semibold text-[#f8f3e6] font-glyph">
+                                  <span className="font-semibold text-amber-100 font-glyph">
                                     {asp.title}
                                   </span>
-                                  <span className="font-mono-tabular text-[11px] shrink-0" style={{ color: asp.cssColor }}>
+                                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono-tabular text-[11px] shrink-0" style={{ color: asp.cssColor }}>
                                     {asp.aspectLabel} · {asp.orb.toFixed(2)}°
                                   </span>
                                 </div>
@@ -607,12 +637,12 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                   {asp.interpretation}
                                 </p>
                                 {(asp.planetA || asp.planetB) && (
-                                  <div className="flex items-center gap-2 pt-0.5 text-[10.5px]">
+                                  <div className="flex items-center gap-3 pt-0.5 text-[10.5px]">
                                     {asp.planetA && (
                                       <button
                                         type="button"
                                         onClick={() => onSelectPlanet(asp.planetA!, 'outer')}
-                                        className="text-[#7dd3fc] hover:underline cursor-pointer"
+                                        className="text-sky-300 hover:underline cursor-pointer"
                                       >
                                         Voir 1er astre ({outerLabel})
                                       </button>
@@ -621,7 +651,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => onSelectPlanet(asp.planetB!, 'outer')}
-                                        className="text-[#7dd3fc] hover:underline cursor-pointer"
+                                        className="text-sky-300 hover:underline cursor-pointer"
                                       >
                                         Voir 2e astre ({outerLabel})
                                       </button>
@@ -1052,18 +1082,19 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
       <aside
         aria-label="Détails de l’astre sélectionné"
-        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[365px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-14.5rem)] overflow-y-auto cosmic-scroll rounded-xl border border-[#d4af37]/30 bg-[#080d1b]/95 p-5 text-[#f3efe6] shadow-2xl"
+        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[375px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-14.5rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-white/10 bg-[#090a14]/85 bg-gradient-to-b from-white/[0.05] to-white/[0.02] backdrop-blur-xl p-5 text-slate-100 shadow-2xl shadow-black/50"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className={`flex flex-wrap items-center gap-1.5 text-xs ${isOuter ? 'text-[#38bdf8]' : 'text-[#e7cfa0]'}`}>
+            <div className={`flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider ${isOuter ? 'text-sky-300' : 'text-amber-200/80'}`}>
+              <Moon className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
               <span>{isOuter ? outerLabel : mode === 'composite' ? 'Composite' : mode === 'live' ? 'En direct' : 'Base'}</span>
               <span aria-hidden="true">·</span>
               <span>Maison {house.roman}{isOuter ? ` ${outerLabel}` : ''}</span>
               {natalActivatedHouse && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span className="text-[#e7cfa0]">M.{natalActivatedHouse.roman} base</span>
+                  <span className="text-amber-200">M.{natalActivatedHouse.roman} base</span>
                 </>
               )}
               <span aria-hidden="true">·</span>
@@ -1071,27 +1102,29 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               {p.retrograde && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span className="text-amber-400">℞</span>
+                  <span className="text-amber-300">℞</span>
                 </>
               )}
             </div>
-            <h2 className="font-display text-3xl font-semibold text-[#f8f3e6] mt-1 flex items-center gap-2.5">
-              <span style={{ color: `#${p.colorHex.toString(16).padStart(6, '0')}` }}>{p.symbol}</span>
-              <span>{p.name}</span>
+            <h2 className="mt-1 flex items-center gap-2.5">
+              <span className="text-2xl" style={{ color: `#${p.colorHex.toString(16).padStart(6, '0')}` }}>{p.symbol}</span>
+              <span className="font-display text-2xl sm:text-3xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
+                {p.name}
+              </span>
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer l’inspection"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/[0.03] p-1.5 text-slate-400 hover:border-amber-300/30 hover:bg-white/10 hover:text-white transition-all duration-300 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="mt-3 flex items-baseline justify-between border-y border-white/10 py-2.5">
-          <div className="font-mono-tabular text-sm text-[#f3efe6]">
+          <div className="font-mono-tabular text-sm text-amber-100">
             {p.formattedDeg} {p.sign.symbol} {p.sign.name}
           </div>
           <div className="font-mono-tabular text-xs text-slate-400">
@@ -1100,9 +1133,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </div>
 
         {/* Chinese Transposition Card */}
-        <div className="mt-3 rounded-lg border border-rose-400/25 bg-[#150f19] p-3 text-xs space-y-1">
+        <div className="mt-3 rounded-2xl border border-rose-300/20 bg-white/[0.03] p-3 text-xs space-y-1 hover:border-amber-300/30 transition-all duration-300">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-amber-300">
+            <span className="font-semibold text-amber-200">
               Transposition Chinoise : {ch.sign.branchHanzi}{ch.sign.hanzi} {ch.sign.name}
             </span>
             <span className="font-mono-tabular text-[11px]" style={{ color: ch.sign.color }}>
@@ -1116,36 +1149,36 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </div>
 
         {/* Opposé & Affinités du signe */}
-        <div className="mt-2.5 rounded-lg border border-emerald-400/25 bg-[#0a161b] px-3 py-2 text-[11px] space-y-1">
+        <div className="mt-2.5 rounded-2xl border border-emerald-300/20 bg-white/[0.03] px-3.5 py-2.5 text-[11px] space-y-1 hover:border-amber-300/30 transition-all duration-300">
           <div className="flex items-center justify-between">
-            <span className="text-emerald-300 font-semibold">Opposé & Affinités ({p.sign.name})</span>
-            <span className="font-mono-tabular text-[#e7cfa0]">
+            <span className="text-emerald-200 font-semibold">Opposé & Affinités ({p.sign.name})</span>
+            <span className="font-mono-tabular text-amber-200">
               Opposé : {signAffinity.oppositeComplement.symbol} {signAffinity.oppositeComplement.name}
             </span>
           </div>
-          <div className="text-slate-300">
+          <div className="text-slate-300 leading-relaxed">
             Trigones : {signAffinity.trineAllies.map((s) => `${s.symbol} ${s.name}`).join(' · ')} ·
             Sextiles : {signAffinity.sextileAllies.map((s) => `${s.symbol} ${s.name}`).join(' · ')}
           </div>
         </div>
 
-        <div className="mt-2.5 rounded-lg border border-[#d4af37]/25 bg-[#0f162b] px-3 py-2 text-[11px] space-y-1">
+        <div className="mt-2.5 rounded-2xl border border-amber-300/20 bg-white/[0.03] px-3.5 py-2.5 text-[11px] space-y-1.5 hover:border-amber-300/30 transition-all duration-300">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-[#e7cfa0]">{decan.label}</span>
+            <span className="font-semibold text-amber-200">{decan.label}</span>
             <span
-              className="rounded px-1.5 py-0.5 text-[10px] font-semibold border border-white/10"
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold border border-white/10 bg-white/[0.04]"
               style={{ color: dignity.badgeColor }}
             >
               {dignity.status}
             </span>
           </div>
-          <p className="text-slate-300 leading-relaxed">{dignity.explanation}</p>
+          <p className="text-slate-200 leading-relaxed">{dignity.explanation}</p>
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-[#f3efe6]">{p.signMeaning}</p>
+        <p className="mt-3 text-xs leading-relaxed text-slate-200">{p.signMeaning}</p>
         {natalActivatedHouse && (
-          <div className="mt-2.5 rounded-lg border border-[#38bdf8]/25 bg-[#0c162d] px-3 py-2 text-[11px] space-y-1">
-            <div className="font-semibold text-[#7dd3fc]">
+          <div className="mt-2.5 rounded-2xl border border-sky-300/20 bg-white/[0.03] px-3.5 py-2.5 text-[11px] space-y-1 hover:border-amber-300/30 transition-all duration-300">
+            <div className="font-semibold text-sky-200">
               Impact sur la Maison {natalActivatedHouse.roman} de base ({natalActivatedHouse.title})
             </div>
             <p className="text-slate-200 leading-relaxed">
@@ -1161,13 +1194,13 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </p>
           </div>
         )}
-        <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+        <p className="mt-2.5 font-serif italic text-xs leading-relaxed text-indigo-200/85">
           Fonction archétypale : {p.role}. {decan.nuance}
         </p>
 
         {compAspects.length > 0 && (
           <div className="mt-4 border-t border-white/10 pt-3">
-            <h3 className="text-xs font-semibold text-[#38bdf8]">
+            <h3 className="text-xs font-semibold text-sky-200">
               Aspects {outerLabel} → Base ({compAspects.length})
             </h3>
             <ul className="mt-2 space-y-1.5">
@@ -1176,17 +1209,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => onHighlightAspect(asp.id)}
-                    className="w-full text-left rounded-lg border border-sky-400/15 bg-sky-950/25 px-3 py-2 hover:border-sky-400/50 transition-colors cursor-pointer space-y-1"
+                    className="w-full text-left rounded-2xl border border-sky-300/20 bg-white/[0.03] px-3.5 py-2.5 hover:border-amber-300/35 hover:bg-white/[0.05] transition-all duration-300 cursor-pointer space-y-1"
                   >
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-[#f3efe6]">
+                      <span className="font-medium text-amber-100">
                         {asp.outerSymbol} {asp.outerPlanetName}{' '}
                         <span style={{ color: asp.cssColor }}>{asp.symbol}</span>{' '}
                         {asp.natalSymbol} {asp.natalPlanetName}
                       </span>
                       <span className="font-mono-tabular text-slate-400">{asp.orb.toFixed(2)}°</span>
                     </div>
-                    <div className="text-[11px] leading-relaxed text-slate-300">{asp.interpretation}</div>
+                    <div className="text-[11px] leading-relaxed text-slate-200">{asp.interpretation}</div>
                   </button>
                 </li>
               ))}
@@ -1196,7 +1229,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
         {internalAspects.length > 0 && (
           <div className="mt-4 border-t border-white/10 pt-3">
-            <h3 className="text-xs font-semibold text-[#e7cfa0]">
+            <h3 className="text-xs font-semibold text-amber-200">
               Aspects internes ({internalAspects.length})
             </h3>
             <ul className="mt-2 space-y-1.5">
@@ -1212,15 +1245,15 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         onHighlightAspect(asp.id);
                         onSelectPlanet(otherId, isOuter ? 'outer' : 'base');
                       }}
-                      className="w-full text-left rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2 hover:border-[#d4af37]/35 hover:bg-white/[0.06] transition-colors cursor-pointer space-y-1"
+                      className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 hover:border-amber-300/35 hover:bg-white/[0.06] transition-all duration-300 cursor-pointer space-y-1"
                     >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-[#f3efe6]">
+                        <span className="font-medium text-amber-100">
                           <span style={{ color: asp.cssColor }}>{asp.symbol}</span> {asp.label} · {otherSym} {otherName}
                         </span>
                         <span className="font-mono-tabular text-slate-400">{asp.orb.toFixed(1)}°</span>
                       </div>
-                      <div className="text-[11px] leading-relaxed text-slate-300">{asp.interpretation}</div>
+                      <div className="text-[11px] leading-relaxed text-slate-200">{asp.interpretation}</div>
                     </button>
                   </li>
                 );
@@ -1240,32 +1273,37 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
       <aside
         aria-label="Détails de la maison sélectionnée"
-        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[350px] max-w-[calc(100vw-2.5rem)] rounded-xl border border-[#d4af37]/30 bg-[#080d1b]/95 p-5 text-[#f3efe6] shadow-2xl"
+        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[360px] max-w-[calc(100vw-2.5rem)] rounded-3xl border border-white/10 bg-[#090a14]/85 bg-gradient-to-b from-white/[0.05] to-white/[0.02] backdrop-blur-xl p-5 text-slate-100 shadow-2xl shadow-black/50"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs text-[#e7cfa0]">Secteur écliptique · Maison {hs.roman}</div>
-            <h2 className="font-display text-2xl font-semibold text-[#f8f3e6] mt-1">{hs.title}</h2>
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-amber-200/80">
+              <Compass className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
+              <span>Secteur écliptique · Maison {hs.roman}</span>
+            </div>
+            <h2 className="font-display text-xl sm:text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase mt-1">
+              {hs.title}
+            </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer l’inspection"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/[0.03] p-1.5 text-slate-400 hover:border-amber-300/30 hover:bg-white/10 hover:text-white transition-all duration-300 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="mt-3 flex items-baseline justify-between border-y border-white/10 py-2.5">
-          <div className="font-mono-tabular text-sm text-[#f3efe6]">
+          <div className="font-mono-tabular text-sm text-amber-100">
             {hs.formattedDeg} {hs.sign.symbol} {hs.sign.name}
           </div>
           <div className="font-mono-tabular text-xs text-slate-400">Maître : {hs.sign.ruler}</div>
         </div>
 
-        <div className="mt-2.5 rounded-lg border border-rose-400/25 bg-[#150f19] px-3 py-2 text-xs flex items-center justify-between">
-          <span className="text-amber-300 font-medium">
+        <div className="mt-2.5 rounded-2xl border border-rose-300/20 bg-white/[0.03] px-3.5 py-2.5 text-xs flex items-center justify-between hover:border-amber-300/30 transition-all duration-300">
+          <span className="text-amber-200 font-medium">
             Rameau Chinois : {ch.sign.branchHanzi}{ch.sign.hanzi} {ch.sign.name}
           </span>
           <span className="font-mono-tabular text-[11px]" style={{ color: ch.sign.color }}>
@@ -1273,21 +1311,21 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </span>
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-[#f3efe6]">{hs.meaning}</p>
+        <p className="mt-3 text-xs leading-relaxed text-slate-200">{hs.meaning}</p>
         <p className="mt-2 text-xs leading-relaxed text-slate-300">
           {getHouseCuspInterpretation(hs, baseChart.planets)}
         </p>
 
         {occupants.length > 0 && (
           <div className="mt-4 border-t border-white/10 pt-3">
-            <div className="text-xs font-semibold text-[#e7cfa0]">Astres présents</div>
+            <div className="text-xs font-semibold text-amber-200">Astres présents</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {occupants.map((occ) => (
                 <button
                   key={occ.id}
                   type="button"
                   onClick={() => onSelectPlanet(occ.id, 'base')}
-                  className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-[#f3efe6] hover:border-[#d4af37]/50 transition-colors cursor-pointer"
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-amber-100 hover:border-amber-300/40 hover:bg-amber-400/10 transition-all duration-300 cursor-pointer"
                 >
                   {occ.symbol} {occ.name}
                 </button>

@@ -68,12 +68,12 @@ export const VoiceDictationButton: React.FC<VoiceDictationButtonProps> = ({
     handleRef.current = handle;
   };
 
-  const padCls = size === 'xs' ? 'p-1' : 'p-1.5';
+  const padCls = size === 'xs' ? 'p-1.5' : 'p-2';
   const iconCls = size === 'xs' ? 'w-3 h-3' : 'w-3.5 h-3.5';
   const idleTone =
     accent === 'gold'
-      ? 'border-[#d4af37]/35 bg-[#0d1428] text-[#e7cfa0] hover:border-[#d4af37] hover:text-white'
-      : 'border-[#38bdf8]/35 bg-[#0d1428] text-[#7dd3fc] hover:border-[#38bdf8] hover:text-white';
+      ? 'border-white/15 bg-white/[0.04] text-amber-300/80 hover:border-amber-300/40 hover:text-amber-200'
+      : 'border-white/15 bg-white/[0.04] text-amber-300/80 hover:border-amber-300/40 hover:text-amber-200';
 
   return (
     <button
@@ -81,7 +81,7 @@ export const VoiceDictationButton: React.FC<VoiceDictationButtonProps> = ({
       onClick={toggleDictation}
       aria-label={listening ? 'Arrêter la dictée vocale' : title}
       title={listening ? 'Écoute en cours… Cliquer pour arrêter' : title}
-      className={`rounded-lg border transition-colors cursor-pointer shrink-0 ${padCls} ${
+      className={`rounded-xl border transition-all duration-300 cursor-pointer shrink-0 ${padCls} ${
         listening
           ? 'border-rose-400 bg-rose-500/25 text-rose-200 animate-pulse'
           : idleTone

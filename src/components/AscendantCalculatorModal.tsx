@@ -199,19 +199,25 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
       role="dialog"
       aria-modal="true"
       aria-label="Calculateur d’Ascendant uniquement"
-      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-[#07070C]/85 p-4 backdrop-blur-xl overflow-hidden"
     >
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto cosmic-scroll rounded-2xl border border-[#d4af37]/40 bg-[#080d1b] p-5 text-[#f3efe6] shadow-2xl space-y-4">
-        <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-24 left-1/4 h-[420px] w-[420px] rounded-full bg-purple-900/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-indigo-900/15 blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 h-[320px] w-[320px] rounded-full bg-amber-500/5 blur-[120px]" />
+      </div>
+
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto cosmic-scroll rounded-3xl border border-white/10 bg-[#0c0c16]/90 bg-white/[0.03] backdrop-blur-xl p-6 text-[#f3efe6] shadow-2xl shadow-black/50 space-y-5">
+        <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
           <div>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-[#e7cfa0]">
-              <Compass className="w-3.5 h-3.5 text-[#d4af37]" />
-              <span>Calcul Direct & Rapide</span>
+            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-200/80">
+              <Compass className="w-4 h-4 text-amber-300/80" />
+              <span className="font-serif italic text-sm tracking-wide">Calcul Direct &amp; Rapide</span>
             </div>
-            <h2 className="font-display text-2xl font-semibold text-[#f8f3e6] mt-0.5">
+            <h2 className="font-display text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase mt-1">
               Calculer l’Ascendant uniquement
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-300 mt-1 leading-relaxed">
               Saisissez simplement la date, l’heure exacte et la ville de naissance sans modifier vos thèmes enregistrés.
             </p>
           </div>
@@ -219,15 +225,15 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
             type="button"
             onClick={onClose}
             aria-label="Fermer le calculateur d’Ascendant"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/[0.03] p-2 text-slate-300 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Inputs: Date, Time & Place */}
-        <div className="rounded-xl border border-white/10 bg-[#0d1428]/80 p-3.5 space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4 space-y-3.5 shadow-xl shadow-black/30">
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 items-end">
             <div>
               <label htmlFor="asc-day" className="block text-[11px] text-slate-400 mb-1">
                 Jour
@@ -236,7 +242,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 id="asc-day"
                 value={Math.min(parts.day, maxDays)}
                 onChange={(e) => updateParts({ day: Number(e.target.value) })}
-                className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] cursor-pointer"
+                className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
               >
                 {Array.from({ length: maxDays }, (_, i) => i + 1).map((d) => (
                   <option key={d} value={d}>
@@ -254,7 +260,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 id="asc-month"
                 value={parts.month}
                 onChange={(e) => updateParts({ month: Number(e.target.value) })}
-                className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2 py-1.5 text-xs text-[#f3efe6] cursor-pointer"
+                className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
               >
                 {MONTHS_FR.map((mName, idx) => (
                   <option key={mName} value={idx + 1}>
@@ -272,7 +278,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 id="asc-year"
                 value={parts.year}
                 onChange={(e) => updateParts({ year: Number(e.target.value) })}
-                className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] cursor-pointer"
+                className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
               >
                 {YEARS_1900_2100.map((y) => (
                   <option key={y} value={y}>
@@ -290,7 +296,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 id="asc-hour"
                 value={parts.hour}
                 onChange={(e) => updateParts({ hour: Number(e.target.value) })}
-                className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] cursor-pointer"
+                className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
               >
                 {HOURS_24.map((h) => (
                   <option key={h} value={h}>
@@ -308,7 +314,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 id="asc-minute"
                 value={parts.minute}
                 onChange={(e) => updateParts({ minute: Number(e.target.value) })}
-                className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2 py-1.5 font-mono-tabular text-xs text-[#f3efe6] cursor-pointer"
+                className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
               >
                 {MINUTES_60.map((m) => (
                   <option key={m} value={m}>
@@ -321,7 +327,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
 
           {/* Quick time step sensitivity buttons */}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[11px] text-slate-400 mr-1">Ajuster l’heure :</span>
               {[
                 { label: '-1h', mins: -60 },
@@ -335,7 +341,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                   key={st.label}
                   type="button"
                   onClick={() => stepMinutes(st.mins)}
-                  className="rounded border border-white/15 bg-[#080d1b] px-2 py-1 font-mono-tabular text-[11px] text-slate-200 hover:border-[#d4af37] hover:text-white cursor-pointer"
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono-tabular text-[11px] text-slate-200 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
                 >
                   {st.label}
                 </button>
@@ -345,7 +351,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
             <button
               type="button"
               onClick={() => setManualCoords((v) => !v)}
-              className="text-[11px] text-[#7dd3fc] hover:underline cursor-pointer"
+              className="text-[11px] text-amber-200/80 hover:text-amber-100 underline-offset-4 hover:underline cursor-pointer transition-colors"
             >
               {manualCoords ? 'Utiliser la recherche de ville' : 'Saisir Lat / Lon manuelles'}
             </button>
@@ -365,7 +371,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                     setCustomLoc(null);
                     setCityId(e.target.value);
                   }}
-                  className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 text-xs text-[#f3efe6] cursor-pointer"
+                  className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
                 >
                   {customLoc && <option value="__custom__">{customLoc.name}</option>}
                   <optgroup label="France (Villes & Préfectures)">
@@ -399,7 +405,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') void handleSearchPlace();
                     }}
-                    className="flex-1 rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 text-xs text-[#f3efe6] focus:border-[#d4af37] focus:outline-none"
+                    className="flex-1 bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                   />
                   {showVoiceDictation && (
                     <VoiceDictationButton
@@ -413,7 +419,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                     type="button"
                     disabled={busy}
                     onClick={() => void handleSearchPlace()}
-                    className="rounded-lg border border-[#d4af37]/40 bg-[#121931] px-3 py-1.5 text-xs font-medium text-[#e7cfa0] hover:border-[#d4af37] disabled:opacity-50 cursor-pointer"
+                    className="rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2 text-xs font-medium text-amber-100 hover:border-amber-300/30 disabled:opacity-50 transition-all duration-300 cursor-pointer"
                   >
                     {busy ? '...' : 'Chercher'}
                   </button>
@@ -421,7 +427,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2 items-end">
+            <div className="grid grid-cols-3 gap-2.5 items-end">
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Nom du lieu</label>
                 <input
@@ -434,7 +440,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                       longitude: activeLoc.longitude,
                     })
                   }
-                  className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 text-xs text-[#f3efe6]"
+                  className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                 />
               </div>
               <div>
@@ -450,7 +456,7 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                       longitude: activeLoc.longitude,
                     })
                   }
-                  className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6]"
+                  className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                 />
               </div>
               <div>
@@ -466,24 +472,24 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                       longitude: Number(e.target.value) || 0,
                     })
                   }
-                  className="w-full rounded-lg border border-white/15 bg-[#080d1b] px-2.5 py-1.5 font-mono-tabular text-xs text-[#f3efe6]"
+                  className="w-full bg-white/[0.04] border border-white/15 rounded-xl px-3 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all"
                 />
               </div>
             </div>
           )}
 
           {candidates.length > 1 && (
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-slate-400">Communes trouvées :</span>
               {candidates.slice(0, 8).map((cand) => (
                 <button
                   key={`${cand.name}-${cand.latitude}-${cand.longitude}`}
                   type="button"
                   onClick={() => setCustomLoc(cand)}
-                  className={`rounded border px-2 py-0.5 text-[11px] transition-colors cursor-pointer ${
+                  className={`rounded-full border px-2.5 py-0.5 text-[11px] transition-all duration-300 cursor-pointer ${
                     customLoc?.name === cand.name
-                      ? 'border-[#d4af37] bg-[#d4af37]/20 text-[#f3d67a]'
-                      : 'border-white/15 bg-[#080d1b] text-slate-200 hover:border-[#d4af37]'
+                      ? 'border-amber-300/50 bg-amber-400/20 text-amber-100'
+                      : 'border-white/10 bg-white/[0.03] text-slate-200 hover:border-amber-300/30'
                   }`}
                 >
                   {cand.name}
@@ -495,17 +501,11 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
         </div>
 
         {/* Dedicated Ascendant Result Card */}
-        <div
-          className="rounded-xl border p-4 space-y-3"
-          style={{
-            borderColor: `${result.ascSign.color}66`,
-            background: 'linear-gradient(135deg, rgba(16,23,43,0.96), rgba(9,14,29,0.98))',
-          }}
-        >
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 shadow-2xl shadow-black/50 hover:border-amber-300/30 transition-all duration-300">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3.5">
               <div
-                className="flex h-14 w-14 items-center justify-center rounded-xl border text-3xl font-bold"
+                className="flex h-16 w-16 items-center justify-center rounded-2xl border text-3xl font-bold font-glyph shadow-lg"
                 style={{
                   borderColor: `${result.ascSign.color}88`,
                   color: result.ascSign.color,
@@ -515,51 +515,55 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 {result.ascSign.symbol}
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-wider text-slate-400">
+                <div className="text-[11px] uppercase tracking-widest text-amber-200/80">
                   Votre Ascendant (Maison I)
                 </div>
-                <div className="font-display text-2xl font-bold text-[#f8f3e6]">
+                <div className="font-display text-2xl font-bold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
                   {result.ascSign.name}{' '}
-                  <span className="font-mono-tabular text-lg text-[#e7cfa0]">
+                  <span className="font-mono-tabular text-lg text-amber-200">
                     {result.ascFormattedDeg}
                   </span>
                 </div>
-                <div className="text-xs text-slate-300">
-                  {result.ascSign.element} · {result.ascSign.modality} · Maître d’Ascendant :{' '}
-                  <strong className="text-[#f3d67a]">{result.ascSign.ruler}</strong>
+                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-200">
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px]">
+                    {result.ascSign.element} · {result.ascSign.modality}
+                  </span>
+                  <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-0.5 text-[11px] text-amber-100">
+                    Maître : <strong>{result.ascSign.ruler}</strong>
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="text-right space-y-1 text-xs">
-              <div className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-[#080d1b] px-2.5 py-1 text-slate-300">
-                <MapPin className="w-3 h-3 text-[#d4af37]" />
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-slate-200">
+                <MapPin className="w-3 h-3 text-amber-300/80" />
                 <span>{result.cityName}</span>
               </div>
-              <div className="font-mono-tabular text-[11px] text-[#7dd3fc]">
+              <div className="font-mono-tabular text-[11px] text-indigo-200">
                 Ce signe s’étend de {fmtTimeHm(result.signWindowStart)} à {fmtTimeHm(result.signWindowEnd)}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1 border-t border-white/10">
-            <div className="rounded-lg border border-white/10 bg-[#080d1b]/80 px-3 py-2">
-              <div className="text-[10px] text-slate-400">Descendant (Axe VII · Opposé)</div>
-              <div className="font-semibold text-[#f3efe6] mt-0.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-2 border-t border-white/10">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 hover:border-amber-300/30 transition-all duration-300">
+              <div className="text-[10px] uppercase tracking-wider text-slate-400">Descendant (Axe VII · Opposé)</div>
+              <div className="font-semibold text-[#f3efe6] mt-1">
                 {result.dscSign.symbol} {result.dscSign.name}{' '}
                 <span className="font-mono-tabular text-slate-400">{result.dscFormattedDeg}</span>
               </div>
             </div>
-            <div className="rounded-lg border border-white/10 bg-[#080d1b]/80 px-3 py-2">
-              <div className="text-[10px] text-slate-400">Milieu du Ciel (MC · Vocation)</div>
-              <div className="font-semibold text-[#f3efe6] mt-0.5">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 hover:border-amber-300/30 transition-all duration-300">
+              <div className="text-[10px] uppercase tracking-wider text-slate-400">Milieu du Ciel (MC · Vocation)</div>
+              <div className="font-semibold text-[#f3efe6] mt-1">
                 {result.mcSign.symbol} {result.mcSign.name}{' '}
                 <span className="font-mono-tabular text-slate-400">{result.mcFormattedDeg}</span>
               </div>
             </div>
-            <div className="rounded-lg border border-rose-400/20 bg-[#150f19] px-3 py-2">
-              <div className="text-[10px] text-amber-300">Rameau Chinois (Ascendant)</div>
-              <div className="font-semibold mt-0.5" style={{ color: chineseAsc.sign.color }}>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 hover:border-amber-300/30 transition-all duration-300">
+              <div className="text-[10px] uppercase tracking-wider text-amber-200/80">Rameau Chinois (Ascendant)</div>
+              <div className="font-semibold mt-1" style={{ color: chineseAsc.sign.color }}>
                 {chineseAsc.sign.branchHanzi}
                 {chineseAsc.sign.hanzi} {chineseAsc.sign.name} ({chineseAsc.sign.wuXing} ·{' '}
                 {chineseAsc.sign.polarity})
@@ -567,31 +571,33 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
             </div>
           </div>
 
-          <div className="space-y-2 text-xs leading-relaxed border-t border-white/10 pt-3">
-            <div className="text-[11px] font-medium text-[#e7cfa0]">{deep.decanNote}</div>
-            <p className="text-[#f3efe6]">
-              <strong className="text-[#d4af37]">Tempérament & Posture : </strong>
-              {deep.temperament}
-            </p>
-            <p className="text-slate-300">
-              <strong className="text-[#7dd3fc]">Première impression : </strong>
-              {deep.firstImpression}
-            </p>
-            <p className="text-slate-300">
-              <strong className="text-emerald-300">Équilibre relationnel (ASC ↔ DSC) : </strong>
-              {deep.axisBalance}
-            </p>
+          <div className="space-y-2.5 text-xs leading-relaxed border-t border-white/10 pt-3">
+            <div className="font-serif italic text-sm text-amber-100">{deep.decanNote}</div>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="rounded-2xl border border-white/10 bg-[#07070C]/50 p-3 text-slate-200 leading-relaxed">
+                <strong className="text-amber-200">Tempérament &amp; Posture : </strong>
+                {deep.temperament}
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-[#07070C]/50 p-3 text-slate-200 leading-relaxed">
+                <strong className="text-indigo-200">Première impression : </strong>
+                {deep.firstImpression}
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-[#07070C]/50 p-3 text-slate-200 leading-relaxed">
+                <strong className="text-emerald-200">Équilibre relationnel (ASC ↔ DSC) : </strong>
+                {deep.axisBalance}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <button
             type="button"
             onClick={() => void handleCopy()}
-            className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#0d1428] px-3 py-2 text-xs font-medium text-slate-200 hover:border-[#d4af37] hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-slate-200 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5 text-amber-300/80" />}
             <span>{copied ? 'Ascendant copié' : 'Copier le résultat'}</span>
           </button>
 
@@ -616,9 +622,9 @@ export const AscendantCalculatorModal: React.FC<AscendantCalculatorModalProps> =
                 });
                 onClose();
               }}
-              className="flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3.5 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer"
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-8 py-3.5 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4" />
               <span>Charger dans le thème complet</span>
             </button>
           </div>

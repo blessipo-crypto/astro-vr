@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Glasses, HelpCircle, Info, Mic, MicOff, Power, RotateCcw, ScanEye, Share2 } from 'lucide-react';
+import { Clock, Compass, Glasses, HelpCircle, Info, Mic, MicOff, Moon, Power, RotateCcw, ScanEye, Share2, Sparkles, Stars, Sun } from 'lucide-react';
 import {
   analyzeComparison,
   analyzeSolarReturn,
@@ -1547,10 +1547,17 @@ export default function App() {
     <div
       className={`app-print-shell relative h-full w-full overflow-hidden text-[#f3efe6] ${
         desktopMR && !cameraActive
-          ? 'bg-[radial-gradient(circle_at_center,_#162238_0%,_#0b1120_65%,_#060913_100%)]'
-          : 'bg-[#05070e]'
+          ? 'bg-[radial-gradient(circle_at_center,_#162238_0%,_#0b1120_65%,_#07070C_100%)]'
+          : 'bg-[#07070C]'
       }`}
     >
+      {/* Celestial Cosmic Lighting Orbs */}
+      <div aria-hidden="true" className="no-print pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-32 -left-24 h-[520px] w-[520px] rounded-full bg-purple-900/20 blur-[120px]" />
+        <div className="absolute top-1/4 -right-24 h-[480px] w-[480px] rounded-full bg-indigo-900/15 blur-[120px]" />
+        <div className="absolute -bottom-32 left-1/3 h-[420px] w-[420px] rounded-full bg-amber-500/5 blur-[120px]" />
+      </div>
+
       {/* Optional Desktop Webcam Passthrough Video Layer for Mixed Reality Preview */}
       {desktopMR && (
         <video
@@ -1601,21 +1608,27 @@ export default function App() {
       )}
 
       {contextLost && (
-        <div className="no-print fixed inset-0 z-40 flex items-center justify-center bg-[#05070e]/95 p-6 text-center">
-          <div className="max-w-md rounded-xl border border-[#d4af37]/30 bg-[#090e1d] p-6">
-            <h2 className="font-display text-2xl font-semibold">Contexte 3D interrompu</h2>
-            <p className="mt-2 text-sm text-slate-300">
-              Le moteur graphique WebGL est en cours de réinitialisation.
+        <div className="no-print fixed inset-0 z-40 flex items-center justify-center bg-[#07070C]/90 backdrop-blur-xl p-6 text-center">
+          <div className="max-w-md rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 shadow-2xl shadow-black/50">
+            <Sparkles className="mx-auto mb-3 h-6 w-6 text-amber-300/80" />
+            <h2 className="font-display text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
+              Contexte 3D interrompu
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-200">
+              Le moteur graphique WebGL est en cours de réinitialisation céleste.
             </p>
           </div>
         </div>
       )}
 
-      {/* Top Bar: Clean 3-Zone Contract */}
-      <header className="no-print pointer-events-none fixed top-0 left-0 right-0 z-20 flex items-center justify-between gap-8 px-5 py-4">
-        <div className="pointer-events-auto flex items-center gap-3 shrink-0">
-          <div className="font-display text-2xl font-semibold tracking-tight text-[#f8f3e6] whitespace-nowrap shrink-0">
-            Uranie VR
+      {/* Top Bar: Clean 3-Zone Cosmic Luxury Header */}
+      <header className="no-print pointer-events-none fixed top-0 left-0 right-0 z-20 flex items-center justify-between gap-4 px-5 py-3.5">
+        <div className="pointer-events-auto flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 pr-1">
+            <Stars className="w-4 h-4 text-amber-300/80 shrink-0" />
+            <span className="font-display text-xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase whitespace-nowrap shrink-0">
+              Uranie VR
+            </span>
           </div>
           <button
             type="button"
@@ -1624,9 +1637,9 @@ export default function App() {
               setAboutOpen(true);
             }}
             title="Présentation du programme, voix explicative et musique ésotérique"
-            className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-[#0d1428]/90 px-2.5 py-1.5 text-xs font-medium text-[#e7cfa0] hover:border-[#d4af37]/60 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-amber-100/90 hover:border-amber-300/30 hover:text-white transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
           >
-            <Info className="w-3.5 h-3.5 text-[#d4af37]" />
+            <Info className="w-3.5 h-3.5 text-amber-300/80" />
             <span>Présentation</span>
           </button>
           <button
@@ -1636,23 +1649,23 @@ export default function App() {
               setRequestedDockTab((prev) => ({ tab: 'help', nonce: (prev?.nonce ?? 0) + 1 }));
             }}
             title="Ouvrir l’onglet d’aide interactive pas-à-pas"
-            className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/40 bg-[#0d1428]/90 px-2.5 py-1.5 text-xs font-medium text-[#7dd3fc] hover:border-[#38bdf8] hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-indigo-100 hover:border-amber-300/30 hover:text-white transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-[#38bdf8]" />
+            <HelpCircle className="w-3.5 h-3.5 text-amber-300/80" />
             <span>Aide</span>
           </button>
           <div
             role="group"
             aria-label="Basculer entre vue 2D et 3D"
-            className="flex items-center rounded-lg border border-white/15 bg-[#0d1428]/90 p-0.5"
+            className="flex items-center rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl p-0.5 shadow-lg shadow-black/30"
           >
             <button
               type="button"
               onClick={() => setViewDimension('2d')}
               title="Vue 2D haute lisibilité sur PC"
-              className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap ${
                 viewDimension === '2d'
-                  ? 'bg-[#38bdf8] text-[#05070e]'
+                  ? 'bg-gradient-to-r from-indigo-400/80 to-sky-400/80 text-slate-950 shadow-[0_0_15px_rgba(129,140,248,0.35)]'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -1662,9 +1675,9 @@ export default function App() {
               type="button"
               onClick={() => setViewDimension('3d')}
               title="Observatoire 3D / VR"
-              className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap ${
                 viewDimension === '3d'
-                  ? 'bg-[#d4af37] text-[#05070e]'
+                  ? 'bg-gradient-to-r from-amber-500/85 via-amber-400/85 to-yellow-500/85 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.35)]'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -1675,10 +1688,10 @@ export default function App() {
             type="button"
             onClick={handleToggleVoiceMode}
             title="Activer ou couper la commande vocale mains-libres (en option)"
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur-xl transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30 ${
               voiceModeEnabled
-                ? 'border-rose-400/70 bg-rose-500/20 text-rose-100'
-                : 'border-[#38bdf8]/35 bg-[#0d1428]/90 text-[#bae6fd] hover:border-[#38bdf8] hover:text-white'
+                ? 'border-rose-400/60 bg-rose-500/20 text-rose-100'
+                : 'border-white/10 bg-[#07070C]/70 bg-white/[0.03] text-slate-200 hover:border-amber-300/30 hover:text-white'
             }`}
           >
             {voiceListening ? (
@@ -1686,41 +1699,42 @@ export default function App() {
             ) : voiceModeEnabled ? (
               <Mic className="w-3.5 h-3.5 text-rose-300" />
             ) : (
-              <MicOff className="w-3.5 h-3.5 text-[#38bdf8]" />
+              <MicOff className="w-3.5 h-3.5 text-amber-300/80" />
             )}
             <span>{voiceModeEnabled ? 'Voix ON' : 'Voix'}</span>
           </button>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2.5 text-xs text-slate-300 font-mono-tabular whitespace-nowrap">
-          <span className="text-[#38bdf8]">{modeTitle[mode]}</span>
-          <span aria-hidden="true" className="text-slate-600">·</span>
-          <span className="text-[#e7cfa0]">
+        <div className="hidden xl:flex items-center gap-2.5 rounded-full border border-white/10 bg-[#07070C]/65 bg-white/[0.03] backdrop-blur-xl px-4 py-1.5 text-xs text-slate-200 font-mono-tabular whitespace-nowrap shadow-lg shadow-black/30">
+          <Compass className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
+          <span className="text-amber-200 font-medium">{modeTitle[mode]}</span>
+          <span aria-hidden="true" className="text-white/25">·</span>
+          <span className="text-indigo-200">
             {tradition === 'chinese'
               ? `ASC ${transposeLongitudeToChinese(baseChart.ascendant).sign.branchHanzi}${transposeLongitudeToChinese(baseChart.ascendant).sign.hanzi} ${transposeLongitudeToChinese(baseChart.ascendant).sign.name}`
               : `ASC ${baseChart.ascSign.symbol} ${baseChart.ascSign.name}`}
           </span>
-          <span aria-hidden="true" className="text-slate-600">·</span>
+          <span aria-hidden="true" className="text-white/25">·</span>
           {sun && (
             <>
-              <span>
-                ☉{' '}
+              <span className="inline-flex items-center gap-1">
+                <Sun className="w-3 h-3 text-amber-300/80" />
                 {tradition === 'chinese'
                   ? transposeLongitudeToChinese(sun.longitude).sign.name
                   : `${sun.formattedDeg} ${sun.sign.name}`}
               </span>
-              <span aria-hidden="true" className="text-slate-600">·</span>
+              <span aria-hidden="true" className="text-white/25">·</span>
             </>
           )}
           {moon && (
             <>
-              <span>
-                ☽{' '}
+              <span className="inline-flex items-center gap-1">
+                <Moon className="w-3 h-3 text-amber-300/80" />
                 {tradition === 'chinese'
                   ? transposeLongitudeToChinese(moon.longitude).sign.name
                   : `${moon.formattedDeg} ${moon.sign.name}`}
               </span>
-              <span aria-hidden="true" className="text-slate-600">·</span>
+              <span aria-hidden="true" className="text-white/25">·</span>
             </>
           )}
           <span className="text-slate-400">{baseChart.cityName}</span>
@@ -1735,13 +1749,13 @@ export default function App() {
                 ? 'Temps réel actif — Cliquer pour mettre en pause'
                 : 'Synchroniser sur l’heure exacte et animer en temps réel'
             }
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 font-mono-tabular text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono-tabular text-xs font-medium backdrop-blur-xl transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30 ${
               Math.abs(timeSpeedDaysPerSec - REAL_TIME_DAYS_PER_SEC) < 1e-8
-                ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-300'
-                : 'border-white/15 bg-[#0d1428] text-slate-300 hover:border-[#38bdf8] hover:text-white'
+                ? 'border-amber-300/40 bg-amber-500/10 text-amber-100'
+                : 'border-white/10 bg-[#07070C]/70 bg-white/[0.03] text-slate-300 hover:border-amber-300/30 hover:text-white'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-3.5 h-3.5 text-amber-300/80" />
             <span>
               Temps réel ·{' '}
               {new Intl.DateTimeFormat('fr-FR', {
@@ -1756,22 +1770,22 @@ export default function App() {
             type="button"
             onClick={handleOpenSharePrint}
             title="Imprimer en PDF ou envoyer par lien"
-            className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/45 bg-[#121931] px-3 py-2 text-xs font-semibold text-[#f3d67a] hover:bg-[#d4af37]/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-amber-100 hover:border-amber-300/30 hover:text-white transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-3.5 h-3.5 text-amber-300/80" />
             <span>PDF / Lien</span>
           </button>
           <button
             type="button"
             onClick={handleEnterMR}
             title="Lancer en Réalité Mixte (Passthrough Quest 3 ou Aperçu Hologramme)"
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-xl transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30 ${
               xrMode === 'mr' || desktopMR
-                ? 'border-[#38bdf8] bg-[#38bdf8] text-[#05070e]'
-                : 'border-[#38bdf8]/45 bg-[#0c162d] text-[#7dd3fc] hover:bg-[#38bdf8]/20'
+                ? 'border-amber-300/50 bg-indigo-500/30 text-white'
+                : 'border-white/10 bg-[#07070C]/70 bg-white/[0.03] text-indigo-100 hover:border-amber-300/30 hover:text-white'
             }`}
           >
-            <ScanEye className="w-4 h-4" />
+            <ScanEye className="w-3.5 h-3.5 text-amber-300/80" />
             <span>
               {xrMode === 'mr'
                 ? 'Quitter RM'
@@ -1785,16 +1799,16 @@ export default function App() {
           <button
             type="button"
             onClick={handleEnterVR}
-            className="flex items-center gap-2 rounded-lg bg-[#d4af37] px-3.5 py-2 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-4 py-1.5 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <Glasses className="w-4 h-4" />
+            <Glasses className="w-3.5 h-3.5" />
             <span>{inVR && xrMode === 'vr' ? 'Quitter VR' : webXRSupported ? 'Entrer en VR' : 'VR · Quest 3'}</span>
           </button>
           <button
             type="button"
             onClick={() => setQuitConfirmOpen(true)}
             title="Quitter Uranie VR"
-            className="flex items-center gap-1.5 rounded-lg border border-rose-500/45 bg-rose-950/55 px-2.5 py-2 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 hover:border-rose-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-rose-200 hover:border-rose-400/50 hover:bg-rose-500/15 transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
           >
             <Power className="w-3.5 h-3.5 text-rose-300" />
             <span className="hidden sm:inline">Quitter</span>
@@ -1803,21 +1817,22 @@ export default function App() {
       </header>
 
       {cameraPreset === 'center' && viewDimension === '3d' && !inVR && !appExited && (
-        <div className="no-print fixed top-16 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-[#38bdf8]/40 bg-[#080e1f]/90 px-3 py-1.5 text-xs text-slate-200 backdrop-blur-md">
-          <span className="text-[#7dd3fc] font-medium whitespace-nowrap">
+        <div className="no-print fixed top-16 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-[#07070C]/80 bg-white/[0.03] backdrop-blur-xl px-4 py-1.5 text-xs text-slate-200 shadow-2xl shadow-black/50">
+          <Sparkles className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
+          <span className="text-amber-100 font-medium whitespace-nowrap">
             Mode 360° · Glissez pour regarder tout autour · Cliquez sur les astres ou le pupitre 3D
           </span>
           <button
             type="button"
             onClick={() => sceneRef.current?.bringMenuInFrontOfViewer()}
-            className="rounded-md border border-[#d4af37]/50 bg-[#d4af37]/15 px-2 py-0.5 font-medium text-[#f8f3e6] hover:bg-[#d4af37]/30 transition-colors whitespace-nowrap cursor-pointer"
+            className="rounded-full border border-amber-300/35 bg-amber-400/15 px-3 py-0.5 font-medium text-amber-100 hover:border-amber-300/60 transition-all duration-300 whitespace-nowrap cursor-pointer"
           >
             Menu 3D ici
           </button>
           <button
             type="button"
             onClick={() => handleCameraPresetChange('overview')}
-            className="rounded-md border border-white/15 bg-white/5 px-2 py-0.5 font-medium text-slate-200 hover:bg-white/15 transition-colors whitespace-nowrap cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-0.5 font-medium text-slate-200 hover:border-amber-300/30 transition-all duration-300 whitespace-nowrap cursor-pointer"
           >
             Quitter 360°
           </button>
@@ -1828,13 +1843,13 @@ export default function App() {
         <div
           className={`no-print fixed ${
             cameraPreset === 'center' && viewDimension === '3d' && !inVR ? 'top-28' : 'top-16'
-          } left-1/2 z-20 flex -translate-x-1/2 max-w-[92vw] items-center gap-2 rounded-xl border ${
+          } left-1/2 z-20 flex -translate-x-1/2 max-w-[92vw] items-center gap-2 rounded-full border ${
             voiceError
-              ? 'border-rose-400/50 bg-[#1a0b12]/95 text-rose-200'
-              : 'border-[#38bdf8]/45 bg-[#080e1f]/95 text-[#e0f2fe]'
-          } px-3.5 py-1.5 text-xs shadow-lg backdrop-blur-md`}
+              ? 'border-rose-400/50 bg-[#1a0b12]/90 text-rose-200'
+              : 'border-white/10 bg-[#07070C]/80 bg-white/[0.03] text-slate-200'
+          } px-4 py-1.5 text-xs shadow-2xl shadow-black/50 backdrop-blur-xl`}
         >
-          <Mic className={`w-3.5 h-3.5 shrink-0 ${voiceListening ? 'text-rose-400 animate-pulse' : 'text-[#38bdf8]'}`} />
+          <Mic className={`w-3.5 h-3.5 shrink-0 ${voiceListening ? 'text-rose-400 animate-pulse' : 'text-amber-300/80'}`} />
           <span className="truncate">
             {voiceError
               ? voiceError
@@ -1846,7 +1861,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleToggleVoiceMode}
-              className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-white/15 cursor-pointer shrink-0"
+              className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-0.5 text-[11px] text-slate-200 hover:border-amber-300/30 cursor-pointer shrink-0 transition-all duration-300"
             >
               Couper
             </button>
@@ -1855,7 +1870,7 @@ export default function App() {
       )}
 
       {!isOnline && (
-        <div className="no-print fixed top-16 left-5 z-20 rounded-lg border border-amber-400/30 bg-[#0b101f]/95 px-3 py-1.5 text-xs text-amber-200">
+        <div className="no-print fixed top-16 left-5 z-20 rounded-full border border-white/10 bg-[#07070C]/80 bg-white/[0.03] backdrop-blur-xl px-3.5 py-1.5 text-xs text-amber-200 shadow-xl shadow-black/40">
           Mode hors ligne · Éphéméride autonome actif
         </div>
       )}
@@ -2087,31 +2102,31 @@ export default function App() {
 
       {/* Confirmation dialog before quitting Uranie VR */}
       {quitConfirmOpen && !appExited && (
-        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-rose-500/35 bg-[#090e1f] p-6 shadow-2xl">
-            <div className="flex items-center gap-3 text-rose-300">
-              <Power className="h-5 w-5 shrink-0" />
-              <h2 className="font-display text-xl font-semibold text-[#f8f3e6]">
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-[#07070C]/80 p-4 backdrop-blur-xl">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0d0d16]/90 bg-white/[0.03] backdrop-blur-xl p-7 shadow-2xl shadow-black/50">
+            <div className="flex items-center gap-3">
+              <Power className="h-5 w-5 text-amber-300/80 shrink-0" />
+              <h2 className="font-display text-xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
                 Quitter Uranie VR ?
               </h2>
             </div>
-            <p className="mt-2.5 text-sm leading-relaxed text-slate-300">
+            <p className="mt-3 text-sm leading-relaxed text-slate-200">
               La session 3D/VR, la voix et la musique ésotérique seront arrêtées. Sur Android ou
               Meta Quest, l’application se fermera ; sur navigateur PC, vous pourrez fermer l’onglet
               ou relancer à tout moment.
             </p>
-            <div className="mt-5 flex items-center justify-end gap-2.5">
+            <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setQuitConfirmOpen(false)}
-                className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
+                className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-xs font-medium text-slate-200 hover:border-amber-300/30 hover:text-white transition-all duration-300 cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={() => void executeQuitApp()}
-                className="flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-500 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded-full border border-rose-400/50 bg-rose-500/20 px-5 py-2.5 text-xs font-semibold text-rose-100 hover:bg-rose-500/35 hover:border-rose-300/70 transition-all duration-300 cursor-pointer"
               >
                 <Power className="h-3.5 w-3.5" />
                 <span>Quitter l’application</span>
@@ -2123,22 +2138,30 @@ export default function App() {
 
       {/* Fullscreen peaceful exit screen (fallback when browser blocks window.close) */}
       {appExited && (
-        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-[#05070e] p-6 text-center">
-          <div className="max-w-md rounded-2xl border border-[#d4af37]/30 bg-[#0a1022] p-8 shadow-2xl">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]">
-              <Power className="h-6 w-6" />
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-[#07070C] p-6 text-center overflow-hidden">
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+            <div className="absolute -top-24 left-1/4 h-[460px] w-[460px] rounded-full bg-purple-900/20 blur-[120px]" />
+            <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-indigo-900/15 blur-[120px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 h-[360px] w-[360px] rounded-full bg-amber-500/5 blur-[120px]" />
+          </div>
+          <div className="relative max-w-md rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-9 shadow-2xl shadow-black/50">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-amber-300/30 bg-white/[0.04] text-amber-300/80">
+              <Stars className="h-6 w-6" />
             </div>
-            <h1 className="font-display text-2xl font-semibold text-[#f8f3e6]">
+            <h1 className="font-display text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
               Session Uranie VR terminée
             </h1>
-            <p className="mt-2.5 text-sm leading-relaxed text-slate-300">
+            <p className="mt-2 font-serif italic text-base text-amber-100/80">
+              Sous la voûte silencieuse des astres
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-slate-200">
               Le moteur 3D, l’audio céleste et les capteurs sont arrêtés. Vous pouvez fermer cet
               onglet ou cette fenêtre en toute sécurité, ou relancer votre thème astral.
             </p>
             <button
               type="button"
               onClick={() => setAppExited(false)}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#d4af37] px-5 py-2.5 text-xs font-semibold text-[#05070e] hover:bg-[#e5c458] transition-colors cursor-pointer"
+              className="mt-7 inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-8 py-3.5 text-sm shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all cursor-pointer"
             >
               <RotateCcw className="h-4 w-4" />
               <span>Relancer Uranie VR</span>
