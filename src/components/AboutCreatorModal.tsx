@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Check,
   Compass,
+  Copy,
   Edit3,
   ExternalLink,
   Glasses,
@@ -114,6 +116,7 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
   });
   const [musicActive, setMusicActive] = useState<boolean>(false);
   const [needsUserClickForAudio, setNeedsUserClickForAudio] = useState<boolean>(false);
+  const [contactCopied, setContactCopied] = useState<boolean>(false);
 
   const speechSupported = isSpeechSynthesisSupported();
   const tourActiveRef = useRef<boolean>(false);
@@ -591,12 +594,49 @@ export const AboutCreatorModal: React.FC<AboutCreatorModalProps> = ({
                     « {creator.dedication} »
                   </div>
                 )}
-                <div className="pt-1 flex flex-wrap items-center gap-4 text-xs text-slate-300">
+                <div className="pt-1 flex flex-wrap items-center gap-2.5 text-xs text-slate-300">
                   {creator.contact && (
-                    <span className="inline-flex items-center gap-1.5 text-amber-100/90">
-                      <Mail className="w-3.5 h-3.5 text-amber-300/80" />
-                      <span>{creator.contact}</span>
-                    </span>
+                    <div className="inline-flex flex-wrap items-center gap-2">
+                      <a
+                        href={`mailto:${encodeURIComponent(creator.contact)}?subject=${encodeURIComponent('Uranie VR — Contact')}`}
+                        target="_top"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-amber-100 hover:border-amber-300/60 hover:bg-amber-400/20 transition-all"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-amber-300/90" />
+                        <span>{creator.contact}</span>
+                      </a>
+                      <a
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(creator.contact)}&su=${encodeURIComponent('Uranie VR — Contact')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-200 hover:border-amber-300/40 hover:text-white transition-all"
+                      >
+                        <span>Gmail Web</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(creator.contact);
+                          } catch {
+                            const ta = document.createElement('textarea');
+                            ta.value = creator.contact;
+                            ta.style.position = 'fixed';
+                            ta.style.opacity = '0';
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(ta);
+                          }
+                          setContactCopied(true);
+                          window.setTimeout(() => setContactCopied(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-200 hover:border-amber-300/40 hover:text-white transition-all cursor-pointer"
+                      >
+                        {contactCopied ? <Check className="h-3 w-3 text-emerald-300" /> : <Copy className="h-3 w-3 text-amber-300/80" />}
+                        <span>{contactCopied ? 'Copié' : 'Copier'}</span>
+                      </button>
+                    </div>
                   )}
                   {creator.projectUrl && (
                     <a

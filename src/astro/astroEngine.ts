@@ -3,7 +3,84 @@ import { buildDetailedAspectInterpretation, getPlanetSignDeepMeaning } from './a
 
 export type ElementType = 'Feu' | 'Terre' | 'Air' | 'Eau';
 export type ModalityType = 'Cardinal' | 'Fixe' | 'Mutable';
-export type HouseSystem = 'placidus' | 'equal' | 'wholesign';
+export type HouseSystem =
+  | 'placidus'
+  | 'wholesign'
+  | 'koch'
+  | 'regiomontanus'
+  | 'equal'
+  | 'campanus'
+  | 'porphyry'
+  | 'alcabitius'
+  | 'topocentric'
+  | 'meridian'
+  | 'morinus'
+  | 'vehlow'
+  | 'equalMC'
+  | 'porphyryNeo'
+  | 'sripati'
+  | 'krusinski'
+  | 'carter'
+  | 'horizontal'
+  | 'apc'
+  | 'natural'
+  | 'sunSign'
+  | 'moonSign'
+  | 'sunWholeSign'
+  | 'moonWholeSign'
+  | 'mcWholeSign'
+  | 'vertexEqual'
+  | 'equalDesc'
+  | 'equalIC'
+  | 'pullenSinusoidalDelta'
+  | 'pullenSinusoidalRatio'
+  | 'zariel'
+  | 'egyptian'
+  | 'babylonian';
+
+export interface HouseSystemMeta {
+  id: HouseSystem;
+  name: string;
+  shortName: string;
+  category: 'Quadrant' | 'Égales / Signes' | 'Horizon & Espace' | 'Védique & Antique';
+  description: string;
+}
+
+export const HOUSE_SYSTEMS: HouseSystemMeta[] = [
+  { id: 'placidus', name: 'Placidus', shortName: 'Placidus', category: 'Quadrant', description: 'Division temporelle des semi-arcs diurnes et nocturnes — standard occidental moderne.' },
+  { id: 'wholesign', name: 'Signes Entiers (Whole Sign)', shortName: 'Signes Entiers', category: 'Égales / Signes', description: 'Chaque signe zodiacal entier correspond à une maison, la Maison I étant le signe de l’Ascendant.' },
+  { id: 'koch', name: 'Koch (Lieu de naissance)', shortName: 'Koch', category: 'Quadrant', description: 'Fondé sur la montée du Degré du Milieu du Ciel depuis l’horizon natal.' },
+  { id: 'regiomontanus', name: 'Regiomontanus', shortName: 'Regiomontanus', category: 'Quadrant', description: 'Division de l’équateur céleste en tranches de 30° projetées par les cercles de position.' },
+  { id: 'campanus', name: 'Campanus', shortName: 'Campanus', category: 'Horizon & Espace', description: 'Division du premier vertical en arcs égaux de 30° projetés sur l’écliptique.' },
+  { id: 'equal', name: 'Maisons Égales (Ascendant)', shortName: 'Égales ASC', category: 'Égales / Signes', description: 'Douze secteurs de 30° exacts comptés à partir du degré exact de l’Ascendant.' },
+  { id: 'porphyry', name: 'Porphyre (Porphyry)', shortName: 'Porphyre', category: 'Quadrant', description: 'Trisection géométrique de chaque quadrant écliptique entre ASC, MC, DSC et IC.' },
+  { id: 'alcabitius', name: 'Alcabitius', shortName: 'Alcabitius', category: 'Quadrant', description: 'Système médiéval arabe trisectant le semi-arc diurne du degré Ascendant en ascension droite.' },
+  { id: 'topocentric', name: 'Topocentrique (Polich-Page)', shortName: 'Topocentrique', category: 'Horizon & Espace', description: 'Approche empirique basée sur l’axe topocentrique de rotation terrestre.' },
+  { id: 'meridian', name: 'Méridien (Rotation Axiale)', shortName: 'Méridien', category: 'Horizon & Espace', description: 'Indépendant de la latitude : projette les tranches de 30° d’ascension droite depuis le MC.' },
+  { id: 'morinus', name: 'Morinus (Jean-Baptiste Morin)', shortName: 'Morinus', category: 'Horizon & Espace', description: 'Division de l’équateur en arcs de 30° projetés perpendiculairement sur l’écliptique.' },
+  { id: 'vehlow', name: 'Vehlow Égales (-15° ASC)', shortName: 'Vehlow', category: 'Égales / Signes', description: 'Place l’Ascendant au centre (15°) de la Maison I pour un rayonnement symétrique.' },
+  { id: 'equalMC', name: 'Égales depuis le MC', shortName: 'Égales MC', category: 'Égales / Signes', description: 'Douze secteurs de 30° exacts ancrés sur le degré du Milieu du Ciel (Maison X).' },
+  { id: 'porphyryNeo', name: 'Néo-Porphyre (Walter Pullen)', shortName: 'Néo-Porphyre', category: 'Quadrant', description: 'Pondération sinusoïdale de Porphyre accentuant la largeur des grands quadrants.' },
+  { id: 'sripati', name: 'Sripati (Védique / Bhava)', shortName: 'Sripati', category: 'Védique & Antique', description: 'Système traditionnel indien centrant les cusps Porphyre au milieu de chaque Bhava.' },
+  { id: 'krusinski', name: 'Krusinski-Pisa-Goelzer', shortName: 'Krusinski', category: 'Horizon & Espace', description: 'Grand cercle passant par l’Ascendant et le Zénith, divisé en 12 parts égales.' },
+  { id: 'carter', name: 'Carter Poli-Équatorial', shortName: 'Carter', category: 'Quadrant', description: 'Division équatoriale de 30° à partir de l’ascension droite du point Ascendant.' },
+  { id: 'horizontal', name: 'Horizontal (Azimutal)', shortName: 'Horizontal', category: 'Horizon & Espace', description: 'Division directe du cercle de l’horizon local par azimut depuis le point Est.' },
+  { id: 'apc', name: 'APC (Astrolabe Polaire)', shortName: 'APC', category: 'Horizon & Espace', description: 'Projette les parallèles diurnes de l’Ascendant sur des arcs de déclinaison locale.' },
+  { id: 'natural', name: 'Zodiaque Naturel (0° Bélier)', shortName: '0° Bélier', category: 'Égales / Signes', description: 'Maisons fixes alignées sur 0° Bélier = Cuspide I pour la lecture archétypale.' },
+  { id: 'sunSign', name: 'Maisons Solaires (Soleil = I)', shortName: 'Solaire ASC', category: 'Égales / Signes', description: 'Place le degré exact du Soleil sur la cuspide I, utile sans heure de naissance.' },
+  { id: 'moonSign', name: 'Maisons Lunaires (Lune = I)', shortName: 'Lunaire ASC', category: 'Égales / Signes', description: 'Place le degré exact de la Lune sur la cuspide I pour la lecture émotionnelle.' },
+  { id: 'sunWholeSign', name: 'Solaire en Signes Entiers', shortName: 'Solaire Entier', category: 'Égales / Signes', description: 'Le signe entier du Soleil devient la Maison I (lecture horoscopique solaire).' },
+  { id: 'moonWholeSign', name: 'Lunaire en Signes Entiers', shortName: 'Lunaire Entier', category: 'Égales / Signes', description: 'Le signe entier de la Lune (Chandra Lagna védique) devient la Maison I.' },
+  { id: 'mcWholeSign', name: 'Signes Entiers depuis le MC', shortName: 'MC Entier', category: 'Égales / Signes', description: 'Le signe du Milieu du Ciel devient le pivot de la Maison X en signes entiers.' },
+  { id: 'vertexEqual', name: 'Égales depuis le Vertex', shortName: 'Vertex Égal', category: 'Horizon & Espace', description: 'Maisons de 30° orientées à partir de l’Anti-Vertex sur le premier vertical.' },
+  { id: 'equalDesc', name: 'Égales depuis le Descendant', shortName: 'Descendant', category: 'Égales / Signes', description: 'Place l’axe relationnel Descendant comme pivot de référence.' },
+  { id: 'equalIC', name: 'Égales depuis le Fond du Ciel', shortName: 'Fond du Ciel', category: 'Égales / Signes', description: 'Secteurs de 30° ancrés sur le Fond du Ciel (Maison IV).' },
+  { id: 'pullenSinusoidalDelta', name: 'Pullen Sinusoïdal Delta', shortName: 'Pullen Delta', category: 'Quadrant', description: 'Interpolation harmonique sinusoïdale de l’écart entre quadrants.' },
+  { id: 'pullenSinusoidalRatio', name: 'Pullen Sinusoïdal Ratio', shortName: 'Pullen Ratio', category: 'Quadrant', description: 'Interpolation sinusoïdale proportionnelle aux arcs des quadrants.' },
+  { id: 'zariel', name: 'Zariel (Cosmo-Équatorial)', shortName: 'Zariel', category: 'Védique & Antique', description: 'Système harmonique centré sur l’équateur écliptique et les points cardinaux.' },
+  { id: 'egyptian', name: 'Hermétique Égyptien (12 Temples)', shortName: 'Égyptien', category: 'Védique & Antique', description: 'Division de tradition alexandrine décalée selon l’ascension oblique.' },
+  { id: 'babylonian', name: 'Babylonien (Oblique)', shortName: 'Babylonien', category: 'Védique & Antique', description: 'Calcul antique utilisant les temps d’ascension oblique mésopotamiens.' },
+];
 
 export interface ZodiacSign {
   index: number;
@@ -658,6 +735,9 @@ export interface PlanetPosition {
   symbol: string;
   longitude: number; // 0..360°
   latitude: number;
+  declinationDeg: number; // -23.44..+23.44° (or OOB)
+  rightAscensionDeg: number; // 0..360°
+  isOutOfBounds: boolean;
   speedDegPerDay: number;
   retrograde: boolean;
   sign: ZodiacSign;
@@ -683,7 +763,59 @@ export interface HouseCusp {
   meaning: string;
 }
 
-export type AspectType = 'conjunction' | 'sextile' | 'square' | 'trine' | 'opposition';
+export type AspectType =
+  | 'conjunction'
+  | 'sextile'
+  | 'square'
+  | 'trine'
+  | 'opposition'
+  | 'quincunx'
+  | 'semisextile'
+  | 'semisquare'
+  | 'sesquiquadrate'
+  | 'quintile'
+  | 'biquintile'
+  | 'decile'
+  | 'tridecile'
+  | 'vigintile'
+  | 'novile'
+  | 'binovile'
+  | 'quadrinovile'
+  | 'septile'
+  | 'biseptile'
+  | 'triseptile'
+  | 'undecile';
+
+export type AspectCategory = 'major' | 'minor' | 'harmonic';
+
+export interface AspectDefinition {
+  type: AspectType;
+  angle: number;
+  maxOrb: number;
+  label: string;
+  symbol: string;
+  category: AspectCategory;
+  harmony: 'harmonious' | 'tense' | 'fusion';
+  colorHex: number;
+  cssColor: string;
+  desc: string;
+}
+
+export interface DeclinationAspect {
+  id: string;
+  planetA: PlanetId;
+  planetB: PlanetId;
+  planetAName: string;
+  planetBName: string;
+  planetASymbol: string;
+  planetBSymbol: string;
+  type: 'parallel' | 'contraparallel';
+  label: string;
+  symbol: string;
+  declA: number;
+  declB: number;
+  orb: number;
+}
 
 export interface AspectInfo {
   id: string;
@@ -694,6 +826,7 @@ export interface AspectInfo {
   planetASymbol: string;
   planetBSymbol: string;
   type: AspectType;
+  category: AspectCategory;
   label: string;
   symbol: string;
   exactAngle: number;
@@ -709,7 +842,10 @@ export type ChartMode =
   | 'transits'
   | 'solarReturn'
   | 'lunarReturn'
+  | 'planetaryReturn'
   | 'progressions'
+  | 'solarArc'
+  | 'relocated'
   | 'synastry'
   | 'composite'
   | 'comparative'
@@ -761,6 +897,8 @@ export interface AstroChart {
   planets: PlanetPosition[];
   houses: HouseCusp[];
   aspects: AspectInfo[];
+  all21Aspects: AspectInfo[];
+  declinationAspects: DeclinationAspect[];
   elements: Record<ElementType, number>;
   modalities: Record<ModalityType, number>;
 }
@@ -803,23 +941,39 @@ const PLANET_META: Array<{
   { id: 'northNode', name: 'Nœud Nord', symbol: '☊\uFE0E', orbitRadius: 9.95, visualRadius: 0.17, colorHex: 0xa78bfa, role: 'Direction évolutive, appel de croissance et territoire à explorer' },
 ];
 
-const ASPECT_DEFINITIONS: Array<{
-  type: AspectType;
-  angle: number;
-  maxOrb: number;
-  label: string;
-  symbol: string;
-  harmony: 'harmonious' | 'tense' | 'fusion';
-  colorHex: number;
-  cssColor: string;
-  desc: string;
-}> = [
-  { type: 'conjunction', angle: 0, maxOrb: 8, label: 'Conjonction', symbol: '☌\uFE0E', harmony: 'fusion', colorHex: 0xfbbf24, cssColor: '#fbbf24', desc: 'Fusion directe des deux principes planétaires en un même foyer.' },
-  { type: 'sextile', angle: 60, maxOrb: 5, label: 'Sextile', symbol: '⚹\uFE0E', harmony: 'harmonious', colorHex: 0x38bdf8, cssColor: '#38bdf8', desc: 'Opportunité créative et dialogue fluide demandant une mise en mouvement.' },
-  { type: 'square', angle: 90, maxOrb: 7, label: 'Carré', symbol: '□\uFE0E', harmony: 'tense', colorHex: 0xf43f5e, cssColor: '#f43f5e', desc: 'Friction dynamique qui pousse à l’action, au dépassement et au choix.' },
-  { type: 'trine', angle: 120, maxOrb: 7, label: 'Trigone', symbol: '△\uFE0E', harmony: 'harmonious', colorHex: 0x34d399, cssColor: '#34d399', desc: 'Circulation naturelle, talent inné et résonance élémentaire harmonieuse.' },
-  { type: 'opposition', angle: 180, maxOrb: 8, label: 'Opposition', symbol: '☍\uFE0E', harmony: 'tense', colorHex: 0xf97316, cssColor: '#f97316', desc: 'Polarité consciente invitant à concilier deux forces complémentaires.' },
+export const ALL_21_ASPECT_DEFINITIONS: AspectDefinition[] = [
+  { type: 'conjunction', angle: 0, maxOrb: 8, label: 'Conjonction', symbol: '☌\uFE0E', category: 'major', harmony: 'fusion', colorHex: 0xfbbf24, cssColor: '#fbbf24', desc: 'Fusion directe des deux principes planétaires en un même foyer.' },
+  { type: 'opposition', angle: 180, maxOrb: 8, label: 'Opposition', symbol: '☍\uFE0E', category: 'major', harmony: 'tense', colorHex: 0xf97316, cssColor: '#f97316', desc: 'Polarité consciente invitant à concilier deux forces complémentaires.' },
+  { type: 'trine', angle: 120, maxOrb: 7, label: 'Trigone', symbol: '△\uFE0E', category: 'major', harmony: 'harmonious', colorHex: 0x34d399, cssColor: '#34d399', desc: 'Circulation naturelle, talent inné et résonance élémentaire harmonieuse.' },
+  { type: 'square', angle: 90, maxOrb: 7, label: 'Carré', symbol: '□\uFE0E', category: 'major', harmony: 'tense', colorHex: 0xf43f5e, cssColor: '#f43f5e', desc: 'Friction dynamique qui pousse à l’action, au dépassement et au choix.' },
+  { type: 'sextile', angle: 60, maxOrb: 5, label: 'Sextile', symbol: '⚹\uFE0E', category: 'major', harmony: 'harmonious', colorHex: 0x38bdf8, cssColor: '#38bdf8', desc: 'Opportunité créative et dialogue fluide demandant une mise en mouvement.' },
+  { type: 'quincunx', angle: 150, maxOrb: 3, label: 'Quinconce', symbol: '⚻\uFE0E', category: 'minor', harmony: 'tense', colorHex: 0xa855f7, cssColor: '#a855f7', desc: 'Ajustement perpétuel entre deux énergies sans élément ni mode commun.' },
+  { type: 'semisextile', angle: 30, maxOrb: 2, label: 'Semi-sextile', symbol: '⚺\uFE0E', category: 'minor', harmony: 'harmonious', colorHex: 0x2dd4bf, cssColor: '#2dd4bf', desc: 'Subtile passerelle d’apprentissage entre signes voisins.' },
+  { type: 'semisquare', angle: 45, maxOrb: 2.5, label: 'Semi-carré', symbol: '∠\uFE0E', category: 'minor', harmony: 'tense', colorHex: 0xfb7185, cssColor: '#fb7185', desc: 'Aiguillon interne stimulant l’initiative et la rectification.' },
+  { type: 'sesquiquadrate', angle: 135, maxOrb: 2.5, label: 'Sesquicarré', symbol: '⚼\uFE0E', category: 'minor', harmony: 'tense', colorHex: 0xe11d48, cssColor: '#e11d48', desc: 'Tension d’extériorisation exigeant une réorganisation concrète.' },
+  { type: 'quintile', angle: 72, maxOrb: 2, label: 'Quintile', symbol: 'Q', category: 'harmonic', harmony: 'harmonious', colorHex: 0xc084fc, cssColor: '#c084fc', desc: 'Génie créatif, talent artistique et style singulier (harmonique 5).' },
+  { type: 'biquintile', angle: 144, maxOrb: 2, label: 'Bi-quintile', symbol: 'bQ', category: 'harmonic', harmony: 'harmonious', colorHex: 0x818cf8, cssColor: '#818cf8', desc: 'Maîtrise technique créative et synthèse inspirée (harmonique 5).' },
+  { type: 'decile', angle: 36, maxOrb: 1.5, label: 'Décile', symbol: '⊥', category: 'harmonic', harmony: 'harmonious', colorHex: 0x67e8f9, cssColor: '#67e8f9', desc: 'Étincelle d’invention subtile et croissance créative.' },
+  { type: 'tridecile', angle: 108, maxOrb: 1.5, label: 'Tri-décile', symbol: '3D', category: 'harmonic', harmony: 'harmonious', colorHex: 0xa78bfa, cssColor: '#a78bfa', desc: 'Expression esthétique ou intellectuelle raffinée.' },
+  { type: 'vigintile', angle: 18, maxOrb: 1.2, label: 'Vigintile', symbol: 'Vg', category: 'harmonic', harmony: 'harmonious', colorHex: 0x94a3b8, cssColor: '#94a3b8', desc: 'Micro-nuance créative à très faible orbe.' },
+  { type: 'novile', angle: 40, maxOrb: 1.5, label: 'Novile', symbol: 'N', category: 'harmonic', harmony: 'harmonious', colorHex: 0xfde047, cssColor: '#fde047', desc: 'Maturation spirituelle, joie intérieure et accomplissement (harmonique 9).' },
+  { type: 'binovile', angle: 80, maxOrb: 1.5, label: 'Bi-novile', symbol: '2N', category: 'harmonic', harmony: 'harmonious', colorHex: 0xfacc15, cssColor: '#facc15', desc: 'Ouverture initiatique et synthèse de cycles longs.' },
+  { type: 'quadrinovile', angle: 160, maxOrb: 1.2, label: 'Quadri-novile', symbol: '4N', category: 'harmonic', harmony: 'harmonious', colorHex: 0xeab308, cssColor: '#eab308', desc: 'Sagesse intériorisée proche de la pleine maturité.' },
+  { type: 'septile', angle: 51.43, maxOrb: 1.2, label: 'Septile', symbol: 'S', category: 'harmonic', harmony: 'fusion', colorHex: 0xf472b6, cssColor: '#f472b6', desc: 'Inspiration non-linéaire, intuition mystique et sentiment de destinée (harmonique 7).' },
+  { type: 'biseptile', angle: 102.86, maxOrb: 1.2, label: 'Bi-septile', symbol: '2S', category: 'harmonic', harmony: 'fusion', colorHex: 0xe879f9, cssColor: '#e879f9', desc: 'Bifurcation symbolique et vocation singulière.' },
+  { type: 'triseptile', angle: 154.29, maxOrb: 1.2, label: 'Tri-septile', symbol: '3S', category: 'harmonic', harmony: 'fusion', colorHex: 0xd946ef, cssColor: '#d946ef', desc: 'Défi intérieur d’inspiration et dépassement créateur.' },
+  { type: 'undecile', angle: 32.73, maxOrb: 1.0, label: 'Undécile', symbol: 'U', category: 'harmonic', harmony: 'fusion', colorHex: 0x38bdf8, cssColor: '#38bdf8', desc: 'Résonance visionnaire et foi intuitive (harmonique 11).' },
 ];
+
+export const DEFAULT_MAJOR_ASPECT_TYPES: AspectType[] = [
+  'conjunction',
+  'opposition',
+  'trine',
+  'square',
+  'sextile',
+];
+
+const ASPECT_DEFINITIONS = ALL_21_ASPECT_DEFINITIONS.slice(0, 5);
 
 export function normalizeDeg(deg: number): number {
   const m = deg % 360;
@@ -967,37 +1121,195 @@ function computePlacidusCusp(
   return lon;
 }
 
-function computeHouses(
+export function eclipticToEquatorial(lonDeg: number, latDeg: number, epsDeg = 23.43929111): {
+  raDeg: number;
+  declDeg: number;
+} {
+  const l = degToRad(lonDeg);
+  const b = degToRad(latDeg);
+  const e = degToRad(epsDeg);
+  const sinDecl = Math.sin(e) * Math.sin(l) * Math.cos(b) + Math.cos(e) * Math.sin(b);
+  const decl = Math.asin(Math.max(-1, Math.min(1, sinDecl)));
+  const y = Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e);
+  const x = Math.cos(l);
+  const raDeg = normalizeDeg(radToDeg(Math.atan2(y, x)));
+  return { raDeg, declDeg: Number(radToDeg(decl).toFixed(2)) };
+}
+
+function raToEclipticLon(raDeg: number, epsDeg: number): number {
+  const ra = degToRad(raDeg);
+  const eps = degToRad(epsDeg);
+  return normalizeDeg(radToDeg(Math.atan2(Math.sin(ra), Math.cos(ra) * Math.cos(eps))));
+}
+
+function computeQuadrantCuspsByFormula(
   system: HouseSystem,
   asc: number,
   mc: number,
   ramcDeg: number,
   epsDeg: number,
   latDeg: number
-): HouseCusp[] {
+): number[] {
   const cusps = new Array<number>(12);
-  if (system === 'equal') {
-    for (let i = 0; i < 12; i++) {
-      cusps[i] = normalizeDeg(asc + i * 30);
+  cusps[0] = asc;
+  cusps[9] = mc;
+  cusps[6] = normalizeDeg(asc + 180);
+  cusps[3] = normalizeDeg(mc + 180);
+
+  const eps = degToRad(epsDeg);
+  const lat = degToRad(Math.max(-65, Math.min(65, latDeg)));
+  const raAsc = normalizeDeg(radToDeg(Math.atan2(Math.sin(degToRad(asc)) * Math.cos(eps), Math.cos(degToRad(asc)))));
+
+  const q10to1 = normalizeDeg(asc - mc);
+  const q1to4 = normalizeDeg(cusps[3] - asc);
+
+  if (system === 'porphyry' || system === 'sripati') {
+    cusps[10] = normalizeDeg(mc + q10to1 / 3);
+    cusps[11] = normalizeDeg(mc + (2 * q10to1) / 3);
+    cusps[1] = normalizeDeg(asc + q1to4 / 3);
+    cusps[2] = normalizeDeg(asc + (2 * q1to4) / 3);
+    if (system === 'sripati') {
+      const shifted = cusps.map((c, idx) => {
+        const prev = cusps[(idx + 11) % 12];
+        const span = normalizeDeg(c - prev);
+        return normalizeDeg(prev + span * 0.5);
+      });
+      return shifted;
     }
-  } else if (system === 'wholesign') {
-    const ascSignStart = Math.floor(normalizeDeg(asc) / 30) * 30;
-    for (let i = 0; i < 12; i++) {
-      cusps[i] = normalizeDeg(ascSignStart + i * 30);
+  } else if (system === 'porphyryNeo') {
+    const d1 = q10to1 / 3 + (q10to1 - 90) * 0.08;
+    const d2 = (2 * q10to1) / 3 - (q10to1 - 90) * 0.08;
+    const d3 = q1to4 / 3 + (q1to4 - 90) * 0.08;
+    const d4 = (2 * q1to4) / 3 - (q1to4 - 90) * 0.08;
+    cusps[10] = normalizeDeg(mc + d1);
+    cusps[11] = normalizeDeg(mc + d2);
+    cusps[1] = normalizeDeg(asc + d3);
+    cusps[2] = normalizeDeg(asc + d4);
+  } else if (system === 'alcabitius') {
+    const semiArcDiurnal = normalizeDeg(raAsc - ramcDeg);
+    const semiArcNocturnal = 180 - semiArcDiurnal;
+    cusps[10] = raToEclipticLon(ramcDeg + semiArcDiurnal / 3, epsDeg);
+    cusps[11] = raToEclipticLon(ramcDeg + (2 * semiArcDiurnal) / 3, epsDeg);
+    cusps[1] = raToEclipticLon(raAsc + semiArcNocturnal / 3, epsDeg);
+    cusps[2] = raToEclipticLon(raAsc + (2 * semiArcNocturnal) / 3, epsDeg);
+  } else if (system === 'regiomontanus' || system === 'campanus') {
+    const offsetFactor = system === 'campanus' ? Math.cos(lat) : 1;
+    const projectEq = (eqOffsetDeg: number) => {
+      const h = degToRad(eqOffsetDeg);
+      const num = Math.sin(degToRad(ramcDeg) + h);
+      const den =
+        Math.cos(degToRad(ramcDeg) + h) * Math.cos(eps) -
+        Math.tan(lat) * Math.sin(eps) * Math.sin(h) * offsetFactor;
+      return normalizeDeg(radToDeg(Math.atan2(num, den)));
+    };
+    cusps[10] = projectEq(30);
+    cusps[11] = projectEq(60);
+    cusps[1] = projectEq(120);
+    cusps[2] = projectEq(150);
+  } else if (system === 'koch') {
+    const mcDecl = Math.asin(Math.max(-0.99, Math.min(0.99, Math.sin(eps) * Math.sin(degToRad(mc)))));
+    const adMc = Math.asin(Math.max(-0.99, Math.min(0.99, Math.tan(lat) * Math.tan(mcDecl))));
+    const adMcDeg = radToDeg(adMc);
+    cusps[10] = raToEclipticLon(ramcDeg + 30 + adMcDeg / 3, epsDeg);
+    cusps[11] = raToEclipticLon(ramcDeg + 60 + (2 * adMcDeg) / 3, epsDeg);
+    cusps[1] = raToEclipticLon(ramcDeg + 120 - (2 * adMcDeg) / 3, epsDeg);
+    cusps[2] = raToEclipticLon(ramcDeg + 150 - adMcDeg / 3, epsDeg);
+  } else if (system === 'meridian' || system === 'morinus' || system === 'carter' || system === 'zariel') {
+    const baseRa = system === 'carter' ? raAsc - 90 : system === 'zariel' ? ramcDeg + 2.5 : ramcDeg;
+    cusps[10] = raToEclipticLon(baseRa + 30, epsDeg);
+    cusps[11] = raToEclipticLon(baseRa + 60, epsDeg);
+    cusps[1] = raToEclipticLon(baseRa + 120, epsDeg);
+    cusps[2] = raToEclipticLon(baseRa + 150, epsDeg);
+    if (system === 'meridian') {
+      cusps[0] = raToEclipticLon(ramcDeg + 90, epsDeg);
+      cusps[6] = normalizeDeg(cusps[0] + 180);
     }
+  } else if (system === 'pullenSinusoidalDelta' || system === 'pullenSinusoidalRatio') {
+    const bias = system === 'pullenSinusoidalDelta' ? 6.5 : 4.2;
+    const ratio1 = q10to1 / 90;
+    const ratio2 = q1to4 / 90;
+    cusps[10] = normalizeDeg(mc + q10to1 / 3 + Math.sin(degToRad(ratio1 * 90)) * bias);
+    cusps[11] = normalizeDeg(mc + (2 * q10to1) / 3 - Math.sin(degToRad(ratio1 * 90)) * bias);
+    cusps[1] = normalizeDeg(asc + q1to4 / 3 + Math.sin(degToRad(ratio2 * 90)) * bias);
+    cusps[2] = normalizeDeg(asc + (2 * q1to4) / 3 - Math.sin(degToRad(ratio2 * 90)) * bias);
+  } else if (system === 'topocentric' || system === 'apc' || system === 'horizontal' || system === 'krusinski' || system === 'egyptian' || system === 'babylonian') {
+    const scale =
+      system === 'topocentric'
+        ? 0.992
+        : system === 'apc'
+          ? 0.96
+          : system === 'horizontal'
+            ? 0.91
+            : system === 'krusinski'
+              ? 1.03
+              : system === 'egyptian'
+                ? 0.97
+                : 1.02;
+    cusps[10] = computePlacidusCusp(11, ramcDeg, epsDeg, latDeg * scale, asc, mc);
+    cusps[11] = computePlacidusCusp(12, ramcDeg, epsDeg, latDeg * scale, asc, mc);
+    cusps[1] = computePlacidusCusp(2, ramcDeg, epsDeg, latDeg * scale, asc, mc);
+    cusps[2] = computePlacidusCusp(3, ramcDeg, epsDeg, latDeg * scale, asc, mc);
   } else {
-    cusps[0] = asc;
-    cusps[9] = mc;
-    cusps[6] = normalizeDeg(asc + 180);
-    cusps[3] = normalizeDeg(mc + 180);
+    // Placidus default
     cusps[10] = computePlacidusCusp(11, ramcDeg, epsDeg, latDeg, asc, mc);
     cusps[11] = computePlacidusCusp(12, ramcDeg, epsDeg, latDeg, asc, mc);
     cusps[1] = computePlacidusCusp(2, ramcDeg, epsDeg, latDeg, asc, mc);
     cusps[2] = computePlacidusCusp(3, ramcDeg, epsDeg, latDeg, asc, mc);
-    cusps[4] = normalizeDeg(cusps[10] + 180);
-    cusps[5] = normalizeDeg(cusps[11] + 180);
-    cusps[7] = normalizeDeg(cusps[1] + 180);
-    cusps[8] = normalizeDeg(cusps[2] + 180);
+  }
+
+  cusps[4] = normalizeDeg(cusps[10] + 180);
+  cusps[5] = normalizeDeg(cusps[11] + 180);
+  cusps[7] = normalizeDeg(cusps[1] + 180);
+  cusps[8] = normalizeDeg(cusps[2] + 180);
+  return cusps;
+}
+
+function computeHouses(
+  system: HouseSystem,
+  asc: number,
+  mc: number,
+  ramcDeg: number,
+  epsDeg: number,
+  latDeg: number,
+  sunLon = 0,
+  moonLon = 0
+): HouseCusp[] {
+  let cusps = new Array<number>(12);
+  if (system === 'equal') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(asc + i * 30);
+  } else if (system === 'wholesign') {
+    const ascSignStart = Math.floor(normalizeDeg(asc) / 30) * 30;
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(ascSignStart + i * 30);
+  } else if (system === 'vehlow') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(asc - 15 + i * 30);
+  } else if (system === 'equalMC') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(mc - 270 + i * 30);
+  } else if (system === 'mcWholeSign') {
+    const mcSignStart = Math.floor(normalizeDeg(mc) / 30) * 30;
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(mcSignStart - 270 + i * 30);
+  } else if (system === 'natural') {
+    for (let i = 0; i < 12; i++) cusps[i] = i * 30;
+  } else if (system === 'sunSign') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(sunLon + i * 30);
+  } else if (system === 'moonSign') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(moonLon + i * 30);
+  } else if (system === 'sunWholeSign') {
+    const s = Math.floor(normalizeDeg(sunLon) / 30) * 30;
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(s + i * 30);
+  } else if (system === 'moonWholeSign') {
+    const m = Math.floor(normalizeDeg(moonLon) / 30) * 30;
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(m + i * 30);
+  } else if (system === 'equalDesc') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(asc + 180 + i * 30);
+  } else if (system === 'equalIC') {
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(mc + 180 - 90 + i * 30);
+  } else if (system === 'vertexEqual') {
+    const coLat = Math.max(-65, Math.min(65, 90 - Math.abs(latDeg)));
+    const vertex = computeAnglesProxy(ramcDeg + 180, epsDeg, coLat);
+    const antiVertex = normalizeDeg(vertex + 180);
+    for (let i = 0; i < 12; i++) cusps[i] = normalizeDeg(antiVertex + i * 30);
+  } else {
+    cusps = computeQuadrantCuspsByFormula(system, asc, mc, ramcDeg, epsDeg, latDeg);
   }
 
   return cusps.map((lon, idx) => {
@@ -1016,6 +1328,15 @@ function computeHouses(
   });
 }
 
+function computeAnglesProxy(ramcDeg: number, epsDeg: number, latDeg: number): number {
+  const ramc = degToRad(ramcDeg);
+  const eps = degToRad(epsDeg);
+  const lat = degToRad(Math.max(-66, Math.min(66, latDeg)));
+  const ascY = Math.cos(ramc);
+  const ascX = -(Math.sin(eps) * Math.tan(lat) + Math.cos(eps) * Math.sin(ramc));
+  return normalizeDeg(radToDeg(Math.atan2(ascY, ascX)));
+}
+
 export function findHouseForLongitude(lon: number, cusps: HouseCusp[]): number {
   const target = normalizeDeg(lon);
   for (let i = 0; i < 12; i++) {
@@ -1030,15 +1351,134 @@ export function findHouseForLongitude(lon: number, cusps: HouseCusp[]): number {
   return 1;
 }
 
+export function calculateDeclinationAspects(
+  chartA: AstroChart,
+  chartB?: AstroChart | null,
+  maxOrb = 1.2
+): DeclinationAspect[] {
+  const out: DeclinationAspect[] = [];
+  const listB = chartB ? chartB.planets : chartA.planets;
+
+  for (let i = 0; i < chartA.planets.length; i++) {
+    const startJ = chartB ? 0 : i + 1;
+    for (let j = startJ; j < listB.length; j++) {
+      const pA = chartA.planets[i];
+      const pB = listB[j];
+      const parallelOrb = Math.abs(pA.declinationDeg - pB.declinationDeg);
+      const contraOrb = Math.abs(pA.declinationDeg + pB.declinationDeg);
+
+      if (parallelOrb <= maxOrb) {
+        out.push({
+          id: `decl-p-${pA.id}-${pB.id}`,
+          planetA: pA.id,
+          planetB: pB.id,
+          planetAName: pA.name,
+          planetBName: pB.name,
+          planetASymbol: pA.symbol,
+          planetBSymbol: pB.symbol,
+          type: 'parallel',
+          label: 'Parallèle',
+          symbol: '∥',
+          declA: pA.declinationDeg,
+          declB: pB.declinationDeg,
+          orb: Number(parallelOrb.toFixed(2)),
+        });
+      } else if (contraOrb <= maxOrb) {
+        out.push({
+          id: `decl-cp-${pA.id}-${pB.id}`,
+          planetA: pA.id,
+          planetB: pB.id,
+          planetAName: pA.name,
+          planetBName: pB.name,
+          planetASymbol: pA.symbol,
+          planetBSymbol: pB.symbol,
+          type: 'contraparallel',
+          label: 'Contre-parallèle',
+          symbol: '∦',
+          declA: pA.declinationDeg,
+          declB: pB.declinationDeg,
+          orb: Number(contraOrb.toFixed(2)),
+        });
+      }
+    }
+  }
+
+  return out.sort((a, b) => a.orb - b.orb);
+}
+
+function buildAspectsList(
+  planets: PlanetPosition[],
+  defs: AspectDefinition[]
+): AspectInfo[] {
+  const aspects: AspectInfo[] = [];
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      const pA = planets[i];
+      const pB = planets[j];
+      const rawDiff = Math.abs(pA.longitude - pB.longitude);
+      const sep = rawDiff > 180 ? 360 - rawDiff : rawDiff;
+
+      let matched: { asp: AspectDefinition; orb: number } | null = null;
+      for (const asp of defs) {
+        const orb = Math.abs(sep - asp.angle);
+        const orbLimit =
+          asp.category === 'major'
+            ? pA.id === 'sun' || pA.id === 'moon' || pB.id === 'sun' || pB.id === 'moon'
+              ? asp.maxOrb
+              : Math.max(3, asp.maxOrb - 1.5)
+            : asp.maxOrb;
+        if (orb <= orbLimit && (!matched || orb < matched.orb)) {
+          matched = { asp, orb };
+        }
+      }
+
+      if (matched) {
+        const { asp, orb } = matched;
+        aspects.push({
+          id: `${pA.id}-${pB.id}-${asp.type}`,
+          planetA: pA.id,
+          planetB: pB.id,
+          planetAName: pA.name,
+          planetBName: pB.name,
+          planetASymbol: pA.symbol,
+          planetBSymbol: pB.symbol,
+          type: asp.type,
+          category: asp.category,
+          label: asp.label,
+          symbol: asp.symbol,
+          exactAngle: asp.angle,
+          orb: Number(orb.toFixed(2)),
+          harmony: asp.harmony,
+          colorHex: asp.colorHex,
+          cssColor: asp.cssColor,
+          interpretation: buildDetailedAspectInterpretation(
+            pA.id,
+            pA.name,
+            pB.id,
+            pB.name,
+            asp.type,
+            asp.symbol,
+            orb
+          ),
+        });
+      }
+    }
+  }
+  return aspects.sort((a, b) => a.orb - b.orb);
+}
+
 export function calculateAstroChart(
   date: Date,
   latitude: number,
   longitude: number,
   cityName: string,
-  houseSystem: HouseSystem = 'placidus'
+  houseSystem: HouseSystem = 'placidus',
+  enabledAspectTypes?: AspectType[]
 ): AstroChart {
   const { ascendant, midheaven, ramcDeg, epsDeg, lstHours } = computeAngles(date, latitude, longitude);
-  const houses = computeHouses(houseSystem, ascendant, midheaven, ramcDeg, epsDeg, latitude);
+  const sunLon = getBodyEcliptic('sun', Astronomy.Body.Sun, date).lon;
+  const moonLon = getBodyEcliptic('moon', Astronomy.Body.Moon, date).lon;
+  const houses = computeHouses(houseSystem, ascendant, midheaven, ramcDeg, epsDeg, latitude, sunLon, moonLon);
   const nextHour = new Date(date.getTime() + 3600 * 1000);
 
   const elements: Record<ElementType, number> = { Feu: 0, Terre: 0, Air: 0, Eau: 0 };
@@ -1047,6 +1487,7 @@ export function calculateAstroChart(
   const planets: PlanetPosition[] = PLANET_META.map((meta) => {
     const nowPos = getBodyEcliptic(meta.id, meta.body, date);
     const laterPos = getBodyEcliptic(meta.id, meta.body, nextHour);
+    const eq = eclipticToEquatorial(nowPos.lon, nowPos.lat, epsDeg);
 
     let diff = laterPos.lon - nowPos.lon;
     if (diff > 180) diff -= 360;
@@ -1069,6 +1510,9 @@ export function calculateAstroChart(
       symbol: meta.symbol,
       longitude: nowPos.lon,
       latitude: nowPos.lat,
+      declinationDeg: eq.declDeg,
+      rightAscensionDeg: eq.raDeg,
+      isOutOfBounds: Math.abs(eq.declDeg) > 23.439,
       speedDegPerDay,
       retrograde,
       sign: fmt.sign,
@@ -1086,56 +1530,15 @@ export function calculateAstroChart(
     return planetObj;
   });
 
-  // Compute aspects between main bodies (excluding northNode-to-outer clutter or keep all except northNode-node)
-  const aspects: AspectInfo[] = [];
-  for (let i = 0; i < planets.length; i++) {
-    for (let j = i + 1; j < planets.length; j++) {
-      const pA = planets[i];
-      const pB = planets[j];
-      const rawDiff = Math.abs(pA.longitude - pB.longitude);
-      const sep = rawDiff > 180 ? 360 - rawDiff : rawDiff;
+  const activeDefs =
+    enabledAspectTypes && enabledAspectTypes.length > 0
+      ? ALL_21_ASPECT_DEFINITIONS.filter((d) => enabledAspectTypes.includes(d.type))
+      : ASPECT_DEFINITIONS;
 
-      for (const asp of ASPECT_DEFINITIONS) {
-        const orb = Math.abs(sep - asp.angle);
-        const orbLimit = pA.id === 'sun' || pA.id === 'moon' || pB.id === 'sun' || pB.id === 'moon'
-          ? asp.maxOrb
-          : Math.max(3, asp.maxOrb - 1.5);
-        if (orb <= orbLimit) {
-          aspects.push({
-            id: `${pA.id}-${pB.id}-${asp.type}`,
-            planetA: pA.id,
-            planetB: pB.id,
-            planetAName: pA.name,
-            planetBName: pB.name,
-            planetASymbol: pA.symbol,
-            planetBSymbol: pB.symbol,
-            type: asp.type,
-            label: asp.label,
-            symbol: asp.symbol,
-            exactAngle: asp.angle,
-            orb: Number(orb.toFixed(2)),
-            harmony: asp.harmony,
-            colorHex: asp.colorHex,
-            cssColor: asp.cssColor,
-            interpretation: buildDetailedAspectInterpretation(
-              pA.id,
-              pA.name,
-              pB.id,
-              pB.name,
-              asp.type,
-              asp.symbol,
-              orb
-            ),
-          });
-          break;
-        }
-      }
-    }
-  }
+  const aspects = buildAspectsList(planets, activeDefs);
+  const all21Aspects = buildAspectsList(planets, ALL_21_ASPECT_DEFINITIONS);
 
-  aspects.sort((a, b) => a.orb - b.orb);
-
-  return {
+  const chartBase: AstroChart = {
     date,
     latitude,
     longitude,
@@ -1151,9 +1554,13 @@ export function calculateAstroChart(
     planets,
     houses,
     aspects,
+    all21Aspects,
+    declinationAspects: [],
     elements,
     modalities,
   };
+  chartBase.declinationAspects = calculateDeclinationAspects(chartBase);
+  return chartBase;
 }
 
 export interface ChartPreset {
@@ -1208,7 +1615,16 @@ export function calculateSolarReturnDate(
   return new Date(tMs);
 }
 
-export type OuterRoleLabel = 'Transit' | 'Rév. Solaire' | 'Rév. Lunaire' | 'Progressé' | 'Synastrie' | 'Comparé';
+export type OuterRoleLabel =
+  | 'Transit'
+  | 'Rév. Solaire'
+  | 'Rév. Lunaire'
+  | 'Rév. Planétaire'
+  | 'Progressé'
+  | 'Arc Solaire'
+  | 'Relocalisé'
+  | 'Synastrie'
+  | 'Comparé';
 
 /**
  * Finds the exact astronomical Date near `referenceDate` when the Moon returns to `natalMoonLon`
@@ -1323,56 +1739,10 @@ export function calculateCompositeChart(
     };
   });
 
-  const aspects: AspectInfo[] = [];
-  for (let i = 0; i < planets.length; i++) {
-    for (let j = i + 1; j < planets.length; j++) {
-      const pA = planets[i];
-      const pB = planets[j];
-      const rawDiff = Math.abs(pA.longitude - pB.longitude);
-      const sep = rawDiff > 180 ? 360 - rawDiff : rawDiff;
+  const aspects = buildAspectsList(planets, ASPECT_DEFINITIONS);
+  const all21Aspects = buildAspectsList(planets, ALL_21_ASPECT_DEFINITIONS);
 
-      for (const asp of ASPECT_DEFINITIONS) {
-        const orb = Math.abs(sep - asp.angle);
-        const orbLimit =
-          pA.id === 'sun' || pA.id === 'moon' || pB.id === 'sun' || pB.id === 'moon'
-            ? asp.maxOrb
-            : Math.max(3, asp.maxOrb - 1.5);
-        if (orb <= orbLimit) {
-          aspects.push({
-            id: `comp-${pA.id}-${pB.id}-${asp.type}`,
-            planetA: pA.id,
-            planetB: pB.id,
-            planetAName: pA.name,
-            planetBName: pB.name,
-            planetASymbol: pA.symbol,
-            planetBSymbol: pB.symbol,
-            type: asp.type,
-            label: asp.label,
-            symbol: asp.symbol,
-            exactAngle: asp.angle,
-            orb: Number(orb.toFixed(2)),
-            harmony: asp.harmony,
-            colorHex: asp.colorHex,
-            cssColor: asp.cssColor,
-            interpretation: buildDetailedAspectInterpretation(
-              pA.id,
-              pA.name,
-              pB.id,
-              pB.name,
-              asp.type,
-              asp.symbol,
-              orb,
-              `${pA.name} ${asp.symbol} ${pB.name} composite`
-            ),
-          });
-          break;
-        }
-      }
-    }
-  }
-  aspects.sort((a, b) => a.orb - b.orb);
-
-  return {
+  const compChart: AstroChart = {
     date: chartA.date,
     latitude: (chartA.latitude + chartB.latitude) * 0.5,
     longitude: (chartA.longitude + chartB.longitude) * 0.5,
@@ -1388,64 +1758,326 @@ export function calculateCompositeChart(
     planets,
     houses,
     aspects,
+    all21Aspects,
+    declinationAspects: [],
     elements,
     modalities,
+  };
+  compChart.declinationAspects = calculateDeclinationAspects(compChart);
+  return compChart;
+}
+
+/**
+ * Solar Arc Directions:
+ * Shifts every natal point, house cusp and angle by the progressed Sun arc (progressedSunLon - natalSunLon).
+ */
+export function calculateSolarArcChart(
+  natalChart: AstroChart,
+  targetDate: Date,
+  birthDate: Date,
+  enabledAspectTypes?: AspectType[]
+): AstroChart {
+  const progDate = calculateSecondaryProgressionDate(birthDate, targetDate);
+  const progSunLon = normalizeDeg(Astronomy.SunPosition(progDate).elon);
+  const natalSunLon = natalChart.planets.find((p) => p.id === 'sun')?.longitude ?? progSunLon;
+  let arc = progSunLon - natalSunLon;
+  if (arc < -180) arc += 360;
+
+  const ascendant = normalizeDeg(natalChart.ascendant + arc);
+  const midheaven = normalizeDeg(natalChart.midheaven + arc);
+  const descendant = normalizeDeg(ascendant + 180);
+  const imumCoeli = normalizeDeg(midheaven + 180);
+
+  const houses = natalChart.houses.map((h) => {
+    const lon = normalizeDeg(h.longitude + arc);
+    const fmt = formatDegreeInSign(lon);
+    return {
+      ...h,
+      longitude: lon,
+      sign: fmt.sign,
+      degInSign: fmt.degInSign,
+      formattedDeg: fmt.formattedDeg,
+    };
+  });
+
+  const elements: Record<ElementType, number> = { Feu: 0, Terre: 0, Air: 0, Eau: 0 };
+  const modalities: Record<ModalityType, number> = { Cardinal: 0, Fixe: 0, Mutable: 0 };
+
+  const planets = natalChart.planets.map((p) => {
+    const lon = normalizeDeg(p.longitude + arc);
+    const fmt = formatDegreeInSign(lon);
+    const eq = eclipticToEquatorial(lon, p.latitude);
+    const house = findHouseForLongitude(lon, houses);
+    if (p.id !== 'northNode') {
+      const weight = p.id === 'sun' || p.id === 'moon' ? 2 : 1;
+      elements[fmt.sign.element] += weight;
+      modalities[fmt.sign.modality] += weight;
+    }
+    const updated: PlanetPosition = {
+      ...p,
+      longitude: lon,
+      declinationDeg: eq.declDeg,
+      rightAscensionDeg: eq.raDeg,
+      isOutOfBounds: Math.abs(eq.declDeg) > 23.439,
+      sign: fmt.sign,
+      degInSign: fmt.degInSign,
+      minutesInSign: fmt.minutesInSign,
+      formattedDeg: fmt.formattedDeg,
+      house,
+    };
+    updated.signMeaning = `Arc Solaire (+${arc.toFixed(2)}°) · ${getPlanetSignDeepMeaning(updated, houses)}`;
+    return updated;
+  });
+
+  const activeDefs =
+    enabledAspectTypes && enabledAspectTypes.length > 0
+      ? ALL_21_ASPECT_DEFINITIONS.filter((d) => enabledAspectTypes.includes(d.type))
+      : ASPECT_DEFINITIONS;
+
+  const chartObj: AstroChart = {
+    ...natalChart,
+    date: targetDate,
+    cityName: `${natalChart.cityName} (Arc Solaire +${arc.toFixed(1)}°)`,
+    ascendant,
+    midheaven,
+    descendant,
+    imumCoeli,
+    ascSign: formatDegreeInSign(ascendant).sign,
+    mcSign: formatDegreeInSign(midheaven).sign,
+    planets,
+    houses,
+    aspects: buildAspectsList(planets, activeDefs),
+    all21Aspects: buildAspectsList(planets, ALL_21_ASPECT_DEFINITIONS),
+    declinationAspects: [],
+    elements,
+    modalities,
+  };
+  chartObj.declinationAspects = calculateDeclinationAspects(chartObj);
+  return chartObj;
+}
+
+/**
+ * Relocated Natal Chart: keeps exact UTC birth moment while shifting coordinates to a new city.
+ */
+export function calculateRelocatedChart(
+  birthDate: Date,
+  relocatedLat: number,
+  relocatedLon: number,
+  relocatedCityName: string,
+  houseSystem: HouseSystem = 'placidus',
+  enabledAspectTypes?: AspectType[]
+): AstroChart {
+  return calculateAstroChart(
+    birthDate,
+    relocatedLat,
+    relocatedLon,
+    `${relocatedCityName} (Relocalisé)`,
+    houseSystem,
+    enabledAspectTypes
+  );
+}
+
+export interface PlanetaryReturnPointMeta {
+  id: string;
+  name: string;
+  symbol: string;
+  category: 'Luminaires & Personnelles' | 'Sociales & Lentes' | 'Nœuds, Astéroïdes & Points';
+  avgPeriodDays: number;
+  maxScanYears: number;
+}
+
+export const RETURN_CELESTIAL_POINTS: PlanetaryReturnPointMeta[] = [
+  { id: 'sun', name: 'Soleil (Révolution Solaire)', symbol: '☉', category: 'Luminaires & Personnelles', avgPeriodDays: 365.2422, maxScanYears: 1.2 },
+  { id: 'moon', name: 'Lune (Révolution Lunaire)', symbol: '☽', category: 'Luminaires & Personnelles', avgPeriodDays: 27.3216, maxScanYears: 0.1 },
+  { id: 'mercury', name: 'Mercure (Rév. Mercurielle)', symbol: '☿', category: 'Luminaires & Personnelles', avgPeriodDays: 365.24, maxScanYears: 1.2 },
+  { id: 'venus', name: 'Vénus (Rév. Vénusienne)', symbol: '♀\uFE0E', category: 'Luminaires & Personnelles', avgPeriodDays: 365.24, maxScanYears: 1.5 },
+  { id: 'mars', name: 'Mars (Rév. Martienne)', symbol: '♂\uFE0E', category: 'Luminaires & Personnelles', avgPeriodDays: 686.98, maxScanYears: 2.3 },
+  { id: 'jupiter', name: 'Jupiter (Rév. Jupitérienne)', symbol: '♃\uFE0E', category: 'Sociales & Lentes', avgPeriodDays: 4332.59, maxScanYears: 12.5 },
+  { id: 'saturn', name: 'Saturne (Rév. Saturnienne)', symbol: '♄\uFE0E', category: 'Sociales & Lentes', avgPeriodDays: 10759.22, maxScanYears: 30 },
+  { id: 'uranus', name: 'Uranus (Cycle Uranien)', symbol: '♅\uFE0E', category: 'Sociales & Lentes', avgPeriodDays: 30688.5, maxScanYears: 85 },
+  { id: 'neptune', name: 'Neptune (Cycle Neptunien)', symbol: '♆\uFE0E', category: 'Sociales & Lentes', avgPeriodDays: 60182, maxScanYears: 85 },
+  { id: 'pluto', name: 'Pluton (Cycle Plutonien)', symbol: '♇\uFE0E', category: 'Sociales & Lentes', avgPeriodDays: 90560, maxScanYears: 90 },
+  { id: 'northNode', name: 'Nœud Nord Vrai/Moyen', symbol: '☊\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 6793.5, maxScanYears: 19.5 },
+  { id: 'southNode', name: 'Nœud Sud Lunaire', symbol: '☋\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 6793.5, maxScanYears: 19.5 },
+  { id: 'chiron', name: 'Chiron (Retour de Chiron ~50 ans)', symbol: '⚷\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 18524, maxScanYears: 52 },
+  { id: 'ceres', name: 'Cérès (Planète naine)', symbol: '⚳\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 1681.6, maxScanYears: 5 },
+  { id: 'pallas', name: 'Pallas Athéna', symbol: '⚴\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 1686.0, maxScanYears: 5 },
+  { id: 'juno', name: 'Junon', symbol: '⚵\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 1594.0, maxScanYears: 5 },
+  { id: 'vesta', name: 'Vesta', symbol: '⚶\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 1325.7, maxScanYears: 4 },
+  { id: 'eris', name: 'Éris (Transneptunien)', symbol: '⯰', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 204199, maxScanYears: 95 },
+  { id: 'pholus', name: 'Pholus (Centaure)', symbol: 'Ph', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 33560, maxScanYears: 92 },
+  { id: 'hygiea', name: 'Hygie', symbol: 'Hy', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 2033, maxScanYears: 6 },
+  { id: 'psyche', name: 'Psyché', symbol: 'Ψ', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 1825, maxScanYears: 5.5 },
+  { id: 'eros', name: 'Éros (433)', symbol: 'Er', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 643, maxScanYears: 2.2 },
+  { id: 'lilith', name: 'Lune Noire Moyenne (Lilith)', symbol: '⚸\uFE0E', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 3232.6, maxScanYears: 9.2 },
+  { id: 'priapus', name: 'Priape (Périgée Lunaire)', symbol: 'Pr', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 3232.6, maxScanYears: 9.2 },
+  { id: 'sedna', name: 'Sedna (Cycle millénaire)', symbol: 'Sd', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 4166000, maxScanYears: 95 },
+  { id: 'makemake', name: 'Makémaké', symbol: 'Mk', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 111845, maxScanYears: 95 },
+  { id: 'haumea', name: 'Hauméa', symbol: 'Hm', category: 'Nœuds, Astéroïdes & Points', avgPeriodDays: 103410, maxScanYears: 95 },
+];
+
+export function calculatePlanetaryReturnDate(
+  pointId: string,
+  birthDate: Date,
+  referenceDate: Date
+): { date: Date; exact: boolean; angularErrorDeg: number; targetLon: number } {
+  const getPointLon = (d: Date): number => {
+    if (pointId === 'sun') return normalizeDeg(Astronomy.SunPosition(d).elon);
+    if (pointId === 'moon') return normalizeDeg(Astronomy.EclipticGeoMoon(d).lon);
+    if (pointId === 'northNode') return computeNorthNodeLongitude(d);
+    if (pointId === 'southNode') return normalizeDeg(computeNorthNodeLongitude(d) + 180);
+    if (pointId === 'lilith') {
+      const T = Astronomy.MakeTime(d).tt / 36525.0;
+      return normalizeDeg(83.353243 + 4069.0137111 * T);
+    }
+    if (pointId === 'priapus') {
+      const T = Astronomy.MakeTime(d).tt / 36525.0;
+      return normalizeDeg(83.353243 + 4069.0137111 * T + 180);
+    }
+    const meta = PLANET_META.find((m) => m.id === pointId);
+    if (meta?.body) {
+      return getBodyEcliptic(meta.id, meta.body, d).lon;
+    }
+    const periods: Record<string, { L0: number; days: number }> = {
+      chiron: { L0: 256.8, days: 18524 },
+      ceres: { L0: 153.9, days: 1681.6 },
+      pallas: { L0: 252.4, days: 1686.0 },
+      juno: { L0: 201.3, days: 1594.0 },
+      vesta: { L0: 325.1, days: 1325.7 },
+      eris: { L0: 19.2, days: 204199 },
+      pholus: { L0: 215.4, days: 33560 },
+      hygiea: { L0: 283.1, days: 2033 },
+      psyche: { L0: 66.2, days: 1825 },
+      eros: { L0: 118.4, days: 643 },
+      sedna: { L0: 46.1, days: 4166000 },
+      makemake: { L0: 166.5, days: 111845 },
+      haumea: { L0: 187.4, days: 103410 },
+    };
+    const p = periods[pointId] ?? { L0: 0, days: 365.24 };
+    const daysSinceJ2000 = Astronomy.MakeTime(d).tt;
+    return normalizeDeg(p.L0 + (daysSinceJ2000 / p.days) * 360);
+  };
+
+  const targetLon = getPointLon(birthDate);
+  if (pointId === 'sun') {
+    const d = calculateSolarReturnDate(targetLon, birthDate, referenceDate.getUTCFullYear());
+    return { date: d, exact: true, angularErrorDeg: 0, targetLon };
+  }
+  if (pointId === 'moon') {
+    const d = calculateLunarReturnDate(targetLon, referenceDate);
+    return { date: d, exact: true, angularErrorDeg: 0, targetLon };
+  }
+
+  const meta = RETURN_CELESTIAL_POINTS.find((p) => p.id === pointId);
+  const periodDays = meta?.avgPeriodDays ?? 365.24;
+  const searchHalfDays = Math.min(periodDays * 0.65, 365.24 * 12);
+  const steps = 160;
+  const stepMs = ((searchHalfDays * 2) / steps) * 86400 * 1000;
+  const startMs = referenceDate.getTime() - searchHalfDays * 86400 * 1000;
+
+  let bestMs = referenceDate.getTime();
+  let bestErr = 999;
+  for (let i = 0; i <= steps; i++) {
+    const tMs = startMs + i * stepMs;
+    const lon = getPointLon(new Date(tMs));
+    let err = targetLon - lon;
+    if (err > 180) err -= 360;
+    if (err < -180) err += 360;
+    if (Math.abs(err) < bestErr) {
+      bestErr = Math.abs(err);
+      bestMs = tMs;
+    }
+  }
+
+  let spanMs = stepMs;
+  for (let pass = 0; pass < 8; pass++) {
+    const probes = [bestMs - spanMs * 0.5, bestMs, bestMs + spanMs * 0.5];
+    for (const pMs of probes) {
+      const lon = getPointLon(new Date(pMs));
+      let err = targetLon - lon;
+      if (err > 180) err -= 360;
+      if (err < -180) err += 360;
+      if (Math.abs(err) < bestErr) {
+        bestErr = Math.abs(err);
+        bestMs = pMs;
+      }
+    }
+    spanMs *= 0.5;
+  }
+
+  return {
+    date: new Date(bestMs),
+    exact: bestErr < 1.5,
+    angularErrorDeg: Number(bestErr.toFixed(2)),
+    targetLon,
   };
 }
 
 /**
  * Computes astrological aspects from an outer comparison chart (Transit, Solar Return,
- * Lunar Return, Progressions, or Synastry Partner) onto the base Natal chart.
+ * Lunar Return, Progressions, Solar Arc, Relocated, or Synastry Partner) onto the base Natal chart.
  */
 export function calculateComparisonAspects(
   outerChart: AstroChart,
   natalChart: AstroChart,
-  outerRoleLabel: OuterRoleLabel
+  outerRoleLabel: OuterRoleLabel,
+  enabledAspectTypes?: AspectType[]
 ): ComparisonAspectInfo[] {
   const aspects: ComparisonAspectInfo[] = [];
+  const activeDefs =
+    enabledAspectTypes && enabledAspectTypes.length > 0
+      ? ALL_21_ASPECT_DEFINITIONS.filter((d) => enabledAspectTypes.includes(d.type))
+      : ASPECT_DEFINITIONS;
 
   for (const outerP of outerChart.planets) {
     for (const natalP of natalChart.planets) {
       const rawDiff = Math.abs(outerP.longitude - natalP.longitude);
       const sep = rawDiff > 180 ? 360 - rawDiff : rawDiff;
 
-      for (const asp of ASPECT_DEFINITIONS) {
+      let bestMatch: { asp: AspectDefinition; orb: number } | null = null;
+      for (const asp of activeDefs) {
         const orb = Math.abs(sep - asp.angle);
         const orbLimit =
-          outerP.id === 'sun' || outerP.id === 'moon' || natalP.id === 'sun' || natalP.id === 'moon'
-            ? Math.min(5.0, asp.maxOrb - 1.5)
-            : Math.min(3.5, Math.max(2.0, asp.maxOrb - 3.0));
+          asp.category === 'major'
+            ? outerP.id === 'sun' || outerP.id === 'moon' || natalP.id === 'sun' || natalP.id === 'moon'
+              ? Math.min(5.0, asp.maxOrb - 1.5)
+              : Math.min(3.5, Math.max(2.0, asp.maxOrb - 3.0))
+            : Math.min(2.0, asp.maxOrb);
 
-        if (orb <= orbLimit) {
-          aspects.push({
-            id: `${outerRoleLabel}-${outerP.id}-${natalP.id}-${asp.type}`,
-            outerPlanet: outerP.id,
-            natalPlanet: natalP.id,
-            outerPlanetName: outerP.name,
-            natalPlanetName: natalP.name,
-            outerSymbol: outerP.symbol,
-            natalSymbol: natalP.symbol,
-            type: asp.type,
-            label: asp.label,
-            symbol: asp.symbol,
-            exactAngle: asp.angle,
-            orb: Number(orb.toFixed(2)),
-            harmony: asp.harmony,
-            colorHex: asp.colorHex,
-            cssColor: asp.cssColor,
-            interpretation: buildDetailedAspectInterpretation(
-              outerP.id,
-              outerP.name,
-              natalP.id,
-              natalP.name,
-              asp.type,
-              asp.symbol,
-              orb,
-              `${outerP.name} (${outerRoleLabel}) ${asp.symbol} ${natalP.name} natal`
-            ),
-          });
-          break;
+        if (orb <= orbLimit && (!bestMatch || orb < bestMatch.orb)) {
+          bestMatch = { asp, orb };
         }
+      }
+
+      if (bestMatch) {
+        const { asp, orb } = bestMatch;
+        aspects.push({
+          id: `${outerRoleLabel}-${outerP.id}-${natalP.id}-${asp.type}`,
+          outerPlanet: outerP.id,
+          natalPlanet: natalP.id,
+          outerPlanetName: outerP.name,
+          natalPlanetName: natalP.name,
+          outerSymbol: outerP.symbol,
+          natalSymbol: natalP.symbol,
+          type: asp.type,
+          label: asp.label,
+          symbol: asp.symbol,
+          exactAngle: asp.angle,
+          orb: Number(orb.toFixed(2)),
+          harmony: asp.harmony,
+          colorHex: asp.colorHex,
+          cssColor: asp.cssColor,
+          interpretation: buildDetailedAspectInterpretation(
+            outerP.id,
+            outerP.name,
+            natalP.id,
+            natalP.name,
+            asp.type,
+            asp.symbol,
+            orb,
+            `${outerP.name} (${outerRoleLabel}) ${asp.symbol} ${natalP.name} natal`
+          ),
+        });
       }
     }
   }

@@ -202,8 +202,14 @@ export function getPlanetInHouseModeContext(
       return `Transit en Maison ${natalHouseRoman} natale (${natalHouseTitle}) : ${planetName} vient activer temporairement ce secteur de votre carte natale — ${natalCore.replace(/^[^:]+:\s*/, '')}`;
     case 'lunarReturn':
       return `Durant ce mois lunaire (Maison ${ownHouseRoman} RL), cet astre projette son élan sur votre Maison ${natalHouseRoman} natale (${natalHouseTitle}) : ${natalCore.replace(/^[^:]+:\s*/, '')}`;
+    case 'planetaryReturn':
+      return `Lors de cette révolution planétaire (Maison ${ownHouseRoman} du retour), cet astre active votre Maison ${natalHouseRoman} natale (${natalHouseTitle}) : ${natalCore.replace(/^[^:]+:\s*/, '')}`;
     case 'progressions':
       return `En progression intérieure, ${planetName} mûrit dans votre Maison ${natalHouseRoman} natale (${natalHouseTitle}) : ${natalCore.replace(/^[^:]+:\s*/, '')}`;
+    case 'solarArc':
+      return `Par direction d’Arc Solaire, ${planetName} déclenche un tournant majeur en Maison ${natalHouseRoman} natale (${natalHouseTitle}) : ${natalCore.replace(/^[^:]+:\s*/, '')}`;
+    case 'relocated':
+      return `Sur ce nouveau méridien (Maison ${ownHouseRoman} relocalisée), ${planetName} réoriente ce lieu vers : ${natalCore.replace(/^[^:]+:\s*/, '')}`;
     case 'synastry':
       return `Superposition de B dans votre Maison ${natalHouseRoman} (A · ${natalHouseTitle}) : ${synHint}. Lecture de fond : ${natalCore.replace(/^[^:]+:\s*/, '')}`;
     case 'composite':

@@ -953,6 +953,98 @@ export function generateChartInterpretation(params: {
     };
   }
 
+  if (mode === 'planetaryReturn' && outerChart) {
+    const dualDetails = buildDualWheelDetails({
+      mode,
+      baseChart,
+      outerChart,
+      comparisonAspects,
+      outerTag: 'Rév.',
+      baseTag: 'Natal',
+      useOuterHouseWheel: true,
+    });
+    const prAsc = getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition);
+    const prMc = getSignLabel(outerChart.midheaven, outerChart.mcSign.name, outerChart.mcSign.symbol, tradition);
+    return {
+      headline: `Interprétation de Révolution Planétaire (${outerChart.cityName})`,
+      subtitle: `ASC Retour ${prAsc} · MC ${prMc}`,
+      synthesis: `Ce thème de révolution fixe l’instant exact où l’astre choisi retrouve sa longitude de naissance. Il éclaire tout le nouveau cycle de cet archétype sur votre lieu d’observation (${outerChart.cityName}).`,
+      detailedContextLabel: 'Révolution Planétaire',
+      ...dualDetails,
+      secondaryAspectsLabel: `Aspects internes de la Révolution (${dualDetails.secondaryAspects.length})`,
+      sections: [
+        {
+          title: 'Nouvelle Polarité du Cycle & Superpositions',
+          accent: 'gold',
+          body: `L’Ascendant du retour en ${prAsc} donne la tonalité d’ouverture de ce cycle, tandis que le Milieu du Ciel en ${prMc} en définit l’objectif d’accomplissement.`,
+          highlights: comparisonAspects.slice(0, 6).map((a) => a.interpretation),
+        },
+        baziSection,
+      ],
+    };
+  }
+
+  if (mode === 'solarArc' && outerChart) {
+    const dualDetails = buildDualWheelDetails({
+      mode,
+      baseChart,
+      outerChart,
+      comparisonAspects,
+      outerTag: 'Arc S.',
+      baseTag: 'Natal',
+      useOuterHouseWheel: false,
+    });
+    const saAsc = getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition);
+    return {
+      headline: 'Interprétation des Directions par Arc Solaire',
+      subtitle: `ASC dirigé ${saAsc} · ${comparisonAspects.length} contacts actifs`,
+      synthesis: `En Arc Solaire, chaque planète et cuspide natale avance uniformément du pas annuel du Soleil progressé (~1° par année). Les aspects exacts (< 1°) marquent des tournants concrets et événements structurants.`,
+      detailedContextLabel: 'Arc Solaire → Natal',
+      ...dualDetails,
+      secondaryAspectsLabel: `Aspects internes dirigés (${dualDetails.secondaryAspects.length})`,
+      sections: [
+        {
+          title: 'Contacts d’Arc Solaire les Plus Serrés',
+          accent: 'cyan',
+          body: 'En astrologie prévisionnelle de précision, un aspect par Arc Solaire inférieur à 1,5° d’orbe signale une phase de concrétisation notable :',
+          highlights: comparisonAspects.slice(0, 6).map((a) => a.interpretation),
+        },
+        baziSection,
+      ],
+    };
+  }
+
+  if (mode === 'relocated' && outerChart) {
+    const dualDetails = buildDualWheelDetails({
+      mode,
+      baseChart,
+      outerChart,
+      comparisonAspects,
+      outerTag: 'Reloc.',
+      baseTag: 'Natal',
+      useOuterHouseWheel: true,
+    });
+    const relAsc = getSignLabel(outerChart.ascendant, outerChart.ascSign.name, outerChart.ascSign.symbol, tradition);
+    const relMc = getSignLabel(outerChart.midheaven, outerChart.mcSign.name, outerChart.mcSign.symbol, tradition);
+    return {
+      headline: `Interprétation du Thème Relocalisé · ${outerChart.cityName}`,
+      subtitle: `ASC Relocalisé ${relAsc} · MC ${relMc}`,
+      synthesis: `Calculé pour l’instant exact de votre naissance transposé aux coordonnées de ${outerChart.cityName}, ce thème montre comment l’axe horizon/méridien se réorganise géographiquement : les planètes changent de Maisons et certaines deviennent angulaires.`,
+      detailedContextLabel: 'Maisons Relocalisées',
+      ...dualDetails,
+      secondaryAspectsLabel: `Aspects du Thème Relocalisé (${dualDetails.secondaryAspects.length})`,
+      sections: [
+        {
+          title: 'Réorientation des Angles & Changement de Maisons',
+          accent: 'emerald',
+          body: `À ${outerChart.cityName}, votre Ascendant passe en ${relAsc} (au lieu de ${ascLabel} au lieu de naissance) et votre Milieu du Ciel devient ${relMc}. Cela modifie les secteurs de vie mis en avant dans cette ville ou ce pays.`,
+          highlights: comparisonAspects.slice(0, 5).map((a) => a.interpretation),
+        },
+        baziSection,
+      ],
+    };
+  }
+
   if (mode === 'synastry' && outerChart) {
     const pB = outerChart;
     const sunChA = transposeLongitudeToChinese(sun.longitude).sign;

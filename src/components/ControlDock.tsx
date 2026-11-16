@@ -29,6 +29,7 @@ import {
   CITY_PRESETS,
   ComparisonAspectInfo,
   GeocodedPlace,
+  HOUSE_SYSTEMS,
   HouseSystem,
   NatalProfile,
   PlanetId,
@@ -181,10 +182,13 @@ interface ControlDockProps {
 const MODE_LABELS: Array<{ id: ChartMode; label: string }> = [
   { id: 'natal', label: 'Thème Natal' },
   { id: 'solarReturn', label: 'Rév. Solaire' },
+  { id: 'planetaryReturn', label: 'Rév. Planétaire' },
   { id: 'comparative', label: 'Comparatifs' },
   { id: 'transits', label: 'Transits' },
   { id: 'lunarReturn', label: 'Rév. Lunaire' },
   { id: 'progressions', label: 'Progressions' },
+  { id: 'solarArc', label: 'Arc Solaire' },
+  { id: 'relocated', label: 'Relocalisé' },
   { id: 'synastry', label: 'Synastrie' },
   { id: 'composite', label: 'Composite' },
   { id: 'live', label: 'En direct' },
@@ -1077,9 +1081,11 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                   }
                   className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1.5 text-xs text-white focus:border-amber-300/60 focus:ring-1 focus:ring-amber-300/40 outline-none transition-all cursor-pointer"
                 >
-                  <option value="placidus">Placidus</option>
-                  <option value="equal">Égales</option>
-                  <option value="wholesign">Signes Entiers</option>
+                  {HOUSE_SYSTEMS.map((hs) => (
+                    <option key={hs.id} value={hs.id}>
+                      {hs.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

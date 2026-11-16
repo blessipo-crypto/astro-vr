@@ -501,6 +501,22 @@ const ASPECT_DYNAMIC_VERB: Record<AspectType, string> = {
   trine: 'circulent avec une fluidité innée et un talent naturel',
   square: 'créent une friction stimulante qui oblige à agir, choisir et dépasser les résistances',
   opposition: 'établissent une polarité consciente demandant d’unir deux exigences complémentaires',
+  quincunx: 'exigent un réajustement fin et une réorientation créatrice permanente',
+  semisextile: 'tissent un apprentissage progressif entre deux expériences voisines',
+  semisquare: 'génèrent une tension aiguë qui pousse à rectifier et à trancher dans le concret',
+  sesquiquadrate: 'provoquent un défi d’extériorisation appelant une maîtrise pragmatique',
+  quintile: 'révèlent un talent singulier et une étincelle créative d’ordre artistique',
+  biquintile: 'expriment une maîtrise inventive et une synthèse personnelle raffinée',
+  decile: 'amorcent une impulsion subtile de croissance créatrice',
+  tridecile: 'affinent la créativité intellectuelle et la recherche d’excellence',
+  vigintile: 'insufflent une micro-nuance de sensibilité originale',
+  novile: 'mûrissent intérieurement vers un accomplissement serein et initiatique',
+  binovile: 'élargissent la compréhension spirituelle à travers l’expérience vécue',
+  quadrinovile: 'achèvent un cycle de sagesse intérieure et de pacification',
+  septile: 'suscitent une inspiration non linéaire, poétique ou de l’ordre de la vocation',
+  biseptile: 'ouvrent une bifurcation intuitive porteuse de sens singulier',
+  triseptile: 'mettent à l’épreuve l’intuition créatrice pour la transformer en œuvre',
+  undecile: 'éveillent une aspiration visionnaire au-delà des cadres habituels',
 };
 
 export function buildDetailedAspectInterpretation(

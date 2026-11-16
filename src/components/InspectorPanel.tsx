@@ -66,7 +66,10 @@ const OUTER_BADGE_MAP: Partial<Record<ChartMode, string>> = {
   transits: 'Transit',
   solarReturn: 'Rév. Solaire',
   lunarReturn: 'Rév. Lunaire',
+  planetaryReturn: 'Rév. Planétaire',
   progressions: 'Progressé',
+  solarArc: 'Arc Solaire',
+  relocated: 'Relocalisé',
   synastry: 'Partenaire B',
   comparative: 'Comparée',
 };
@@ -123,7 +126,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
       <aside
         aria-label="Interprétations, comparatif, affinités et transposition chinoise"
-        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[455px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-14.5rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-white/10 bg-[#090a14]/85 bg-gradient-to-b from-white/[0.05] to-white/[0.02] backdrop-blur-xl p-5 text-slate-100 shadow-2xl shadow-black/50"
+        className="no-print pointer-events-auto fixed top-20 right-4 z-40 w-[455px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-11rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-amber-200/30 bg-[#151824]/92 backdrop-blur-2xl p-5 text-slate-100 shadow-2xl shadow-black/60"
       >
         <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3.5">
           <div>
@@ -1082,7 +1085,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
       <aside
         aria-label="Détails de l’astre sélectionné"
-        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[375px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-14.5rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-white/10 bg-[#090a14]/85 bg-gradient-to-b from-white/[0.05] to-white/[0.02] backdrop-blur-xl p-5 text-slate-100 shadow-2xl shadow-black/50"
+        className="no-print pointer-events-auto fixed top-20 right-4 z-40 w-[375px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-11rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-amber-200/30 bg-[#151824]/92 backdrop-blur-2xl p-5 text-slate-100 shadow-2xl shadow-black/60"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -1273,7 +1276,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
       <aside
         aria-label="Détails de la maison sélectionnée"
-        className="no-print pointer-events-auto fixed top-16 right-5 z-20 w-[360px] max-w-[calc(100vw-2.5rem)] rounded-3xl border border-white/10 bg-[#090a14]/85 bg-gradient-to-b from-white/[0.05] to-white/[0.02] backdrop-blur-xl p-5 text-slate-100 shadow-2xl shadow-black/50"
+        className="no-print pointer-events-auto fixed top-20 right-4 z-40 w-[360px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-11rem)] overflow-y-auto cosmic-scroll rounded-3xl border border-amber-200/30 bg-[#151824]/92 backdrop-blur-2xl p-5 text-slate-100 shadow-2xl shadow-black/60"
       >
         <div className="flex items-start justify-between gap-3">
           <div>

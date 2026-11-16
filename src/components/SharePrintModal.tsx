@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Copy,
@@ -31,7 +31,21 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfDone, setPdfDone] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [emailComposerOpen, setEmailComposerOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailCopied, setEmailCopied] = useState(false);
   const dossierRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setEmailSubject('');
+    setEmailBody('');
+    setEmailCopied(false);
+    if (!open) {
+      setEmailComposerOpen(false);
+    }
+  }, [open, reportProps.shareUrl, reportProps.mode, reportProps.modeLabel]);
 
   if (!open) return null;
 
@@ -40,13 +54,67 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
   const sun = reportProps.baseChart.planets.find((p) => p.id === 'sun');
   const moon = reportProps.baseChart.planets.find((p) => p.id === 'moon');
 
-  const handleCopyLink = async () => {
+  const defaultSubject = `Thème astrologique — ${profileLabel} (${reportProps.modeLabel})`;
+  const defaultBody = [
+    `Bonjour,`,
+    ``,
+    `Voici le thème astrologique de ${profileLabel} (${reportProps.modeLabel}) calculé sur Uranie VR :`,
+    sun ? `• Soleil : ${sun.formattedDeg} ${sun.sign.name} (Maison ${reportProps.baseChart.houses[sun.house - 1].roman})` : null,
+    moon ? `• Lune : ${moon.formattedDeg} ${moon.sign.name} (Maison ${reportProps.baseChart.houses[moon.house - 1].roman})` : null,
+    `• Ascendant : ${reportProps.baseChart.ascSign.name} · Milieu du Ciel : ${reportProps.baseChart.mcSign.name}`,
+    `• Lieu : ${reportProps.baseChart.cityName}`,
+    ``,
+    `Consulter le thème interactif complet :`,
+    reportProps.shareUrl,
+  ]
+    .filter((line): line is string => line !== null)
+    .join('\n');
+
+  const activeSubject = emailSubject || defaultSubject;
+  const activeBody = emailBody || defaultBody;
+  const activeTo = emailTo.trim();
+
+  const copyTextSafe = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(reportProps.shareUrl);
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  const handleCopyLink = async () => {
+    const ok = await copyTextSafe(reportProps.shareUrl);
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
-    } catch {
-      // Fallback: input remains selectable
+    }
+  };
+
+  const handleOpenEmailComposer = () => {
+    if (!emailSubject) setEmailSubject(defaultSubject);
+    if (!emailBody) setEmailBody(defaultBody);
+    setEmailComposerOpen((prev) => !prev);
+  };
+
+  const handleCopyFullEmail = async () => {
+    const fullText = `Destinataire : ${activeTo || '(à compléter)'}\nObjet : ${activeSubject}\n\n${activeBody}`;
+    const ok = await copyTextSafe(fullText);
+    if (ok) {
+      setEmailCopied(true);
+      window.setTimeout(() => setEmailCopied(false), 2500);
     }
   };
 
@@ -163,11 +231,17 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
-  const mailtoHref = `mailto:?subject=${encodeURIComponent(
-    `Thème astrologique — ${profileLabel} (${reportProps.modeLabel})`
-  )}&body=${encodeURIComponent(
-    `Découvrez le thème astrologique de ${profileLabel} (${reportProps.modeLabel}) calculé sur Uranie VR :\n\n${reportProps.shareUrl}`
-  )}`;
+  const mailtoHref = `mailto:${encodeURIComponent(activeTo)}?subject=${encodeURIComponent(
+    activeSubject
+  )}&body=${encodeURIComponent(activeBody)}`;
+
+  const gmailHref = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+    activeTo
+  )}&su=${encodeURIComponent(activeSubject)}&body=${encodeURIComponent(activeBody)}`;
+
+  const outlookHref = `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(
+    activeTo
+  )}&subject=${encodeURIComponent(activeSubject)}&body=${encodeURIComponent(activeBody)}`;
 
   return (
     <div
@@ -182,7 +256,7 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 h-[320px] w-[320px] rounded-full bg-amber-500/5 blur-[120px]" />
       </div>
 
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-white/10 bg-[#0c0c16]/90 bg-white/[0.03] backdrop-blur-xl text-[#f3efe6] shadow-2xl shadow-black/50 overflow-hidden">
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-amber-200/30 bg-[#151824]/92 backdrop-blur-xl text-[#f3efe6] shadow-2xl shadow-black/50 overflow-hidden">
         {/* Top Modal Header */}
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4 shrink-0">
           <div>
@@ -190,7 +264,7 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               Exporter PDF, Imprimer &amp; Partager
             </h2>
             <p className="font-serif italic text-sm text-slate-300 mt-0.5">
-              Téléchargez le dossier complet en PDF, imprimez, ou envoyez vers WhatsApp / e-mail.
+              Téléchargez le dossier complet en PDF, imprimez, ou envoyez vers WhatsApp / E-mail.
             </p>
           </div>
           <button
@@ -204,7 +278,7 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
         </div>
 
         {/* Action Bar: Real PDF Export + Print + HTML + WhatsApp + Mail */}
-        <div className="border-b border-white/10 bg-white/[0.02] px-6 py-4 space-y-3 shrink-0">
+        <div className="border-b border-white/10 bg-white/[0.02] px-6 py-4 space-y-3 shrink-0 overflow-y-auto cosmic-scroll max-h-[54vh]">
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
@@ -256,13 +330,18 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               <span>Envoyer vers WhatsApp</span>
             </a>
 
-            <a
-              href={mailtoHref}
-              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-200 hover:border-amber-300/30 hover:text-white transition-all duration-300"
+            <button
+              type="button"
+              onClick={handleOpenEmailComposer}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-300 cursor-pointer ${
+                emailComposerOpen
+                  ? 'border-amber-300/70 bg-amber-400/20 text-amber-100 shadow-[0_0_16px_rgba(251,191,36,0.25)]'
+                  : 'border-white/15 bg-white/[0.04] text-slate-200 hover:border-amber-300/40 hover:text-white'
+              }`}
             >
               <Mail className="w-4 h-4 text-amber-300/80" />
               <span>E-mail</span>
-            </a>
+            </button>
 
             {canNativeShare && (
               <button
@@ -275,6 +354,102 @@ export const SharePrintModal: React.FC<SharePrintModalProps> = ({
               </button>
             )}
           </div>
+
+          {emailComposerOpen && (
+            <div className="rounded-2xl border border-amber-300/35 bg-[#0b0e19]/90 p-4 space-y-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-amber-200">
+                  <Mail className="h-3.5 w-3.5 text-amber-300" />
+                  <span>Préparer &amp; Envoyer par E-mail</span>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  Choisissez Gmail, Outlook, votre messagerie locale ou copiez le message complet.
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label htmlFor="share-email-to" className="block text-[11px] text-slate-400 mb-1">
+                    Adresse e-mail du destinataire (optionnel)
+                  </label>
+                  <input
+                    id="share-email-to"
+                    type="email"
+                    value={emailTo}
+                    onChange={(e) => setEmailTo(e.target.value)}
+                    placeholder="destinataire@exemple.com"
+                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-300/60 outline-none"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="share-email-subject" className="block text-[11px] text-slate-400 mb-1">
+                    Objet du message
+                  </label>
+                  <input
+                    id="share-email-subject"
+                    type="text"
+                    value={activeSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-xs text-white focus:border-amber-300/60 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="share-email-body" className="block text-[11px] text-slate-400 mb-1">
+                  Contenu du message
+                </label>
+                <textarea
+                  id="share-email-body"
+                  rows={4}
+                  value={activeBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 focus:border-amber-300/60 outline-none leading-relaxed"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <a
+                  href={gmailHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500/85 to-amber-500/85 px-4 py-2 text-xs font-semibold text-white shadow-[0_0_16px_rgba(244,63,94,0.28)] hover:scale-[1.02] transition-all"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  <span>Envoyer via Gmail Web</span>
+                </a>
+                <a
+                  href={outlookHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-sky-300/40 bg-sky-500/20 px-4 py-2 text-xs font-semibold text-sky-100 hover:bg-sky-500/30 transition-all"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  <span>Envoyer via Outlook Web</span>
+                </a>
+                <a
+                  href={mailtoHref}
+                  target="_top"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-400/15 px-4 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/25 transition-all"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  <span>Messagerie appareil (mailto)</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyFullEmail()}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+                    emailCopied
+                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
+                      : 'border-white/15 bg-white/[0.05] text-slate-200 hover:border-amber-300/40'
+                  }`}
+                >
+                  {emailCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  <span>{emailCopied ? 'Message copié !' : 'Copier le message complet'}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {pdfError && (
             <div className="text-[11px] text-rose-300">{pdfError}</div>

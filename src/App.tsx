@@ -1,19 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Compass, Glasses, HelpCircle, Info, Mic, MicOff, Moon, Power, RotateCcw, ScanEye, Share2, Sparkles, Stars, Sun } from 'lucide-react';
+import { Mic, Power, RotateCcw, SlidersHorizontal, Sparkles, Stars } from 'lucide-react';
 import {
   analyzeComparison,
   analyzeSolarReturn,
+  AspectType,
   AstroChart,
   calculateAstroChart,
   calculateComparisonAspects,
   calculateCompositeChart,
   calculateLunarReturnDate,
+  calculatePlanetaryReturnDate,
+  calculateRelocatedChart,
   calculateSecondaryProgressionDate,
+  calculateSolarArcChart,
   calculateSolarReturnDate,
   ChartMode,
   CITY_PRESETS,
   ComparativeAnalysis,
   ComparisonAspectInfo,
+  DEFAULT_MAJOR_ASPECT_TYPES,
+  HOUSE_SYSTEMS,
   HouseCusp,
   NatalProfile,
   PlanetId,
@@ -21,7 +27,12 @@ import {
   searchPlacesByQuery,
   SolarReturnAnalysis,
 } from './astro/astroEngine';
-import { transposeLongitudeToChinese, ZodiacTradition } from './astro/chineseAstrology';
+import {
+  buildFullChartDataSheet,
+  CatalogPointEntry,
+  searchMinorPlanetsCatalog,
+} from './astro/celestialCatalog';
+import { ZodiacTradition } from './astro/chineseAstrology';
 import { buildShareThemeUrl, readSharedThemeFromUrl } from './astro/shareTheme';
 import { ComparativePairKind, ControlDock, DockTab } from './components/ControlDock';
 import {
@@ -32,11 +43,18 @@ import {
 } from './components/Chart2DCanvas';
 import { InspectorPanel } from './components/InspectorPanel';
 import { PrintableChartReport } from './components/PrintableChartReport';
-import { PWAInstallButton } from './components/PWAInstallButton';
 import { AboutCreatorModal } from './components/AboutCreatorModal';
 import { AscendantCalculatorModal } from './components/AscendantCalculatorModal';
 import { QuestGuideModal } from './components/QuestGuideModal';
 import { SharePrintModal } from './components/SharePrintModal';
+import { ChartSelectorBar } from './components/ChartSelectorBar';
+import { CosmicHomeView } from './components/CosmicHomeView';
+import { CosmicTabId, FloatingPillNav } from './components/FloatingPillNav';
+import { AdvancedConfigDrawer, DignityRingsConfig } from './components/AdvancedConfigDrawer';
+import { CelestialDataSheetView } from './components/CelestialDataSheetView';
+import { AuxiliaryChartsView } from './components/AuxiliaryChartsView';
+import { SpacetimeNavigator } from './components/SpacetimeNavigator';
+import { SoftwareGuideHelpView } from './components/SoftwareGuideHelpView';
 import {
   AspectFilter,
   AstrologyScene,
@@ -284,6 +302,30 @@ export default function App() {
     return 'ascendant';
   });
   const [highlightedAspectId, setHighlightedAspectId] = useState<string | null>(null);
+  const [cosmicTab, setCosmicTab] = useState<CosmicTabId>(() => (initialShared ? 'wheel' : 'home'));
+  const [configOpen, setConfigOpen] = useState<boolean>(false);
+  const [show3DDock, setShow3DDock] = useState<boolean>(false);
+  const [enabledAspectTypes, setEnabledAspectTypes] = useState<AspectType[]>(
+    DEFAULT_MAJOR_ASPECT_TYPES
+  );
+  const [dignityConfig, setDignityConfig] = useState<DignityRingsConfig>({
+    showDecans: true,
+    showTerms: true,
+    termSystem: 'egyptian',
+    showDodecatemoria: false,
+    showCentralSun: true,
+  });
+  const [pinnedPointIds, setPinnedPointIds] = useState<string[]>(['lot-fortune', 'chiron']);
+  const [planetaryReturnPointId, setPlanetaryReturnPointId] = useState<string>('sun');
+  const [relocatedLoc, setRelocatedLoc] = useState<{
+    name: string;
+    latitude: number;
+    longitude: number;
+  }>({
+    name: 'New York (États-Unis)',
+    latitude: 40.7128,
+    longitude: -74.006,
+  });
   const [aboutOpen, setAboutOpen] = useState<boolean>(() => {
     if (initialShared) return false;
     try {
@@ -379,9 +421,17 @@ export default function App() {
         birthLocation.latitude,
         birthLocation.longitude,
         birthLocation.cityName,
-        draftProfile.houseSystem
+        draftProfile.houseSystem,
+        enabledAspectTypes
       ),
-    [birthDate, birthLocation.latitude, birthLocation.longitude, birthLocation.cityName, draftProfile.houseSystem]
+    [
+      birthDate,
+      birthLocation.latitude,
+      birthLocation.longitude,
+      birthLocation.cityName,
+      draftProfile.houseSystem,
+      enabledAspectTypes,
+    ]
   );
 
   const partnerProfile = useMemo(
@@ -397,9 +447,10 @@ export default function App() {
       pLoc.latitude,
       pLoc.longitude,
       pLoc.cityName,
-      partnerProfile.houseSystem
+      partnerProfile.houseSystem,
+      enabledAspectTypes
     );
-  }, [partnerProfile]);
+  }, [partnerProfile, enabledAspectTypes]);
 
   const solarReturnExactDate: Date | null = useMemo(() => {
     const natalSun = natalChart.planets.find((p) => p.id === 'sun');
@@ -412,6 +463,11 @@ export default function App() {
     if (!natalMoon) return null;
     return calculateLunarReturnDate(natalMoon.longitude, transitDate);
   }, [natalChart, transitDate]);
+
+  const planetaryReturnExact = useMemo(
+    () => calculatePlanetaryReturnDate(planetaryReturnPointId, birthDate, transitDate),
+    [planetaryReturnPointId, birthDate, transitDate]
+  );
 
   // Compute baseChart, outerChart & comparisonAspects for current mode
   const { baseChart, outerChart, comparisonAspects } = useMemo<{
@@ -429,7 +485,8 @@ export default function App() {
         birthLocation.latitude,
         birthLocation.longitude,
         birthLocation.cityName,
-        draftProfile.houseSystem
+        draftProfile.houseSystem,
+        enabledAspectTypes
       );
       return { baseChart: liveChart, outerChart: null, comparisonAspects: [] };
     }
@@ -449,12 +506,13 @@ export default function App() {
         birthLocation.latitude,
         birthLocation.longitude,
         birthLocation.cityName,
-        draftProfile.houseSystem
+        draftProfile.houseSystem,
+        enabledAspectTypes
       );
       return {
         baseChart: natalChart,
         outerChart: trChart,
-        comparisonAspects: calculateComparisonAspects(trChart, natalChart, 'Transit'),
+        comparisonAspects: calculateComparisonAspects(trChart, natalChart, 'Transit', enabledAspectTypes),
       };
     }
 
@@ -470,12 +528,13 @@ export default function App() {
         srLoc.latitude,
         srLoc.longitude,
         srLoc.name,
-        draftProfile.houseSystem
+        draftProfile.houseSystem,
+        enabledAspectTypes
       );
       return {
         baseChart: natalChart,
         outerChart: srChart,
-        comparisonAspects: calculateComparisonAspects(srChart, natalChart, 'Rév. Solaire'),
+        comparisonAspects: calculateComparisonAspects(srChart, natalChart, 'Rév. Solaire', enabledAspectTypes),
       };
     }
 
@@ -485,12 +544,41 @@ export default function App() {
         birthLocation.latitude,
         birthLocation.longitude,
         birthLocation.cityName,
-        draftProfile.houseSystem
+        draftProfile.houseSystem,
+        enabledAspectTypes
       );
       return {
         baseChart: natalChart,
         outerChart: lrChart,
-        comparisonAspects: calculateComparisonAspects(lrChart, natalChart, 'Rév. Lunaire'),
+        comparisonAspects: calculateComparisonAspects(lrChart, natalChart, 'Rév. Lunaire', enabledAspectTypes),
+      };
+    }
+
+    if (mode === 'planetaryReturn') {
+      const preset = CITY_PRESETS.find((c) => c.id === solarReturnCityId) ?? CITY_PRESETS[0];
+      const prLoc = solarReturnCustomLoc ?? {
+        name: `${preset.name} (${preset.country})`,
+        latitude: preset.latitude,
+        longitude: preset.longitude,
+      };
+      const prDate = planetaryReturnExact?.date ?? transitDate;
+      const prChart = calculateAstroChart(
+        prDate,
+        prLoc.latitude,
+        prLoc.longitude,
+        prLoc.name,
+        draftProfile.houseSystem,
+        enabledAspectTypes
+      );
+      return {
+        baseChart: natalChart,
+        outerChart: prChart,
+        comparisonAspects: calculateComparisonAspects(
+          prChart,
+          natalChart,
+          'Rév. Planétaire',
+          enabledAspectTypes
+        ),
       };
     }
 
@@ -501,12 +589,43 @@ export default function App() {
         birthLocation.latitude,
         birthLocation.longitude,
         birthLocation.cityName,
-        draftProfile.houseSystem
+        draftProfile.houseSystem,
+        enabledAspectTypes
       );
       return {
         baseChart: natalChart,
         outerChart: progChart,
-        comparisonAspects: calculateComparisonAspects(progChart, natalChart, 'Progressé'),
+        comparisonAspects: calculateComparisonAspects(progChart, natalChart, 'Progressé', enabledAspectTypes),
+      };
+    }
+
+    if (mode === 'solarArc') {
+      const saChart = calculateSolarArcChart(natalChart, transitDate, birthDate, enabledAspectTypes);
+      return {
+        baseChart: natalChart,
+        outerChart: saChart,
+        comparisonAspects: calculateComparisonAspects(saChart, natalChart, 'Arc Solaire', enabledAspectTypes),
+      };
+    }
+
+    if (mode === 'relocated') {
+      const relocChart = calculateRelocatedChart(
+        birthDate,
+        relocatedLoc.latitude,
+        relocatedLoc.longitude,
+        relocatedLoc.name,
+        draftProfile.houseSystem,
+        enabledAspectTypes
+      );
+      return {
+        baseChart: relocChart,
+        outerChart: natalChart,
+        comparisonAspects: calculateComparisonAspects(
+          natalChart,
+          relocChart,
+          'Relocalisé',
+          enabledAspectTypes
+        ),
       };
     }
 
@@ -514,7 +633,7 @@ export default function App() {
       return {
         baseChart: natalChart,
         outerChart: partnerChart,
-        comparisonAspects: calculateComparisonAspects(partnerChart, natalChart, 'Synastrie'),
+        comparisonAspects: calculateComparisonAspects(partnerChart, natalChart, 'Synastrie', enabledAspectTypes),
       };
     }
 
@@ -535,19 +654,21 @@ export default function App() {
           srLoc.latitude,
           srLoc.longitude,
           `${srLoc.name} (RS ${comparativeYearA})`,
-          draftProfile.houseSystem
+          draftProfile.houseSystem,
+          enabledAspectTypes
         );
         const srChartB = calculateAstroChart(
           srDateB,
           srLoc.latitude,
           srLoc.longitude,
           `${srLoc.name} (RS ${comparativeYearB})`,
-          draftProfile.houseSystem
+          draftProfile.houseSystem,
+          enabledAspectTypes
         );
         return {
           baseChart: srChartA,
           outerChart: srChartB,
-          comparisonAspects: calculateComparisonAspects(srChartB, srChartA, 'Comparé'),
+          comparisonAspects: calculateComparisonAspects(srChartB, srChartA, 'Comparé', enabledAspectTypes),
         };
       }
 
@@ -557,12 +678,13 @@ export default function App() {
           srLoc.latitude,
           srLoc.longitude,
           `${srLoc.name} (RS ${solarReturnYear})`,
-          draftProfile.houseSystem
+          draftProfile.houseSystem,
+          enabledAspectTypes
         );
         return {
           baseChart: natalChart,
           outerChart: srChart,
-          comparisonAspects: calculateComparisonAspects(srChart, natalChart, 'Rév. Solaire'),
+          comparisonAspects: calculateComparisonAspects(srChart, natalChart, 'Rév. Solaire', enabledAspectTypes),
         };
       }
 
@@ -570,7 +692,7 @@ export default function App() {
         return {
           baseChart: natalChart,
           outerChart: partnerChart,
-          comparisonAspects: calculateComparisonAspects(partnerChart, natalChart, 'Comparé'),
+          comparisonAspects: calculateComparisonAspects(partnerChart, natalChart, 'Comparé', enabledAspectTypes),
         };
       }
 
@@ -580,12 +702,13 @@ export default function App() {
           birthLocation.latitude,
           birthLocation.longitude,
           birthLocation.cityName,
-          draftProfile.houseSystem
+          draftProfile.houseSystem,
+          enabledAspectTypes
         );
         return {
           baseChart: natalChart,
           outerChart: trChart,
-          comparisonAspects: calculateComparisonAspects(trChart, natalChart, 'Transit'),
+          comparisonAspects: calculateComparisonAspects(trChart, natalChart, 'Transit', enabledAspectTypes),
         };
       }
     }
@@ -606,10 +729,38 @@ export default function App() {
     solarReturnCityId,
     solarReturnCustomLoc,
     lunarReturnExactDate,
+    planetaryReturnExact,
+    relocatedLoc,
     comparativePair,
     comparativeYearA,
     comparativeYearB,
+    enabledAspectTypes,
   ]);
+
+  const pinnedCatalogPoints = useMemo<CatalogPointEntry[]>(() => {
+    if (pinnedPointIds.length === 0) return [];
+    const sheet = buildFullChartDataSheet(baseChart);
+    const result: CatalogPointEntry[] = [];
+    for (const pid of pinnedPointIds) {
+      const found = sheet.find((e) => e.id === pid);
+      if (found) {
+        result.push(found);
+      } else if (pid.startsWith('mpc-')) {
+        const extra = searchMinorPlanetsCatalog(pid.slice(4), baseChart, 1);
+        if (extra[0]) result.push(extra[0]);
+      } else {
+        const extra = searchMinorPlanetsCatalog(pid, baseChart, 1);
+        if (extra[0]) result.push(extra[0]);
+      }
+    }
+    return result;
+  }, [pinnedPointIds, baseChart]);
+
+  const handleTogglePinPoint = useCallback((pt: CatalogPointEntry) => {
+    setPinnedPointIds((prev) =>
+      prev.includes(pt.id) ? prev.filter((id) => id !== pt.id) : [...prev, pt.id]
+    );
+  }, []);
 
   const solarReturnAnalysis = useMemo<SolarReturnAnalysis | null>(() => {
     if (mode !== 'solarReturn' || !outerChart) return null;
@@ -753,13 +904,15 @@ export default function App() {
   }, [isAnimPlaying, showHouses, skyAnimsOn, voiceModeEnabled, voiceListening, voiceInterimText, voiceStatusText]);
 
   useEffect(() => {
-    sceneRef.current?.setPaused((viewDimension === '2d' && !inVR) || appExited);
+    sceneRef.current?.setPaused(
+      ((cosmicTab !== 'wheel' || viewDimension === '2d') && !inVR) || appExited
+    );
     try {
       localStorage.setItem(VIEW_DIM_STORAGE_KEY, viewDimension);
     } catch {
       // Ignore storage quota errors
     }
-  }, [viewDimension, inVR, appExited]);
+  }, [cosmicTab, viewDimension, inVR, appExited]);
 
   useEffect(() => {
     try {
@@ -1284,6 +1437,7 @@ export default function App() {
             break;
 
           case 'openTab':
+            setCosmicTab('auxiliary');
             setDockCollapsed(false);
             setRequestedDockTab((prev) => ({ tab: action.tab, nonce: (prev?.nonce ?? 0) + 1 }));
             break;
@@ -1529,7 +1683,10 @@ export default function App() {
     transits: 'Natal + Transits',
     solarReturn: `Rév. Solaire ${solarReturnYear}`,
     lunarReturn: 'Rév. Lunaire',
+    planetaryReturn: 'Révolution Planétaire',
     progressions: 'Progressions Sec.',
+    solarArc: 'Arc Solaire',
+    relocated: `Relocalisé · ${relocatedLoc.name}`,
     synastry: 'Synastrie',
     composite: 'Thème Composite',
     comparative:
@@ -1543,19 +1700,76 @@ export default function App() {
     live: 'Ciel en direct',
   };
 
+  const activeHouseSystemMeta =
+    HOUSE_SYSTEMS.find((h) => h.id === draftProfile.houseSystem) ?? HOUSE_SYSTEMS[0];
+
+  const handleModeSwitchFromSelector = useCallback((nextMode: ChartMode) => {
+    setMode(nextMode);
+    if (nextMode === 'live') {
+      setTransitDate(new Date());
+      setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
+    }
+  }, []);
+
+  const spacetimeNavigatorElement = (
+    <SpacetimeNavigator
+      transitDate={transitDate}
+      timeSpeedDaysPerSec={timeSpeedDaysPerSec}
+      realTimeDaysPerSec={REAL_TIME_DAYS_PER_SEC}
+      onSetTransitDate={(d) => {
+        setTimeSpeedDaysPerSec(0);
+        setTransitDate(d);
+      }}
+      onStepMinutes={(deltaMinutes) => {
+        setTimeSpeedDaysPerSec(0);
+        setTransitDate((prev) => new Date(prev.getTime() + deltaMinutes * 60_000));
+      }}
+      onTimeSpeedChange={setTimeSpeedDaysPerSec}
+      onResetNow={handleResetTransitNow}
+      modeLabel={modeTitle[mode]}
+    />
+  );
+
   return (
     <div
       className={`app-print-shell relative h-full w-full overflow-hidden text-[#f3efe6] ${
         desktopMR && !cameraActive
-          ? 'bg-[radial-gradient(circle_at_center,_#162238_0%,_#0b1120_65%,_#07070C_100%)]'
-          : 'bg-[#07070C]'
+          ? 'bg-[radial-gradient(circle_at_center,_#162238_0%,_#0b1120_65%,_#080911_100%)]'
+          : 'bg-[#080911]'
       }`}
     >
-      {/* Celestial Cosmic Lighting Orbs */}
+      {/* Celestial Cosmic Insights Background: Subtle Nebulae + Golden Constellation Hairlines */}
       <div aria-hidden="true" className="no-print pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-32 -left-24 h-[520px] w-[520px] rounded-full bg-purple-900/20 blur-[120px]" />
         <div className="absolute top-1/4 -right-24 h-[480px] w-[480px] rounded-full bg-indigo-900/15 blur-[120px]" />
-        <div className="absolute -bottom-32 left-1/3 h-[420px] w-[420px] rounded-full bg-amber-500/5 blur-[120px]" />
+        <div className="absolute -bottom-32 left-1/3 h-[420px] w-[420px] rounded-full bg-amber-500/8 blur-[120px]" />
+        <svg
+          className="h-full w-full opacity-[0.22]"
+          viewBox="0 0 1440 900"
+          preserveAspectRatio="xMidYMid slice"
+          fill="none"
+        >
+          <g stroke="#fde68a" strokeOpacity="0.28" strokeWidth="0.7">
+            <path d="M120 180 L210 140 L310 210 L265 300 L150 260 Z" />
+            <path d="M1080 150 L1180 110 L1290 175 L1235 265 L1340 315" />
+            <path d="M85 620 L195 570 L280 650 L410 615" />
+            <path d="M1040 670 L1160 610 L1265 695 L1360 640" />
+            <circle cx="720" cy="450" r="340" strokeDasharray="3 8" strokeOpacity="0.14" />
+          </g>
+          <g fill="#fef3c7" fillOpacity="0.45">
+            <circle cx="120" cy="180" r="1.8" />
+            <circle cx="210" cy="140" r="2.2" />
+            <circle cx="310" cy="210" r="1.6" />
+            <circle cx="265" cy="300" r="1.8" />
+            <circle cx="1080" cy="150" r="2" />
+            <circle cx="1180" cy="110" r="1.6" />
+            <circle cx="1290" cy="175" r="2.2" />
+            <circle cx="1235" cy="265" r="1.7" />
+            <circle cx="1340" cy="315" r="1.9" />
+            <circle cx="195" cy="570" r="1.9" />
+            <circle cx="1160" cy="610" r="2" />
+          </g>
+        </svg>
       </div>
 
       {/* Optional Desktop Webcam Passthrough Video Layer for Mixed Reality Preview */}
@@ -1570,14 +1784,80 @@ export default function App() {
         />
       )}
 
-      {/* Isolated WebGL / WebXR Mount Container */}
+      {/* Isolated WebGL / WebXR Mount Container (active on Wheel tab in 3D or VR) */}
       <div
         ref={canvasMountRef}
-        className={viewDimension === '2d' ? 'hidden' : 'no-print relative z-10 h-full w-full'}
+        className={
+          cosmicTab === 'wheel' && viewDimension === '3d'
+            ? 'no-print relative z-10 h-full w-full'
+            : 'hidden'
+        }
       />
 
-      {/* Interactive PC 2D Astrological Wheel View */}
-      {viewDimension === '2d' && (
+      {/* Top Cosmic Insights Chart Engine Selector & Utility Header */}
+      <ChartSelectorBar
+        mode={mode}
+        onModeChange={handleModeSwitchFromSelector}
+        planetaryReturnPointId={planetaryReturnPointId}
+        onPlanetaryReturnPointChange={setPlanetaryReturnPointId}
+        nativeName={draftProfile.name || 'Profil actif'}
+        cityName={birthLocation.cityName}
+        houseSystemName={activeHouseSystemMeta.name}
+        onOpenConfig={() => setConfigOpen(true)}
+        onOpenAbout={() => {
+          setAutoStartIntroAudio(true);
+          setAboutOpen(true);
+        }}
+        onOpenSharePrint={handleOpenSharePrint}
+        onEnterMR={handleEnterMR}
+        onEnterVR={() => {
+          setCosmicTab('wheel');
+          handleEnterVR();
+        }}
+        onToggleVoiceMode={handleToggleVoiceMode}
+        onRequestQuit={() => setQuitConfirmOpen(true)}
+        voiceModeEnabled={voiceModeEnabled}
+        voiceListening={voiceListening}
+        inVR={inVR}
+        xrMode={xrMode}
+        desktopMR={desktopMR}
+        webXRSupported={webXRSupported}
+        mrSupported={mrSupported}
+      />
+
+      {/* VIEW 1: COSMIC HOME / SYNTHÈSE */}
+      {cosmicTab === 'home' && (
+        <CosmicHomeView
+          mode={mode}
+          tradition={tradition}
+          natalChart={natalChart}
+          baseChart={baseChart}
+          outerChart={outerChart}
+          comparisonAspects={comparisonAspects}
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          draftProfile={draftProfile}
+          onSelectProfile={handleSelectProfile}
+          onOpenWheel={() => setCosmicTab('wheel')}
+          onOpenDataSheet={() => setCosmicTab('datasheet')}
+          onOpenAuxiliary={() => setCosmicTab('auxiliary')}
+          onOpenFullSummary={() => {
+            setSelectedPlanet(null);
+            setSelectedHouse(null);
+            setShowFullSummary(true);
+          }}
+          onOpenConfig={() => setConfigOpen(true)}
+          onInspectTransitDate={(targetDate) => {
+            setTimeSpeedDaysPerSec(0);
+            setTransitDate(targetDate);
+            setMode('transits');
+            setCosmicTab('wheel');
+          }}
+        />
+      )}
+
+      {/* VIEW 2A: INTERACTIVE 2D WHEEL + SPACETIME NAVIGATOR */}
+      {cosmicTab === 'wheel' && viewDimension === '2d' && (
         <div className="no-print">
           <Chart2DCanvas
             baseChart={baseChart}
@@ -1603,13 +1883,114 @@ export default function App() {
             onSwitchTo3D={() => setViewDimension('3d')}
             inspectorOpen={Boolean(showFullSummary || selectedPlanet || selectedHouse)}
             dockCollapsed={dockCollapsed}
+            dignityConfig={dignityConfig}
+            onDignityConfigChange={(patch) => setDignityConfig((prev) => ({ ...prev, ...patch }))}
+            pinnedCatalogPoints={pinnedCatalogPoints}
+            spacetimeSlot={spacetimeNavigatorElement}
           />
         </div>
       )}
 
+      {/* VIEW 2B: FLOATING SPACETIME NAVIGATOR & STUDIO 3D BUTTON OVER 3D WEBGL SCENE */}
+      {cosmicTab === 'wheel' && viewDimension === '3d' && !inVR && !appExited && (
+        <>
+          <div className="no-print fixed bottom-[70px] left-1/2 z-20 -translate-x-1/2 w-[min(94vw,820px)]">
+            {spacetimeNavigatorElement}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShow3DDock((v) => !v)}
+            className="no-print fixed left-4 top-20 z-20 flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-[#151824]/80 backdrop-blur-xl px-3.5 py-1.5 text-xs font-medium text-amber-100 hover:border-amber-300/60 transition-all cursor-pointer shadow-lg shadow-black/40"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-amber-300" />
+            <span>{show3DDock ? 'Masquer Atelier 3D' : 'Atelier 3D / VR'}</span>
+          </button>
+        </>
+      )}
+
+      {/* VIEW 3: CELESTIAL CATALOGUE & CHART POINT DATASHEET */}
+      {cosmicTab === 'datasheet' && (
+        <CelestialDataSheetView
+          baseChart={baseChart}
+          pinnedCatalogPoints={pinnedCatalogPoints}
+          onTogglePinPoint={handleTogglePinPoint}
+          onOpenWheel={() => setCosmicTab('wheel')}
+        />
+      )}
+
+      {/* VIEW 4: AUXILIARY CHARTS, SYNASTRY, RETURNS & RELOCATED */}
+      {cosmicTab === 'auxiliary' && (
+        <AuxiliaryChartsView
+          mode={mode}
+          onModeChange={(nextM) => setMode(nextM)}
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          onSelectProfile={handleSelectProfile}
+          draftProfile={draftProfile}
+          onDraftProfileChange={handleDraftProfileChange}
+          onSaveProfile={handleSaveProfile}
+          onCreateNewProfile={handleCreateNewProfile}
+          onDeleteProfile={handleDeleteProfile}
+          partnerProfileId={partnerProfileId}
+          onPartnerProfileChange={setPartnerProfileId}
+          solarReturnYear={solarReturnYear}
+          onSolarReturnYearChange={setSolarReturnYear}
+          planetaryReturnPointId={planetaryReturnPointId}
+          onPlanetaryReturnPointChange={setPlanetaryReturnPointId}
+          planetaryReturnExact={planetaryReturnExact}
+          relocatedLoc={relocatedLoc}
+          onRelocatedLocChange={setRelocatedLoc}
+          baseChart={baseChart}
+          outerChart={outerChart}
+          comparisonAspects={comparisonAspects}
+          onOpenAscendantCalculator={() => setAscendantModalOpen(true)}
+          onOpenWheel={() => setCosmicTab('wheel')}
+          onOpenFullSummary={() => {
+            setSelectedPlanet(null);
+            setSelectedHouse(null);
+            setShowFullSummary(true);
+          }}
+          showVoiceSearchButtons={voiceSearchButtonsEnabled}
+        />
+      )}
+
+      {/* VIEW 5: AIDE & RÉCAPITULATIF COMPLET DU LOGICIEL */}
+      {cosmicTab === 'help' && (
+        <SoftwareGuideHelpView
+          voiceModeEnabled={voiceModeEnabled}
+          actions={{
+            onOpenHome: () => setCosmicTab('home'),
+            onOpenWheel2D: () => {
+              setViewDimension('2d');
+              setCosmicTab('wheel');
+            },
+            onOpenWheel3D: () => {
+              setViewDimension('3d');
+              setCosmicTab('wheel');
+            },
+            onOpenDataSheet: () => setCosmicTab('datasheet'),
+            onOpenAuxiliary: () => setCosmicTab('auxiliary'),
+            onOpenConfig: () => setConfigOpen(true),
+            onOpenFullSummary: () => {
+              setSelectedPlanet(null);
+              setSelectedHouse(null);
+              setShowFullSummary(true);
+            },
+            onOpenAscendantCalculator: () => setAscendantModalOpen(true),
+            onOpenSharePrint: handleOpenSharePrint,
+            onOpenAboutAudio: () => {
+              setAutoStartIntroAudio(true);
+              setAboutOpen(true);
+            },
+            onOpenQuestGuide: () => setQuestModalOpen(true),
+            onToggleVoiceMode: handleToggleVoiceMode,
+          }}
+        />
+      )}
+
       {contextLost && (
-        <div className="no-print fixed inset-0 z-40 flex items-center justify-center bg-[#07070C]/90 backdrop-blur-xl p-6 text-center">
-          <div className="max-w-md rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 shadow-2xl shadow-black/50">
+        <div className="no-print fixed inset-0 z-40 flex items-center justify-center bg-[#080911]/90 backdrop-blur-xl p-6 text-center">
+          <div className="max-w-md rounded-3xl border border-amber-200/30 bg-[#151824]/80 backdrop-blur-xl p-8 shadow-2xl shadow-black/50">
             <Sparkles className="mx-auto mb-3 h-6 w-6 text-amber-300/80" />
             <h2 className="font-display text-2xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase">
               Contexte 3D interrompu
@@ -1621,203 +2002,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Bar: Clean 3-Zone Cosmic Luxury Header */}
-      <header className="no-print pointer-events-none fixed top-0 left-0 right-0 z-20 flex items-center justify-between gap-4 px-5 py-3.5">
-        <div className="pointer-events-auto flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-2 pr-1">
-            <Stars className="w-4 h-4 text-amber-300/80 shrink-0" />
-            <span className="font-display text-xl font-semibold bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent tracking-widest uppercase whitespace-nowrap shrink-0">
-              Uranie VR
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setAutoStartIntroAudio(true);
-              setAboutOpen(true);
-            }}
-            title="Présentation du programme, voix explicative et musique ésotérique"
-            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-amber-100/90 hover:border-amber-300/30 hover:text-white transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
-          >
-            <Info className="w-3.5 h-3.5 text-amber-300/80" />
-            <span>Présentation</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setDockCollapsed(false);
-              setRequestedDockTab((prev) => ({ tab: 'help', nonce: (prev?.nonce ?? 0) + 1 }));
-            }}
-            title="Ouvrir l’onglet d’aide interactive pas-à-pas"
-            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-indigo-100 hover:border-amber-300/30 hover:text-white transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-amber-300/80" />
-            <span>Aide</span>
-          </button>
-          <div
-            role="group"
-            aria-label="Basculer entre vue 2D et 3D"
-            className="flex items-center rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl p-0.5 shadow-lg shadow-black/30"
-          >
-            <button
-              type="button"
-              onClick={() => setViewDimension('2d')}
-              title="Vue 2D haute lisibilité sur PC"
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap ${
-                viewDimension === '2d'
-                  ? 'bg-gradient-to-r from-indigo-400/80 to-sky-400/80 text-slate-950 shadow-[0_0_15px_rgba(129,140,248,0.35)]'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              2D
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewDimension('3d')}
-              title="Observatoire 3D / VR"
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap ${
-                viewDimension === '3d'
-                  ? 'bg-gradient-to-r from-amber-500/85 via-amber-400/85 to-yellow-500/85 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.35)]'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              3D
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={handleToggleVoiceMode}
-            title="Activer ou couper la commande vocale mains-libres (en option)"
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur-xl transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30 ${
-              voiceModeEnabled
-                ? 'border-rose-400/60 bg-rose-500/20 text-rose-100'
-                : 'border-white/10 bg-[#07070C]/70 bg-white/[0.03] text-slate-200 hover:border-amber-300/30 hover:text-white'
-            }`}
-          >
-            {voiceListening ? (
-              <Mic className="w-3.5 h-3.5 animate-pulse text-rose-300" />
-            ) : voiceModeEnabled ? (
-              <Mic className="w-3.5 h-3.5 text-rose-300" />
-            ) : (
-              <MicOff className="w-3.5 h-3.5 text-amber-300/80" />
-            )}
-            <span>{voiceModeEnabled ? 'Voix ON' : 'Voix'}</span>
-          </button>
-        </div>
-
-        <div className="hidden xl:flex items-center gap-2.5 rounded-full border border-white/10 bg-[#07070C]/65 bg-white/[0.03] backdrop-blur-xl px-4 py-1.5 text-xs text-slate-200 font-mono-tabular whitespace-nowrap shadow-lg shadow-black/30">
-          <Compass className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
-          <span className="text-amber-200 font-medium">{modeTitle[mode]}</span>
-          <span aria-hidden="true" className="text-white/25">·</span>
-          <span className="text-indigo-200">
-            {tradition === 'chinese'
-              ? `ASC ${transposeLongitudeToChinese(baseChart.ascendant).sign.branchHanzi}${transposeLongitudeToChinese(baseChart.ascendant).sign.hanzi} ${transposeLongitudeToChinese(baseChart.ascendant).sign.name}`
-              : `ASC ${baseChart.ascSign.symbol} ${baseChart.ascSign.name}`}
-          </span>
-          <span aria-hidden="true" className="text-white/25">·</span>
-          {sun && (
-            <>
-              <span className="inline-flex items-center gap-1">
-                <Sun className="w-3 h-3 text-amber-300/80" />
-                {tradition === 'chinese'
-                  ? transposeLongitudeToChinese(sun.longitude).sign.name
-                  : `${sun.formattedDeg} ${sun.sign.name}`}
-              </span>
-              <span aria-hidden="true" className="text-white/25">·</span>
-            </>
-          )}
-          {moon && (
-            <>
-              <span className="inline-flex items-center gap-1">
-                <Moon className="w-3 h-3 text-amber-300/80" />
-                {tradition === 'chinese'
-                  ? transposeLongitudeToChinese(moon.longitude).sign.name
-                  : `${moon.formattedDeg} ${moon.sign.name}`}
-              </span>
-              <span aria-hidden="true" className="text-white/25">·</span>
-            </>
-          )}
-          <span className="text-slate-400">{baseChart.cityName}</span>
-        </div>
-
-        <div className="pointer-events-auto flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleToggleRealTime}
-            title={
-              Math.abs(timeSpeedDaysPerSec - REAL_TIME_DAYS_PER_SEC) < 1e-8
-                ? 'Temps réel actif — Cliquer pour mettre en pause'
-                : 'Synchroniser sur l’heure exacte et animer en temps réel'
-            }
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono-tabular text-xs font-medium backdrop-blur-xl transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30 ${
-              Math.abs(timeSpeedDaysPerSec - REAL_TIME_DAYS_PER_SEC) < 1e-8
-                ? 'border-amber-300/40 bg-amber-500/10 text-amber-100'
-                : 'border-white/10 bg-[#07070C]/70 bg-white/[0.03] text-slate-300 hover:border-amber-300/30 hover:text-white'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5 text-amber-300/80" />
-            <span>
-              Temps réel ·{' '}
-              {new Intl.DateTimeFormat('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              }).format(transitDate)}
-            </span>
-          </button>
-          <PWAInstallButton />
-          <button
-            type="button"
-            onClick={handleOpenSharePrint}
-            title="Imprimer en PDF ou envoyer par lien"
-            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-amber-100 hover:border-amber-300/30 hover:text-white transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
-          >
-            <Share2 className="w-3.5 h-3.5 text-amber-300/80" />
-            <span>PDF / Lien</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleEnterMR}
-            title="Lancer en Réalité Mixte (Passthrough Quest 3 ou Aperçu Hologramme)"
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-xl transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30 ${
-              xrMode === 'mr' || desktopMR
-                ? 'border-amber-300/50 bg-indigo-500/30 text-white'
-                : 'border-white/10 bg-[#07070C]/70 bg-white/[0.03] text-indigo-100 hover:border-amber-300/30 hover:text-white'
-            }`}
-          >
-            <ScanEye className="w-3.5 h-3.5 text-amber-300/80" />
-            <span>
-              {xrMode === 'mr'
-                ? 'Quitter RM'
-                : desktopMR
-                  ? 'Quitter Hologramme'
-                  : mrSupported
-                    ? 'Réalité Mixte'
-                    : 'Réalité Mixte (MR)'}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={handleEnterVR}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/80 via-amber-400/80 to-yellow-500/80 text-slate-950 font-semibold tracking-wide rounded-full px-4 py-1.5 text-xs shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-all whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            <Glasses className="w-3.5 h-3.5" />
-            <span>{inVR && xrMode === 'vr' ? 'Quitter VR' : webXRSupported ? 'Entrer en VR' : 'VR · Quest 3'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setQuitConfirmOpen(true)}
-            title="Quitter Uranie VR"
-            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#07070C]/70 bg-white/[0.03] backdrop-blur-xl px-3 py-1.5 text-xs font-medium text-rose-200 hover:border-rose-400/50 hover:bg-rose-500/15 transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-black/30"
-          >
-            <Power className="w-3.5 h-3.5 text-rose-300" />
-            <span className="hidden sm:inline">Quitter</span>
-          </button>
-        </div>
-      </header>
-
-      {cameraPreset === 'center' && viewDimension === '3d' && !inVR && !appExited && (
-        <div className="no-print fixed top-16 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-[#07070C]/80 bg-white/[0.03] backdrop-blur-xl px-4 py-1.5 text-xs text-slate-200 shadow-2xl shadow-black/50">
+      {cameraPreset === 'center' && cosmicTab === 'wheel' && viewDimension === '3d' && !inVR && !appExited && (
+        <div className="no-print fixed top-16 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-[#080911]/85 backdrop-blur-xl px-4 py-1.5 text-xs text-slate-200 shadow-2xl shadow-black/50">
           <Sparkles className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
           <span className="text-amber-100 font-medium whitespace-nowrap">
             Mode 360° · Glissez pour regarder tout autour · Cliquez sur les astres ou le pupitre 3D
@@ -1904,121 +2090,165 @@ export default function App() {
         onOpenSharePrint={handleOpenSharePrint}
       />
 
-      {/* Collapsible Bottom Control Dock */}
-      <ControlDock
-        mode={mode}
-        onModeChange={(nextMode) => {
-          setMode(nextMode);
-          if (nextMode === 'live') {
-            setTransitDate(new Date());
-            setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
-          }
-          if (nextMode === 'natal' || nextMode === 'comparative' || nextMode === 'solarReturn') {
+      {/* Collapsible Bottom Control Dock (only shown when 3D Studio drawer requested in 3D mode) */}
+      {cosmicTab === 'wheel' && viewDimension === '3d' && show3DDock && (
+        <ControlDock
+          mode={mode}
+          onModeChange={(nextMode) => {
+            setMode(nextMode);
+            if (nextMode === 'live') {
+              setTransitDate(new Date());
+              setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
+            }
+            if (nextMode === 'natal' || nextMode === 'comparative' || nextMode === 'solarReturn') {
+              sceneRef.current?.selectPlanet(null, 'base');
+              sceneRef.current?.selectHouse(null);
+              setShowFullSummary(true);
+            }
+          }}
+          tradition={tradition}
+          onTraditionChange={setTradition}
+          baseChart={baseChart}
+          outerChart={outerChart}
+          comparisonAspects={comparisonAspects}
+          collapsed={dockCollapsed}
+          onToggleCollapse={() => setDockCollapsed((c) => !c)}
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          onSelectProfile={handleSelectProfile}
+          draftProfile={draftProfile}
+          onDraftProfileChange={handleDraftProfileChange}
+          onSaveProfile={handleSaveProfile}
+          onCreateNewProfile={handleCreateNewProfile}
+          onDeleteProfile={handleDeleteProfile}
+          partnerProfileId={partnerProfileId}
+          onPartnerProfileChange={setPartnerProfileId}
+          comparativePair={comparativePair}
+          onComparativePairChange={setComparativePair}
+          comparativeYearA={comparativeYearA}
+          onComparativeYearAChange={setComparativeYearA}
+          comparativeYearB={comparativeYearB}
+          onComparativeYearBChange={setComparativeYearB}
+          transitDateInput={toLocalDatetimeInput(transitDate)}
+          onTransitDateChange={handleTransitDateChange}
+          onResetTransitNow={handleResetTransitNow}
+          solarReturnYear={solarReturnYear}
+          onSolarReturnYearChange={setSolarReturnYear}
+          solarReturnCityId={solarReturnCityId}
+          onSolarReturnCityChange={setSolarReturnCityId}
+          solarReturnCustomLoc={solarReturnCustomLoc}
+          onSolarReturnCustomLocChange={setSolarReturnCustomLoc}
+          solarReturnExactDate={solarReturnExactDate}
+          lunarReturnExactDate={lunarReturnExactDate}
+          timeSpeedDaysPerSec={timeSpeedDaysPerSec}
+          onTimeSpeedChange={setTimeSpeedDaysPerSec}
+          srAnimSpeed={srAnimSpeed}
+          onSrAnimSpeedChange={setSrAnimSpeed}
+          aspectFilter={aspectFilter}
+          onAspectFilterChange={handleAspectFilterChange}
+          onHighlightAspect={handleHighlightAspect}
+          wheelStyle={wheelStyle}
+          onWheelStyleChange={setWheelStyle}
+          signStyle={signStyle}
+          onSignStyleChange={setSignStyle}
+          starfieldStyle={starfieldStyle}
+          onStarfieldStyleChange={setStarfieldStyle}
+          displayFocus={displayFocus}
+          onDisplayFocusChange={handleDisplayFocusChange}
+          showHouses={showHouses}
+          onToggleHouses={handleToggleHouses}
+          showConstellations={showConstellations}
+          onToggleConstellations={handleToggleConstellations}
+          showVRPlaque={showVRPlaque}
+          onToggleVRPlaque={handleToggleVRPlaque}
+          desktopMR={desktopMR}
+          onToggleDesktopMR={handleToggleDesktopMR}
+          mrScale={mrScale}
+          onMrScaleChange={handleMrScaleChange}
+          cameraPreset={cameraPreset}
+          onCameraPresetChange={handleCameraPresetChange}
+          audioEnabled={audioEnabled}
+          onToggleAudio={handleToggleAudio}
+          skyAnimations={skyAnimations}
+          onSkyAnimationsChange={setSkyAnimations}
+          viewDimension={viewDimension}
+          onViewDimensionChange={setViewDimension}
+          wheel2DStyle={wheel2DStyle}
+          onWheel2DStyleChange={handleWheel2DStyleChange}
+          wheel2DOrientation={wheel2DOrientation}
+          onWheel2DOrientationChange={setWheel2DOrientation}
+          selectedPlanetId={selectedPlanet?.id ?? null}
+          onSelectPlanet={handleSelectPlanet}
+          onOpenFullSummary={() => {
+            setSelectedPlanet(null);
+            setSelectedHouse(null);
             sceneRef.current?.selectPlanet(null, 'base');
             sceneRef.current?.selectHouse(null);
-            setShowFullSummary(true);
-          }
-        }}
-        tradition={tradition}
-        onTraditionChange={setTradition}
+            setShowFullSummary((v) => !v);
+          }}
+          onOpenAscendantCalculator={() => setAscendantModalOpen(true)}
+          onOpenQuestGuide={() => setQuestModalOpen(true)}
+          onOpenSharePrint={handleOpenSharePrint}
+          onOpenAudioIntro={() => {
+            setAutoStartIntroAudio(true);
+            setAboutOpen(true);
+          }}
+          onQuitApp={() => setQuitConfirmOpen(true)}
+          voiceEnabled={voiceModeEnabled}
+          voiceListening={voiceListening}
+          voiceFeedbackEnabled={voiceFeedbackEnabled}
+          voiceSearchButtonsEnabled={voiceSearchButtonsEnabled}
+          onToggleVoiceMode={handleToggleVoiceMode}
+          onToggleVoiceFeedback={() => setVoiceFeedbackEnabled((v) => !v)}
+          onToggleVoiceSearchButtons={() => setVoiceSearchButtonsEnabled((v) => !v)}
+          onRunVoiceCommandText={(txt) => void executeVoiceCommandText(txt)}
+          typography={typography}
+          onTypographyChange={setTypography}
+          requestedTab={requestedDockTab}
+        />
+      )}
+
+      {/* Modular Advanced Configuration Drawer (33 Houses, 21 Aspects, Declinations & Chart Styles) */}
+      <AdvancedConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
         baseChart={baseChart}
-        outerChart={outerChart}
-        comparisonAspects={comparisonAspects}
-        collapsed={dockCollapsed}
-        onToggleCollapse={() => setDockCollapsed((c) => !c)}
-        profiles={profiles}
-        activeProfileId={activeProfileId}
-        onSelectProfile={handleSelectProfile}
-        draftProfile={draftProfile}
-        onDraftProfileChange={handleDraftProfileChange}
-        onSaveProfile={handleSaveProfile}
-        onCreateNewProfile={handleCreateNewProfile}
-        onDeleteProfile={handleDeleteProfile}
-        partnerProfileId={partnerProfileId}
-        onPartnerProfileChange={setPartnerProfileId}
-        comparativePair={comparativePair}
-        onComparativePairChange={setComparativePair}
-        comparativeYearA={comparativeYearA}
-        onComparativeYearAChange={setComparativeYearA}
-        comparativeYearB={comparativeYearB}
-        onComparativeYearBChange={setComparativeYearB}
-        transitDateInput={toLocalDatetimeInput(transitDate)}
-        onTransitDateChange={handleTransitDateChange}
-        onResetTransitNow={handleResetTransitNow}
-        solarReturnYear={solarReturnYear}
-        onSolarReturnYearChange={setSolarReturnYear}
-        solarReturnCityId={solarReturnCityId}
-        onSolarReturnCityChange={setSolarReturnCityId}
-        solarReturnCustomLoc={solarReturnCustomLoc}
-        onSolarReturnCustomLocChange={setSolarReturnCustomLoc}
-        solarReturnExactDate={solarReturnExactDate}
-        lunarReturnExactDate={lunarReturnExactDate}
-        timeSpeedDaysPerSec={timeSpeedDaysPerSec}
-        onTimeSpeedChange={setTimeSpeedDaysPerSec}
-        srAnimSpeed={srAnimSpeed}
-        onSrAnimSpeedChange={setSrAnimSpeed}
-        aspectFilter={aspectFilter}
-        onAspectFilterChange={handleAspectFilterChange}
-        onHighlightAspect={handleHighlightAspect}
-        wheelStyle={wheelStyle}
-        onWheelStyleChange={setWheelStyle}
-        signStyle={signStyle}
-        onSignStyleChange={setSignStyle}
-        starfieldStyle={starfieldStyle}
-        onStarfieldStyleChange={setStarfieldStyle}
-        displayFocus={displayFocus}
-        onDisplayFocusChange={handleDisplayFocusChange}
-        showHouses={showHouses}
-        onToggleHouses={handleToggleHouses}
-        showConstellations={showConstellations}
-        onToggleConstellations={handleToggleConstellations}
-        showVRPlaque={showVRPlaque}
-        onToggleVRPlaque={handleToggleVRPlaque}
-        desktopMR={desktopMR}
-        onToggleDesktopMR={handleToggleDesktopMR}
-        mrScale={mrScale}
-        onMrScaleChange={handleMrScaleChange}
-        cameraPreset={cameraPreset}
-        onCameraPresetChange={handleCameraPresetChange}
-        audioEnabled={audioEnabled}
-        onToggleAudio={handleToggleAudio}
-        skyAnimations={skyAnimations}
-        onSkyAnimationsChange={setSkyAnimations}
-        viewDimension={viewDimension}
-        onViewDimensionChange={setViewDimension}
+        houseSystem={draftProfile.houseSystem}
+        onHouseSystemChange={(hs) => handleDraftProfileChange({ houseSystem: hs })}
+        enabledAspectTypes={enabledAspectTypes}
+        onEnabledAspectTypesChange={setEnabledAspectTypes}
+        dignityConfig={dignityConfig}
+        onDignityConfigChange={(patch) => setDignityConfig((prev) => ({ ...prev, ...patch }))}
         wheel2DStyle={wheel2DStyle}
         onWheel2DStyleChange={handleWheel2DStyleChange}
         wheel2DOrientation={wheel2DOrientation}
         onWheel2DOrientationChange={setWheel2DOrientation}
-        selectedPlanetId={selectedPlanet?.id ?? null}
-        onSelectPlanet={handleSelectPlanet}
-        onOpenFullSummary={() => {
-          setSelectedPlanet(null);
-          setSelectedHouse(null);
-          sceneRef.current?.selectPlanet(null, 'base');
-          sceneRef.current?.selectHouse(null);
-          setShowFullSummary((v) => !v);
-        }}
-        onOpenAscendantCalculator={() => setAscendantModalOpen(true)}
-        onOpenQuestGuide={() => setQuestModalOpen(true)}
-        onOpenSharePrint={handleOpenSharePrint}
-        onOpenAudioIntro={() => {
-          setAutoStartIntroAudio(true);
-          setAboutOpen(true);
-        }}
-        onQuitApp={() => setQuitConfirmOpen(true)}
-        voiceEnabled={voiceModeEnabled}
-        voiceListening={voiceListening}
-        voiceFeedbackEnabled={voiceFeedbackEnabled}
-        voiceSearchButtonsEnabled={voiceSearchButtonsEnabled}
-        onToggleVoiceMode={handleToggleVoiceMode}
-        onToggleVoiceFeedback={() => setVoiceFeedbackEnabled((v) => !v)}
-        onToggleVoiceSearchButtons={() => setVoiceSearchButtonsEnabled((v) => !v)}
-        onRunVoiceCommandText={(txt) => void executeVoiceCommandText(txt)}
+        signStyle={signStyle}
+        onSignStyleChange={setSignStyle}
         typography={typography}
         onTypographyChange={setTypography}
-        requestedTab={requestedDockTab}
+        audioEnabled={audioEnabled}
+        onToggleAudio={handleToggleAudio}
       />
+
+      {/* Bottom Floating Pill Navigation Bar ("Cosmic Insights") */}
+      {!appExited && !inVR && (
+        <FloatingPillNav
+          activeTab={cosmicTab}
+          onSelectTab={setCosmicTab}
+          onOpenConfig={() => setConfigOpen(true)}
+          onOpenFullSummary={() => {
+            setSelectedPlanet(null);
+            setSelectedHouse(null);
+            setShowFullSummary(true);
+          }}
+          viewDimension={viewDimension}
+          onToggleViewDimension={(dim) => {
+            setViewDimension(dim);
+            setCosmicTab('wheel');
+          }}
+        />
+      )}
 
       <AscendantCalculatorModal
         open={ascendantModalOpen}
