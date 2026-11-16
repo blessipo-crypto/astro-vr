@@ -3,11 +3,13 @@ import {
   Compass,
   Glasses,
   Info,
+  Lock,
   Mic,
   MicOff,
   Power,
   ScanEye,
   Share2,
+  ShieldCheck,
   SlidersHorizontal,
   Stars,
 } from 'lucide-react';
@@ -36,6 +38,13 @@ export interface ChartSelectorBarProps {
   desktopMR: boolean;
   webXRSupported: boolean;
   mrSupported: boolean;
+  protectionActive?: boolean;
+  isAdminUnlocked?: boolean;
+  lockConfig?: boolean;
+  lockModes?: boolean;
+  lockExports?: boolean;
+  lockQuit?: boolean;
+  onOpenAdmin?: () => void;
 }
 
 const CHART_ENGINE_ITEMS: Array<{ id: ChartMode; label: string }> = [
@@ -71,6 +80,13 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
   desktopMR,
   webXRSupported,
   mrSupported,
+  protectionActive = false,
+  isAdminUnlocked = false,
+  lockConfig = false,
+  lockModes = false,
+  lockExports = false,
+  lockQuit = false,
+  onOpenAdmin,
 }) => {
   const isReturnMode =
     mode === 'solarReturn' || mode === 'lunarReturn' || mode === 'planetaryReturn';
@@ -119,10 +135,13 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onModeChange(item.id)}
+                title={lockModes && !active ? 'Changement de mode verrouillé par l’administrateur' : undefined}
                 className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
                   active
                     ? 'bg-gradient-to-r from-amber-400/90 via-amber-300/90 to-yellow-400/90 text-slate-950 shadow-[0_0_16px_rgba(251,191,36,0.3)]'
-                    : 'text-slate-300 hover:bg-white/[0.05] hover:text-amber-100'
+                    : lockModes
+                      ? 'text-slate-500 cursor-not-allowed'
+                      : 'text-slate-300 hover:bg-white/[0.05] hover:text-amber-100'
                 }`}
               >
                 {item.label}
@@ -133,6 +152,7 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
           {isReturnMode && (
             <select
               aria-label="Choisir le point de révolution planétaire"
+              disabled={lockModes}
               value={
                 mode === 'solarReturn'
                   ? 'sun'
@@ -147,7 +167,7 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
                 else if (val === 'moon') onModeChange('lunarReturn');
                 else onModeChange('planetaryReturn');
               }}
-              className="ml-1 rounded-full border border-amber-300/35 bg-[#0c101d] px-2.5 py-1 text-[11px] font-medium text-amber-200 outline-none cursor-pointer"
+              className="ml-1 rounded-full border border-amber-300/35 bg-[#0c101d] px-2.5 py-1 text-[11px] font-medium text-amber-200 outline-none cursor-pointer disabled:opacity-50"
             >
               {RETURN_CELESTIAL_POINTS.map((pt) => (
                 <option key={pt.id} value={pt.id}>
@@ -158,15 +178,27 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
           )}
         </div>
 
-        {/* Right: Quick Tools (Config, Voice, PDF/WhatsApp/Mail, MR/VR, Quit) */}
+        {/* Right: Quick Tools (Config, Voice, PDF/WhatsApp/Mail, Admin, MR/VR, Quit) */}
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={onOpenConfig}
-            title="Configuration avancée : 33 Maisons, 21 Aspects, Déclinaisons & Dignités"
-            className="flex items-center gap-1 rounded-full border border-amber-200/25 bg-[#151824]/80 px-2.5 py-1.5 text-[11px] font-medium text-amber-100 hover:border-amber-300/50 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            title={
+              lockConfig
+                ? 'Configuration verrouillée par l’administrateur'
+                : 'Configuration avancée : 33 Maisons, 21 Aspects, Déclinaisons & Dignités'
+            }
+            className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              lockConfig
+                ? 'border-rose-400/35 bg-rose-500/10 text-rose-100 hover:border-rose-300/60'
+                : 'border-amber-200/25 bg-[#151824]/80 text-amber-100 hover:border-amber-300/50'
+            }`}
           >
-            <SlidersHorizontal className="h-3.5 w-3.5 text-amber-300" />
+            {lockConfig ? (
+              <Lock className="h-3.5 w-3.5 text-rose-300" />
+            ) : (
+              <SlidersHorizontal className="h-3.5 w-3.5 text-amber-300" />
+            )}
             <span className="hidden xl:inline">Maisons · Aspects</span>
           </button>
 
@@ -195,12 +227,50 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
           <button
             type="button"
             onClick={onOpenSharePrint}
-            title="Imprimer, exporter en PDF, envoyer par E-mail ou WhatsApp"
-            className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-medium text-amber-100 hover:border-amber-300/35 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            title={
+              lockExports
+                ? 'Exports PDF, E-mail & WhatsApp verrouillés par l’administrateur'
+                : 'Imprimer, exporter en PDF, envoyer par E-mail ou WhatsApp'
+            }
+            className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              lockExports
+                ? 'border-rose-400/35 bg-rose-500/10 text-rose-100 hover:border-rose-300/60'
+                : 'border-white/10 bg-white/[0.03] text-amber-100 hover:border-amber-300/35'
+            }`}
           >
-            <Share2 className="h-3.5 w-3.5 text-amber-300/80" />
+            {lockExports ? (
+              <Lock className="h-3.5 w-3.5 text-rose-300" />
+            ) : (
+              <Share2 className="h-3.5 w-3.5 text-amber-300/80" />
+            )}
             <span className="hidden md:inline">PDF · E-mail</span>
           </button>
+
+          {onOpenAdmin && (protectionActive || isAdminUnlocked) && (
+            <button
+              type="button"
+              onClick={onOpenAdmin}
+              title={
+                isAdminUnlocked
+                  ? 'Session Admin ouverte — cliquer pour gérer les verrous'
+                  : 'Mode protégé actif — cliquer pour déverrouiller Admin'
+              }
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                isAdminUnlocked
+                  ? 'border-emerald-400/45 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25'
+                  : 'border-amber-300/45 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25'
+              }`}
+            >
+              {isAdminUnlocked ? (
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+              ) : (
+                <Lock className="h-3.5 w-3.5 text-amber-300" />
+              )}
+              <span className="hidden lg:inline">
+                {isAdminUnlocked ? 'Admin ouvert' : 'Protégé'}
+              </span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -229,10 +299,18 @@ export const ChartSelectorBar: React.FC<ChartSelectorBarProps> = ({
           <button
             type="button"
             onClick={onRequestQuit}
-            title="Quitter Uranie VR"
-            className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-rose-200 hover:border-rose-400/50 hover:bg-rose-500/15 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            title={
+              lockQuit
+                ? 'Sortie verrouillée par l’administrateur'
+                : 'Quitter Uranie VR'
+            }
+            className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              lockQuit
+                ? 'border-white/10 bg-white/[0.02] text-slate-500 hover:border-rose-300/35'
+                : 'border-white/10 bg-white/[0.03] text-rose-200 hover:border-rose-400/50 hover:bg-rose-500/15'
+            }`}
           >
-            <Power className="h-3.5 w-3.5 text-rose-300" />
+            <Power className={`h-3.5 w-3.5 ${lockQuit ? 'text-slate-500' : 'text-rose-300'}`} />
           </button>
         </div>
       </div>

@@ -27,6 +27,7 @@ import {
   TransitAlertCategory,
   TransitNotification,
 } from '../astro/transitNotifications';
+import { LunarCycleModule } from './LunarCycleModule';
 
 export interface CosmicHomeViewProps {
   mode: ChartMode;
@@ -312,7 +313,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
     <div className="no-print fixed inset-0 z-10 overflow-y-auto cosmic-scroll pt-20 pb-24 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Hero Cosmic Identity Banner */}
-        <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 sm:p-7 shadow-[0_18px_50px_rgba(0,0,0,0.6)] ring-1 ring-amber-300/10">
+        <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 sm:p-7 shadow-[0_18px_50px_rgba(0,0,0,0.6)] ring-1 ring-amber-300/10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-200">
@@ -405,10 +406,16 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
           </div>
         </section>
 
+        {/* Cycle Lunaire Module */}
+        <LunarCycleModule
+          natalChart={activeNatalChart}
+          onInspectTransitDate={onInspectTransitDate}
+        />
+
         {/* 30-Day Major Planetary Transits Notifications Feed */}
         <section
           aria-label="Notifications des transits planétaires des 30 prochains jours"
-          className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-5 sm:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.55)] ring-1 ring-amber-300/10"
+          className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-5 sm:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.55)] ring-1 ring-amber-300/10"
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 pb-4">
             <div className="flex items-start gap-3">
@@ -476,7 +483,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
           </div>
 
           {/* Notifications List */}
-          <div className="mt-4 space-y-2.5 max-h-[420px] overflow-y-auto cosmic-scroll pr-1">
+          <div className="mt-4 space-y-2.5 max-h-[420px] overflow-y-auto cosmic-scroll px-1.5 py-1">
             {visibleNotifications.map((notif) => {
               const isRead = readSet.has(notif.id);
               const priorityBadge =
@@ -495,7 +502,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
               return (
                 <article
                   key={notif.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-3.5 transition-all duration-200 ${
+                  className={`cosmic-glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-3.5 ${
                     isRead
                       ? 'border-white/10 bg-white/[0.02] opacity-75'
                       : notif.priority === 'major'
@@ -600,7 +607,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
             return (
               <article
                 key={card.id}
-                className="group flex items-center gap-4 rounded-3xl border border-amber-200/30 bg-[#151824]/70 backdrop-blur-xl p-5 shadow-2xl shadow-black/50 ring-1 ring-white/[0.04] hover:border-amber-300/55 transition-all duration-300"
+                className="cosmic-glass-card group flex items-center gap-4 rounded-3xl border border-amber-200/30 bg-[#151824]/70 backdrop-blur-xl p-5 shadow-2xl shadow-black/50 ring-1 ring-white/[0.04]"
               >
                 <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border shrink-0 ${card.iconBg}`}>
                   <Icon className="h-5 w-5" />
@@ -629,7 +636,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
           <button
             type="button"
             onClick={onOpenDataSheet}
-            className="text-left rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5 hover:border-amber-300/55 transition-all duration-300 cursor-pointer"
+            className="cosmic-glass-card text-left rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5 cursor-pointer"
           >
             <div className="font-display text-sm font-semibold text-amber-200 uppercase tracking-wider">
               Catalogue Céleste & DataSheet
@@ -642,7 +649,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
           <button
             type="button"
             onClick={onOpenAuxiliary}
-            className="text-left rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5 hover:border-amber-300/55 transition-all duration-300 cursor-pointer"
+            className="cosmic-glass-card text-left rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5 cursor-pointer"
           >
             <div className="font-display text-sm font-semibold text-purple-200 uppercase tracking-wider">
               Synastrie, Progressions & Profils
@@ -655,7 +662,7 @@ export const CosmicHomeView: React.FC<CosmicHomeViewProps> = ({
           <button
             type="button"
             onClick={onOpenConfig}
-            className="text-left rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5 hover:border-amber-300/55 transition-all duration-300 cursor-pointer"
+            className="cosmic-glass-card text-left rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5 cursor-pointer"
           >
             <div className="font-display text-sm font-semibold text-sky-200 uppercase tracking-wider">
               33 Maisons · 21 Aspects · Déclinaisons

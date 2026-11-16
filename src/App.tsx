@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Mic, Power, RotateCcw, SlidersHorizontal, Sparkles, Stars } from 'lucide-react';
+import { Lock, Mic, Power, RotateCcw, SlidersHorizontal, Sparkles, Stars } from 'lucide-react';
 import {
   analyzeComparison,
   analyzeSolarReturn,
@@ -55,6 +55,20 @@ import { CelestialDataSheetView } from './components/CelestialDataSheetView';
 import { AuxiliaryChartsView } from './components/AuxiliaryChartsView';
 import { SpacetimeNavigator } from './components/SpacetimeNavigator';
 import { SoftwareGuideHelpView } from './components/SoftwareGuideHelpView';
+import { TutorialDidacticielView } from './components/TutorialDidacticielView';
+import { HistoricalLibraryView } from './components/HistoricalLibraryView';
+import { AdminSecurityView } from './components/AdminSecurityView';
+import { ScreenLockOverlay } from './components/ScreenLockOverlay';
+import { CosmicIntroReplayView } from './components/CosmicIntroReplayView';
+import {
+  AdminSecurityPolicy,
+  AdminSecurityState,
+  appendAuditEntry,
+  hashAdminPassword,
+  loadAdminSecurityState,
+  saveAdminSecurityState,
+  verifyAdminPasswordAttempt,
+} from './astro/adminSecurity';
 import {
   AspectFilter,
   AstrologyScene,
@@ -348,6 +362,11 @@ export default function App() {
   );
   const [quitConfirmOpen, setQuitConfirmOpen] = useState<boolean>(false);
   const [appExited, setAppExited] = useState<boolean>(false);
+  const [adminSecurity, setAdminSecurity] = useState<AdminSecurityState>(() =>
+    loadAdminSecurityState()
+  );
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+  const [lockBannerMsg, setLockBannerMsg] = useState<string | null>(null);
   const [voiceModeEnabled, setVoiceModeEnabled] = useState<boolean>(false);
   const [voiceListening, setVoiceListening] = useState<boolean>(false);
   const [voiceFeedbackEnabled, setVoiceFeedbackEnabled] = useState<boolean>(() => {
@@ -410,6 +429,180 @@ export default function App() {
       // Ignore storage quota errors
     }
   }, [profiles]);
+
+  // Persist admin security settings & audit log
+  useEffect(() => {
+    saveAdminSecurityState(adminSecurity);
+  }, [adminSecurity]);
+
+  const hasAdminPassword = Boolean(adminSecurity.passwordHash);
+  const isProtectionEnforced =
+    hasAdminPassword && adminSecurity.protectionActive && !isAdminUnlocked;
+  const profilesLocked = isProtectionEnforced && adminSecurity.policy.lockEditionProfiles;
+  const configLocked = isProtectionEnforced && adminSecurity.policy.lockConfigDrawer;
+  const modesLocked = isProtectionEnforced && adminSecurity.policy.lockChartModeSwitch;
+  const exportsLocked = isProtectionEnforced && adminSecurity.policy.lockExports;
+  const quitLocked = isProtectionEnforced && adminSecurity.policy.lockQuitApp;
+
+  const notifyLockedAction = useCallback((actionLabel: string) => {
+    setLockBannerMsg(`${actionLabel} est verrouillé par l’administrateur.`);
+  }, []);
+
+  useEffect(() => {
+    if (!lockBannerMsg) return;
+    const t = window.setTimeout(() => setLockBannerMsg(null), 4500);
+    return () => window.clearTimeout(t);
+  }, [lockBannerMsg]);
+
+  // Auto-lock Admin session after inactivity when configured
+  useEffect(() => {
+    const mins = adminSecurity.policy.autoLockMinutes;
+    if (!hasAdminPassword || mins <= 0 || !isAdminUnlocked) return;
+    let timerId = 0;
+    const resetTimer = () => {
+      window.clearTimeout(timerId);
+      timerId = window.setTimeout(() => {
+        setIsAdminUnlocked(false);
+        setAdminSecurity((prev) => ({
+          ...prev,
+          auditLog: appendAuditEntry(
+            prev.auditLog,
+            `Session Admin verrouillée automatiquement après ${mins} min d’inactivité`,
+            'info'
+          ),
+        }));
+      }, mins * 60_000);
+    };
+    resetTimer();
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown'];
+    events.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+    return () => {
+      window.clearTimeout(timerId);
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+    };
+  }, [hasAdminPassword, isAdminUnlocked, adminSecurity.policy.autoLockMinutes]);
+
+  const handleInitializeAdminPassword = useCallback(
+    async (password: string, enableProtectionImmediately: boolean) => {
+      const salt = adminSecurity.salt;
+      const hash = await hashAdminPassword(password, salt);
+      setAdminSecurity((prev) => ({
+        ...prev,
+        passwordHash: hash,
+        protectionActive: enableProtectionImmediately,
+        screenLocked: false,
+        failedAttempts: 0,
+        lockedUntilTs: null,
+        auditLog: appendAuditEntry(prev.auditLog, 'Mot de passe Administrateur initialisé', 'success'),
+      }));
+      setIsAdminUnlocked(true);
+    },
+    [adminSecurity.salt]
+  );
+
+  const handleUnlockAdmin = useCallback(
+    async (password: string) => {
+      const res = await verifyAdminPasswordAttempt(adminSecurity, password);
+      setAdminSecurity(res.nextState);
+      if (res.ok) {
+        setIsAdminUnlocked(true);
+      }
+      return { ok: res.ok, errorMsg: res.errorMsg };
+    },
+    [adminSecurity]
+  );
+
+  const handleLockAdminSession = useCallback(() => {
+    setIsAdminUnlocked(false);
+    setAdminSecurity((prev) => ({
+      ...prev,
+      auditLog: appendAuditEntry(prev.auditLog, 'Session Admin fermée manuellement', 'info'),
+    }));
+  }, []);
+
+  const handleActivateProtectionAndClose = useCallback(() => {
+    setAdminSecurity((prev) => ({
+      ...prev,
+      protectionActive: true,
+      auditLog: appendAuditEntry(prev.auditLog, 'Mode anti-manipulation activé', 'success'),
+    }));
+    setIsAdminUnlocked(false);
+    setCosmicTab('wheel');
+  }, []);
+
+  const handleEnableFullScreenLock = useCallback(() => {
+    setConfigOpen(false);
+    setSharePrintOpen(false);
+    setIsAdminUnlocked(false);
+    setAdminSecurity((prev) => ({
+      ...prev,
+      protectionActive: true,
+      screenLocked: true,
+      auditLog: appendAuditEntry(prev.auditLog, 'Verrouillage plein écran activé', 'info'),
+    }));
+  }, []);
+
+  const handleToggleProtectionActive = useCallback((active: boolean) => {
+    setAdminSecurity((prev) => ({
+      ...prev,
+      protectionActive: active,
+      auditLog: appendAuditEntry(
+        prev.auditLog,
+        active ? 'Protection anti-manipulation activée' : 'Protection anti-manipulation désactivée',
+        active ? 'success' : 'info'
+      ),
+    }));
+  }, []);
+
+  const handleUpdateSecurityPolicy = useCallback((patch: Partial<AdminSecurityPolicy>) => {
+    setAdminSecurity((prev) => ({
+      ...prev,
+      policy: { ...prev.policy, ...patch },
+      auditLog: appendAuditEntry(prev.auditLog, 'Politique de verrous mise à jour', 'info'),
+    }));
+  }, []);
+
+  const handleChangeAdminPassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      const check = await verifyAdminPasswordAttempt(adminSecurity, currentPassword);
+      if (!check.ok) {
+        setAdminSecurity(check.nextState);
+        return { ok: false, errorMsg: check.errorMsg };
+      }
+      const nextHash = await hashAdminPassword(newPassword, check.nextState.salt);
+      setAdminSecurity({
+        ...check.nextState,
+        passwordHash: nextHash,
+        auditLog: appendAuditEntry(check.nextState.auditLog, 'Mot de passe Admin modifié', 'success'),
+      });
+      return { ok: true, errorMsg: null };
+    },
+    [adminSecurity]
+  );
+
+  const handleDisableSecurity = useCallback(
+    async (currentPassword: string) => {
+      const check = await verifyAdminPasswordAttempt(adminSecurity, currentPassword);
+      if (!check.ok) {
+        setAdminSecurity(check.nextState);
+        return { ok: false, errorMsg: check.errorMsg };
+      }
+      setIsAdminUnlocked(false);
+      setAdminSecurity({
+        ...check.nextState,
+        passwordHash: null,
+        protectionActive: false,
+        screenLocked: false,
+        auditLog: appendAuditEntry(check.nextState.auditLog, 'Protection par mot de passe supprimée', 'warning'),
+      });
+      return { ok: true, errorMsg: null };
+    },
+    [adminSecurity]
+  );
+
+  const handleClearAuditLog = useCallback(() => {
+    setAdminSecurity((prev) => ({ ...prev, auditLog: [] }));
+  }, []);
 
   const birthDate = useMemo(() => parseProfileDate(draftProfile.birthDateIso), [draftProfile.birthDateIso]);
   const birthLocation = useMemo(() => resolveProfileLocation(draftProfile), [draftProfile]);
@@ -905,14 +1098,16 @@ export default function App() {
 
   useEffect(() => {
     sceneRef.current?.setPaused(
-      ((cosmicTab !== 'wheel' || viewDimension === '2d') && !inVR) || appExited
+      ((cosmicTab !== 'wheel' || viewDimension === '2d') && !inVR) ||
+        appExited ||
+        (adminSecurity.screenLocked && hasAdminPassword)
     );
     try {
       localStorage.setItem(VIEW_DIM_STORAGE_KEY, viewDimension);
     } catch {
       // Ignore storage quota errors
     }
-  }, [cosmicTab, viewDimension, inVR, appExited]);
+  }, [cosmicTab, viewDimension, inVR, appExited, adminSecurity.screenLocked, hasAdminPassword]);
 
   useEffect(() => {
     try {
@@ -1032,11 +1227,22 @@ export default function App() {
     [profiles]
   );
 
-  const handleDraftProfileChange = useCallback((patch: Partial<NatalProfile>) => {
-    setDraftProfile((prev) => ({ ...prev, ...patch }));
-  }, []);
+  const handleDraftProfileChange = useCallback(
+    (patch: Partial<NatalProfile>) => {
+      if (profilesLocked) {
+        notifyLockedAction('La modification du thème natal');
+        return;
+      }
+      setDraftProfile((prev) => ({ ...prev, ...patch }));
+    },
+    [profilesLocked, notifyLockedAction]
+  );
 
   const handleSaveProfile = useCallback(() => {
+    if (profilesLocked) {
+      notifyLockedAction('L’enregistrement des profils');
+      return;
+    }
     setProfiles((prev) => {
       const exists = prev.some((p) => p.id === draftProfile.id);
       if (exists) {
@@ -1045,9 +1251,13 @@ export default function App() {
       return [...prev, draftProfile];
     });
     celestialAudio.playSoftTick();
-  }, [draftProfile]);
+  }, [draftProfile, profilesLocked, notifyLockedAction]);
 
   const handleCreateNewProfile = useCallback(() => {
+    if (profilesLocked) {
+      notifyLockedAction('La création de profil');
+      return;
+    }
     const newId = `profile-${Date.now()}`;
     const newProfile: NatalProfile = {
       id: newId,
@@ -1059,10 +1269,14 @@ export default function App() {
     setProfiles((prev) => [...prev, newProfile]);
     setActiveProfileId(newId);
     setDraftProfile(newProfile);
-  }, []);
+  }, [profilesLocked, notifyLockedAction]);
 
   const handleDeleteProfile = useCallback(
     (id: string) => {
+      if (profilesLocked) {
+        notifyLockedAction('La suppression de profil');
+        return;
+      }
       setProfiles((prev) => {
         if (prev.length <= 1) return prev;
         const filtered = prev.filter((p) => p.id !== id);
@@ -1071,7 +1285,57 @@ export default function App() {
         return filtered;
       });
     },
-    []
+    [profilesLocked, notifyLockedAction]
+  );
+
+  const handleLoadHistoricalProfile = useCallback(
+    (histProfile: NatalProfile, destination: 'wheel' | 'summary') => {
+      if (profilesLocked) {
+        notifyLockedAction('Le chargement depuis la Bibliothèque');
+        return;
+      }
+      setProfiles((prev) => {
+        const exists = prev.some((p) => p.id === histProfile.id);
+        return exists
+          ? prev.map((p) => (p.id === histProfile.id ? histProfile : p))
+          : [...prev, histProfile];
+      });
+      setActiveProfileId(histProfile.id);
+      setDraftProfile(histProfile);
+      setMode('natal');
+      setSelectedPlanet(null);
+      setSelectedHouse(null);
+      if (destination === 'summary') {
+        setShowFullSummary(true);
+      } else {
+        setShowFullSummary(false);
+        setViewDimension('2d');
+        setCosmicTab('wheel');
+      }
+      celestialAudio.playSoftTick();
+    },
+    [profilesLocked, notifyLockedAction]
+  );
+
+  const handleCompareHistoricalSynastry = useCallback(
+    (histProfile: NatalProfile) => {
+      if (profilesLocked) {
+        notifyLockedAction('Le chargement en Synastrie');
+        return;
+      }
+      setProfiles((prev) => {
+        const exists = prev.some((p) => p.id === histProfile.id);
+        return exists
+          ? prev.map((p) => (p.id === histProfile.id ? histProfile : p))
+          : [...prev, histProfile];
+      });
+      setPartnerProfileId(histProfile.id);
+      setMode('synastry');
+      setShowFullSummary(false);
+      setCosmicTab('auxiliary');
+      celestialAudio.playSoftTick();
+    },
+    [profilesLocked, notifyLockedAction]
   );
 
   const handleTransitDateChange = useCallback((val: string) => {
@@ -1256,6 +1520,44 @@ export default function App() {
     }
   }, [voiceSearchButtonsEnabled]);
 
+  const handleOpenConfigGuarded = useCallback(() => {
+    if (configLocked) {
+      notifyLockedAction('La configuration avancée');
+      return;
+    }
+    setConfigOpen(true);
+  }, [configLocked, notifyLockedAction]);
+
+  const handleRequestQuitGuarded = useCallback(() => {
+    if (quitLocked) {
+      notifyLockedAction('La fermeture du logiciel');
+      return;
+    }
+    setQuitConfirmOpen(true);
+  }, [quitLocked, notifyLockedAction]);
+
+  const handleOpenSharePrint = useCallback(() => {
+    if (exportsLocked) {
+      notifyLockedAction('L’export PDF, E-mail & WhatsApp');
+      return;
+    }
+    const snap = sceneRef.current?.captureSnapshot() ?? null;
+    setSnapshotDataUrl(snap);
+    setSharePrintOpen(true);
+  }, [exportsLocked, notifyLockedAction]);
+
+  const handleTriggerPdfPrint = useCallback(() => {
+    if (exportsLocked) {
+      notifyLockedAction('L’impression PDF');
+      return;
+    }
+    const snap = sceneRef.current?.captureSnapshot() ?? null;
+    if (snap) setSnapshotDataUrl(snap);
+    window.setTimeout(() => {
+      window.print();
+    }, 100);
+  }, [exportsLocked, notifyLockedAction]);
+
   const executeVoiceCommandText = useCallback(
     async (transcript: string) => {
       const parsed = parseVoiceCommand(transcript, profiles);
@@ -1269,6 +1571,11 @@ export default function App() {
       for (const action of parsed.actions) {
         switch (action.type) {
           case 'setMode':
+            if (modesLocked) {
+              notifyLockedAction('Le changement de mode');
+              finalFeedback = 'Changement de mode verrouillé par l’administrateur.';
+              break;
+            }
             setMode(action.mode);
             if (action.mode === 'live') {
               setTransitDate(new Date());
@@ -1284,6 +1591,11 @@ export default function App() {
             break;
 
           case 'updateBirthProfile': {
+            if (profilesLocked) {
+              notifyLockedAction('La modification du thème natal');
+              finalFeedback = 'Modification du thème verrouillée par l’administrateur.';
+              break;
+            }
             const p = action.patch;
             setDraftProfile((prev) => {
               const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(prev.birthDateIso);
@@ -1310,6 +1622,11 @@ export default function App() {
           }
 
           case 'searchBirthPlace': {
+            if (profilesLocked) {
+              notifyLockedAction('La modification du lieu de naissance');
+              finalFeedback = 'Lieu verrouillé par l’administrateur.';
+              break;
+            }
             const places = await searchPlacesByQuery(action.query);
             if (places.length > 0) {
               const top = places[0];
@@ -1327,6 +1644,11 @@ export default function App() {
           }
 
           case 'searchSrPlace': {
+            if (modesLocked) {
+              notifyLockedAction('Le lieu de révolution');
+              finalFeedback = 'Lieu anniversaire verrouillé par l’administrateur.';
+              break;
+            }
             const places = await searchPlacesByQuery(action.query);
             if (places.length > 0) {
               setSolarReturnCustomLoc(places[0]);
@@ -1338,6 +1660,10 @@ export default function App() {
           }
 
           case 'setSrYear':
+            if (modesLocked) {
+              notifyLockedAction('L’année de révolution');
+              break;
+            }
             setSolarReturnYear(action.year);
             break;
 
@@ -1407,6 +1733,10 @@ export default function App() {
             break;
 
           case 'setTimePlayback':
+            if (modesLocked) {
+              notifyLockedAction('La vitesse temporelle');
+              break;
+            }
             if (action.action === 'pause') {
               setTimeSpeedDaysPerSec(0);
               setSrAnimSpeed(0);
@@ -1418,11 +1748,19 @@ export default function App() {
             break;
 
           case 'stepTime':
+            if (modesLocked) {
+              notifyLockedAction('La navigation temporelle');
+              break;
+            }
             setTimeSpeedDaysPerSec(0);
             setTransitDate((prev) => new Date(prev.getTime() + action.deltaMinutes * 60_000));
             break;
 
           case 'setTransitDate':
+            if (modesLocked) {
+              notifyLockedAction('La date de transit');
+              break;
+            }
             setTimeSpeedDaysPerSec(0);
             setTransitDate(action.date);
             break;
@@ -1482,7 +1820,7 @@ export default function App() {
             break;
 
           case 'quitApp':
-            setQuitConfirmOpen(true);
+            handleRequestQuitGuarded();
             break;
         }
       }
@@ -1497,6 +1835,11 @@ export default function App() {
       mode,
       voiceFeedbackEnabled,
       inVR,
+      profilesLocked,
+      modesLocked,
+      notifyLockedAction,
+      handleOpenSharePrint,
+      handleRequestQuitGuarded,
       handleSaveProfile,
       handleCreateNewProfile,
       handleSelectProfile,
@@ -1661,20 +2004,6 @@ export default function App() {
     comparativeYearB,
   ]);
 
-  const handleOpenSharePrint = useCallback(() => {
-    const snap = sceneRef.current?.captureSnapshot() ?? null;
-    setSnapshotDataUrl(snap);
-    setSharePrintOpen(true);
-  }, []);
-
-  const handleTriggerPdfPrint = useCallback(() => {
-    const snap = sceneRef.current?.captureSnapshot() ?? null;
-    if (snap) setSnapshotDataUrl(snap);
-    window.setTimeout(() => {
-      window.print();
-    }, 100);
-  }, []);
-
   const sun = baseChart.planets.find((p) => p.id === 'sun');
   const moon = baseChart.planets.find((p) => p.id === 'moon');
 
@@ -1703,13 +2032,20 @@ export default function App() {
   const activeHouseSystemMeta =
     HOUSE_SYSTEMS.find((h) => h.id === draftProfile.houseSystem) ?? HOUSE_SYSTEMS[0];
 
-  const handleModeSwitchFromSelector = useCallback((nextMode: ChartMode) => {
-    setMode(nextMode);
-    if (nextMode === 'live') {
-      setTransitDate(new Date());
-      setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
-    }
-  }, []);
+  const handleModeSwitchFromSelector = useCallback(
+    (nextMode: ChartMode) => {
+      if (modesLocked) {
+        notifyLockedAction('Le changement de mode astrologique');
+        return;
+      }
+      setMode(nextMode);
+      if (nextMode === 'live') {
+        setTransitDate(new Date());
+        setTimeSpeedDaysPerSec(REAL_TIME_DAYS_PER_SEC);
+      }
+    },
+    [modesLocked, notifyLockedAction]
+  );
 
   const spacetimeNavigatorElement = (
     <SpacetimeNavigator
@@ -1717,16 +2053,38 @@ export default function App() {
       timeSpeedDaysPerSec={timeSpeedDaysPerSec}
       realTimeDaysPerSec={REAL_TIME_DAYS_PER_SEC}
       onSetTransitDate={(d) => {
+        if (modesLocked) {
+          notifyLockedAction('La navigation temporelle');
+          return;
+        }
         setTimeSpeedDaysPerSec(0);
         setTransitDate(d);
       }}
       onStepMinutes={(deltaMinutes) => {
+        if (modesLocked) {
+          notifyLockedAction('La navigation temporelle');
+          return;
+        }
         setTimeSpeedDaysPerSec(0);
         setTransitDate((prev) => new Date(prev.getTime() + deltaMinutes * 60_000));
       }}
-      onTimeSpeedChange={setTimeSpeedDaysPerSec}
-      onResetNow={handleResetTransitNow}
+      onTimeSpeedChange={(speed) => {
+        if (modesLocked) {
+          notifyLockedAction('La vitesse temporelle');
+          return;
+        }
+        setTimeSpeedDaysPerSec(speed);
+      }}
+      onResetNow={() => {
+        if (modesLocked) {
+          notifyLockedAction('La navigation temporelle');
+          return;
+        }
+        handleResetTransitNow();
+      }}
       modeLabel={modeTitle[mode]}
+      locked={modesLocked}
+      onLockedAttempt={() => notifyLockedAction('Le Spacetime Navigator')}
     />
   );
 
@@ -1803,7 +2161,7 @@ export default function App() {
         nativeName={draftProfile.name || 'Profil actif'}
         cityName={birthLocation.cityName}
         houseSystemName={activeHouseSystemMeta.name}
-        onOpenConfig={() => setConfigOpen(true)}
+        onOpenConfig={handleOpenConfigGuarded}
         onOpenAbout={() => {
           setAutoStartIntroAudio(true);
           setAboutOpen(true);
@@ -1815,7 +2173,7 @@ export default function App() {
           handleEnterVR();
         }}
         onToggleVoiceMode={handleToggleVoiceMode}
-        onRequestQuit={() => setQuitConfirmOpen(true)}
+        onRequestQuit={handleRequestQuitGuarded}
         voiceModeEnabled={voiceModeEnabled}
         voiceListening={voiceListening}
         inVR={inVR}
@@ -1823,7 +2181,31 @@ export default function App() {
         desktopMR={desktopMR}
         webXRSupported={webXRSupported}
         mrSupported={mrSupported}
+        protectionActive={hasAdminPassword && adminSecurity.protectionActive}
+        isAdminUnlocked={isAdminUnlocked}
+        lockConfig={configLocked}
+        lockModes={modesLocked}
+        lockExports={exportsLocked}
+        lockQuit={quitLocked}
+        onOpenAdmin={() => setCosmicTab('admin')}
       />
+
+      {lockBannerMsg && !adminSecurity.screenLocked && (
+        <div className="no-print fixed top-16 left-1/2 z-40 -translate-x-1/2 flex items-center gap-3 rounded-full border border-amber-300/45 bg-[#151824]/95 backdrop-blur-xl px-4 py-2 text-xs text-amber-100 shadow-2xl shadow-black/60 max-w-[94vw]">
+          <Lock className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+          <span className="truncate">{lockBannerMsg}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setLockBannerMsg(null);
+              setCosmicTab('admin');
+            }}
+            className="rounded-full bg-amber-400/90 px-3 py-0.5 text-[11px] font-semibold text-slate-950 hover:bg-amber-300 transition-all cursor-pointer whitespace-nowrap shrink-0"
+          >
+            Déverrouiller Admin
+          </button>
+        </div>
+      )}
 
       {/* VIEW 1: COSMIC HOME / SYNTHÈSE */}
       {cosmicTab === 'home' && (
@@ -1846,8 +2228,12 @@ export default function App() {
             setSelectedHouse(null);
             setShowFullSummary(true);
           }}
-          onOpenConfig={() => setConfigOpen(true)}
+          onOpenConfig={handleOpenConfigGuarded}
           onInspectTransitDate={(targetDate) => {
+            if (modesLocked) {
+              notifyLockedAction('La navigation temporelle');
+              return;
+            }
             setTimeSpeedDaysPerSec(0);
             setTransitDate(targetDate);
             setMode('transits');
@@ -1922,7 +2308,7 @@ export default function App() {
       {cosmicTab === 'auxiliary' && (
         <AuxiliaryChartsView
           mode={mode}
-          onModeChange={(nextM) => setMode(nextM)}
+          onModeChange={handleModeSwitchFromSelector}
           profiles={profiles}
           activeProfileId={activeProfileId}
           onSelectProfile={handleSelectProfile}
@@ -1950,16 +2336,75 @@ export default function App() {
             setSelectedHouse(null);
             setShowFullSummary(true);
           }}
+          onOpenLibrary={() => setCosmicTab('library')}
           showVoiceSearchButtons={voiceSearchButtonsEnabled}
+          profilesLocked={profilesLocked}
+          modesLocked={modesLocked}
+          onOpenAdmin={() => setCosmicTab('admin')}
         />
       )}
 
-      {/* VIEW 5: AIDE & RÉCAPITULATIF COMPLET DU LOGICIEL */}
+      {/* VIEW 4B: BIBLIOTHÈQUE DES ASTRES (THÈMES HISTORIQUES CÉLÈBRES) */}
+      {cosmicTab === 'library' && (
+        <HistoricalLibraryView
+          activeProfileId={activeProfileId}
+          partnerProfileId={partnerProfileId}
+          showVoiceSearchButtons={voiceSearchButtonsEnabled}
+          onLoadHistoricalProfile={handleLoadHistoricalProfile}
+          onCompareInSynastry={handleCompareHistoricalSynastry}
+          profilesLocked={profilesLocked}
+          onOpenAdmin={() => setCosmicTab('admin')}
+        />
+      )}
+
+      {/* VIEW 5: DIDACTICIEL INTERACTIF (THÈME NATAL, RÉV. SOLAIRE & TRANSITS) */}
+      {cosmicTab === 'tutorial' && (
+        <TutorialDidacticielView
+          draftProfile={draftProfile}
+          natalChart={natalChart}
+          solarReturnYear={solarReturnYear}
+          solarReturnExactDate={solarReturnExactDate}
+          transitDate={transitDate}
+          comparisonAspectsCount={comparisonAspects.length}
+          actions={{
+            onOpenNatalEditor: () => {
+              if (!modesLocked) setMode('natal');
+              setCosmicTab('auxiliary');
+            },
+            onOpenAscendantCalculator: () => setAscendantModalOpen(true),
+            onOpenSolarReturnSetup: () => {
+              if (!modesLocked) setMode('solarReturn');
+              setCosmicTab('auxiliary');
+            },
+            onOpenSolarReturnWheel: () => {
+              if (!modesLocked) setMode('solarReturn');
+              setViewDimension('2d');
+              setCosmicTab('wheel');
+            },
+            onOpenTransitsWheel: () => {
+              if (!modesLocked) setMode('transits');
+              setViewDimension('2d');
+              setCosmicTab('wheel');
+            },
+            onOpenHomeAlerts: () => setCosmicTab('home'),
+            onOpenConfig: handleOpenConfigGuarded,
+            onOpenFullSummary: () => {
+              setSelectedPlanet(null);
+              setSelectedHouse(null);
+              setShowFullSummary(true);
+            },
+            onOpenSharePrint: handleOpenSharePrint,
+          }}
+        />
+      )}
+
+      {/* VIEW 6: AIDE & RÉCAPITULATIF COMPLET DU LOGICIEL */}
       {cosmicTab === 'help' && (
         <SoftwareGuideHelpView
           voiceModeEnabled={voiceModeEnabled}
           actions={{
             onOpenHome: () => setCosmicTab('home'),
+            onOpenTutorial: () => setCosmicTab('tutorial'),
             onOpenWheel2D: () => {
               setViewDimension('2d');
               setCosmicTab('wheel');
@@ -1970,7 +2415,7 @@ export default function App() {
             },
             onOpenDataSheet: () => setCosmicTab('datasheet'),
             onOpenAuxiliary: () => setCosmicTab('auxiliary'),
-            onOpenConfig: () => setConfigOpen(true),
+            onOpenConfig: handleOpenConfigGuarded,
             onOpenFullSummary: () => {
               setSelectedPlanet(null);
               setSelectedHouse(null);
@@ -1984,7 +2429,42 @@ export default function App() {
             },
             onOpenQuestGuide: () => setQuestModalOpen(true),
             onToggleVoiceMode: handleToggleVoiceMode,
+            onOpenAdmin: () => setCosmicTab('admin'),
+            onOpenIntroReplay: () => {
+              if (esotericIntroMusic.isPlaying()) {
+                esotericIntroMusic.stop();
+              }
+              setCosmicTab('intro');
+            },
           }}
+        />
+      )}
+
+      {/* VIEW 6B: REVOIR L'ANIMATION (CINÉMATIQUE D'INTRODUCTION 100s) */}
+      {cosmicTab === 'intro' && (
+        <CosmicIntroReplayView
+          appName="URANIE VR"
+          onEnterUniverse={() => setCosmicTab('home')}
+        />
+      )}
+
+      {/* VIEW 7: ADMIN & SÉCURITÉ ANTI-MANIPULATION PAR MOT DE PASSE */}
+      {cosmicTab === 'admin' && (
+        <AdminSecurityView
+          securityState={adminSecurity}
+          isAdminUnlocked={isAdminUnlocked}
+          profiles={profiles}
+          onInitializePassword={handleInitializeAdminPassword}
+          onUnlockAdmin={handleUnlockAdmin}
+          onLockAdminSession={handleLockAdminSession}
+          onActivateProtectionAndClose={handleActivateProtectionAndClose}
+          onEnableFullScreenLock={handleEnableFullScreenLock}
+          onToggleProtectionActive={handleToggleProtectionActive}
+          onUpdatePolicy={handleUpdateSecurityPolicy}
+          onChangePassword={handleChangeAdminPassword}
+          onDisableSecurity={handleDisableSecurity}
+          onClearAuditLog={handleClearAuditLog}
+          onOpenWheel={() => setCosmicTab('wheel')}
         />
       )}
 
@@ -2232,11 +2712,16 @@ export default function App() {
       />
 
       {/* Bottom Floating Pill Navigation Bar ("Cosmic Insights") */}
-      {!appExited && !inVR && (
+      {!appExited && !inVR && !(adminSecurity.screenLocked && hasAdminPassword) && (
         <FloatingPillNav
           activeTab={cosmicTab}
-          onSelectTab={setCosmicTab}
-          onOpenConfig={() => setConfigOpen(true)}
+          onSelectTab={(tab) => {
+            if (tab === 'intro' && esotericIntroMusic.isPlaying()) {
+              esotericIntroMusic.stop();
+            }
+            setCosmicTab(tab);
+          }}
+          onOpenConfig={handleOpenConfigGuarded}
           onOpenFullSummary={() => {
             setSelectedPlanet(null);
             setSelectedHouse(null);
@@ -2247,8 +2732,18 @@ export default function App() {
             setViewDimension(dim);
             setCosmicTab('wheel');
           }}
+          protectionLocked={isProtectionEnforced}
+          isAdminUnlocked={isAdminUnlocked}
+          configLocked={configLocked}
         />
       )}
+
+      {/* Full-Screen Admin Lock Overlay */}
+      <ScreenLockOverlay
+        open={adminSecurity.screenLocked && hasAdminPassword}
+        lockedUntilTs={adminSecurity.lockedUntilTs}
+        onUnlock={handleUnlockAdmin}
+      />
 
       <AscendantCalculatorModal
         open={ascendantModalOpen}

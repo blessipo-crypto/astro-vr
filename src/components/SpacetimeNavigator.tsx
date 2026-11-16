@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Clock,
   FastForward,
+  Lock,
   MoveHorizontal,
   Pause,
   Play,
@@ -20,6 +21,8 @@ export interface SpacetimeNavigatorProps {
   onResetNow: () => void;
   modeLabel?: string;
   compact?: boolean;
+  locked?: boolean;
+  onLockedAttempt?: () => void;
 }
 
 const SPEED_OPTIONS: Array<{ label: string; shortLabel: string; speed: number }> = [
@@ -81,6 +84,8 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
   onResetNow,
   modeLabel,
   compact = false,
+  locked = false,
+  onLockedAttempt,
 }) => {
   const isPlaying = timeSpeedDaysPerSec > 0;
   const isRealTime = Math.abs(timeSpeedDaysPerSec - realTimeDaysPerSec) < 1e-8;
@@ -125,6 +130,10 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
 
   const startHoldStep = useCallback(
     (minutes: number) => {
+      if (locked) {
+        onLockedAttempt?.();
+        return;
+      }
       stopHoldRepeat();
       onStepMinutes(minutes);
       holdTimerRef.current = window.setTimeout(() => {
@@ -133,7 +142,7 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
         }, 75);
       }, 320);
     },
-    [onStepMinutes, stopHoldRepeat]
+    [locked, onLockedAttempt, onStepMinutes, stopHoldRepeat]
   );
 
   const formattedDate = useMemo(
@@ -205,6 +214,12 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
                   {modeLabel}
                 </span>
               )}
+              {locked && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-200 whitespace-nowrap">
+                  <Lock className="h-2.5 w-2.5" />
+                  <span>Verrouillé</span>
+                </span>
+              )}
             </div>
             <div className="font-mono-tabular text-xs text-slate-200 flex items-center gap-1.5 whitespace-nowrap">
               <span className="text-amber-200 font-semibold">{formattedDate}</span>
@@ -218,19 +233,26 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
+            disabled={locked}
             onClick={() => {
+              if (locked) {
+                onLockedAttempt?.();
+                return;
+              }
               const now = new Date();
               setAnchorMs(now.getTime());
               onResetNow();
             }}
-            title="Synchroniser immédiatement sur l’instant présent (Temps réel)"
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
-              isRealTime
-                ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100 shadow-[0_0_16px_rgba(52,211,153,0.28)]'
-                : 'border-amber-200/25 bg-white/[0.04] text-amber-100 hover:border-amber-300/50'
+            title={locked ? 'Navigation temporelle verrouillée' : 'Synchroniser immédiatement sur l’instant présent (Temps réel)'}
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap shrink-0 ${
+              locked
+                ? 'border-white/10 bg-white/[0.02] text-slate-500 cursor-not-allowed'
+                : isRealTime
+                  ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100 shadow-[0_0_16px_rgba(52,211,153,0.28)] cursor-pointer'
+                  : 'border-amber-200/25 bg-white/[0.04] text-amber-100 hover:border-amber-300/50 cursor-pointer'
             }`}
           >
-            {isRealTime && (
+            {isRealTime && !locked && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
             )}
             <Clock className="h-3 w-3 text-amber-300" />
@@ -239,14 +261,21 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
 
           <button
             type="button"
-            onClick={() =>
-              onTimeSpeedChange(isPlaying ? 0 : lastActiveSpeedRef.current || 1)
-            }
-            title={isPlaying ? 'Mettre l’animation temporelle en pause' : 'Animer le mouvement planétaire à 60 ips'}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
-              isPlaying
-                ? 'bg-gradient-to-r from-amber-500/90 via-amber-400/90 to-yellow-500/90 text-slate-950 shadow-[0_0_18px_rgba(245,158,11,0.38)]'
-                : 'border border-amber-300/40 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25'
+            disabled={locked}
+            onClick={() => {
+              if (locked) {
+                onLockedAttempt?.();
+                return;
+              }
+              onTimeSpeedChange(isPlaying ? 0 : lastActiveSpeedRef.current || 1);
+            }}
+            title={locked ? 'Navigation temporelle verrouillée' : isPlaying ? 'Mettre l’animation temporelle en pause' : 'Animer le mouvement planétaire à 60 ips'}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap shrink-0 ${
+              locked
+                ? 'border border-white/10 bg-white/[0.02] text-slate-500 cursor-not-allowed'
+                : isPlaying
+                  ? 'bg-gradient-to-r from-amber-500/90 via-amber-400/90 to-yellow-500/90 text-slate-950 shadow-[0_0_18px_rgba(245,158,11,0.38)] cursor-pointer'
+                  : 'border border-amber-300/40 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25 cursor-pointer'
             }`}
           >
             {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
@@ -261,12 +290,15 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
                 <button
                   key={opt.shortLabel}
                   type="button"
-                  title={opt.label}
-                  onClick={() => onTimeSpeedChange(opt.speed)}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer whitespace-nowrap ${
-                    active
-                      ? 'bg-sky-400/25 text-sky-100 border border-sky-300/50 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-                      : 'text-slate-300 hover:text-white border border-transparent'
+                  disabled={locked}
+                  title={locked ? 'Navigation temporelle verrouillée' : opt.label}
+                  onClick={() => (locked ? onLockedAttempt?.() : onTimeSpeedChange(opt.speed))}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-all whitespace-nowrap ${
+                    locked
+                      ? 'text-slate-600 cursor-not-allowed border border-transparent'
+                      : active
+                        ? 'bg-sky-400/25 text-sky-100 border border-sky-300/50 shadow-[0_0_10px_rgba(56,189,248,0.2)] cursor-pointer'
+                        : 'text-slate-300 hover:text-white border border-transparent cursor-pointer'
                   }`}
                 >
                   {opt.shortLabel}
@@ -277,12 +309,13 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
 
           <select
             aria-label="Vitesse d’animation Spacetime"
+            disabled={locked}
             value={
               SPEED_OPTIONS.find((s) => Math.abs(s.speed - timeSpeedDaysPerSec) < 1e-7)?.speed ??
               (isPlaying ? 1 : 0)
             }
             onChange={(e) => onTimeSpeedChange(Number(e.target.value))}
-            className="md:hidden rounded-full border border-white/15 bg-[#0e1220] px-2.5 py-1 text-[11px] text-amber-100 cursor-pointer focus:border-amber-300/60 outline-none"
+            className="md:hidden rounded-full border border-white/15 bg-[#0e1220] px-2.5 py-1 text-[11px] text-amber-100 cursor-pointer focus:border-amber-300/60 outline-none disabled:opacity-50"
           >
             <option value={0}>Pause (0x)</option>
             {SPEED_OPTIONS.map((opt) => (
@@ -332,21 +365,29 @@ export const SpacetimeNavigator: React.FC<SpacetimeNavigatorProps> = ({
           <input
             type="range"
             aria-label="Curseur temporel continu des planètes"
+            disabled={locked}
             min={anchorMs - activeSpan.halfRangeMs}
             max={anchorMs + activeSpan.halfRangeMs}
             step={Math.max(1000, Math.floor((activeSpan.halfRangeMs * 2) / 1000))}
             value={scrubValueMs}
             onPointerDown={() => {
+              if (locked) {
+                onLockedAttempt?.();
+                return;
+              }
               setIsScrubbing(true);
               if (isPlaying) onTimeSpeedChange(0);
             }}
             onPointerUp={() => setIsScrubbing(false)}
             onPointerCancel={() => setIsScrubbing(false)}
             onChange={(e) => {
+              if (locked) return;
               const nextMs = Number(e.target.value);
               onSetTransitDate(new Date(nextMs));
             }}
-            className="relative z-10 w-full h-4 appearance-none bg-transparent cursor-ew-resize accent-amber-300"
+            className={`relative z-10 w-full h-4 appearance-none bg-transparent accent-amber-300 ${
+              locked ? 'cursor-not-allowed opacity-50' : 'cursor-ew-resize'
+            }`}
           />
         </div>
 

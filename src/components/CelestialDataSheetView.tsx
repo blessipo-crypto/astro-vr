@@ -106,7 +106,7 @@ export const CelestialDataSheetView: React.FC<CelestialDataSheetViewProps> = ({
     <div className="no-print fixed inset-0 z-10 overflow-y-auto cosmic-scroll pt-20 pb-24 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-5">
         {/* Header & Search Banner */}
-        <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-5 sm:p-6 shadow-2xl shadow-black/50">
+        <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-5 sm:p-6 shadow-2xl shadow-black/50">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-purple-300/30 bg-purple-500/10 px-3 py-1 text-[11px] font-medium text-purple-200">
@@ -178,7 +178,7 @@ export const CelestialDataSheetView: React.FC<CelestialDataSheetViewProps> = ({
 
         {/* Active Fixed Stars Conjunctions & Parans Highlights */}
         {activeStarContacts.length > 0 && (
-          <section className="rounded-3xl border border-amber-200/25 bg-[#151824]/65 backdrop-blur-xl p-4 sm:p-5">
+          <section className="cosmic-glass-panel rounded-3xl border border-amber-200/25 bg-[#151824]/65 backdrop-blur-xl p-4 sm:p-5">
             <div className="flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-amber-200 mb-3">
               <Stars className="h-4 w-4 text-amber-300" />
               <span>Étoiles Fixes en Conjonction ou Paran Natal ({activeStarContacts.length})</span>
@@ -187,7 +187,7 @@ export const CelestialDataSheetView: React.FC<CelestialDataSheetViewProps> = ({
               {activeStarContacts.slice(0, 6).map((st) => (
                 <div
                   key={st.id}
-                  className="rounded-2xl border border-white/10 bg-[#0b0e19]/80 p-3 text-xs space-y-1"
+                  className="cosmic-glass-card rounded-2xl border border-white/10 bg-[#0b0e19]/80 p-3 text-xs space-y-1"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-amber-100 truncate">{st.name}</span>
@@ -206,7 +206,7 @@ export const CelestialDataSheetView: React.FC<CelestialDataSheetViewProps> = ({
         )}
 
         {/* Precision DataSheet Table */}
-        <section className="rounded-3xl border border-amber-200/25 bg-[#151824]/75 backdrop-blur-xl overflow-hidden shadow-2xl shadow-black/50">
+        <section className="cosmic-glass-panel rounded-3xl border border-amber-200/25 bg-[#151824]/75 backdrop-blur-xl overflow-hidden shadow-2xl shadow-black/50">
           <div className="overflow-x-auto cosmic-scroll">
             <table className="w-full text-left text-xs border-collapse">
               <thead>

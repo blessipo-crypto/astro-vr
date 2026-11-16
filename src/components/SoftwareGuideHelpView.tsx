@@ -5,7 +5,9 @@ import {
   Compass,
   Database,
   FileDown,
+  Film,
   Glasses,
+  GraduationCap,
   HelpCircle,
   Home,
   Keyboard,
@@ -18,6 +20,7 @@ import {
   Orbit,
   Search,
   Share2,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Stars,
@@ -37,6 +40,7 @@ type HelpCategoryId =
 
 export interface SoftwareGuideHelpActions {
   onOpenHome: () => void;
+  onOpenTutorial?: () => void;
   onOpenWheel2D: () => void;
   onOpenWheel3D: () => void;
   onOpenDataSheet: () => void;
@@ -48,6 +52,8 @@ export interface SoftwareGuideHelpActions {
   onOpenAboutAudio: () => void;
   onOpenQuestGuide: () => void;
   onToggleVoiceMode: () => void;
+  onOpenAdmin?: () => void;
+  onOpenIntroReplay?: () => void;
 }
 
 interface CapabilityItem {
@@ -225,6 +231,40 @@ const CAPABILITIES: CapabilityItem[] = [
     actionLabel: 'Ouvrir Export & Partage',
     runAction: (a) => a.onOpenSharePrint(),
   },
+  {
+    id: 'cap-admin-security',
+    category: 'config',
+    title: 'Espace Admin & Sécurité Anti-Manipulation par Mot de Passe',
+    badge: 'Sécurité',
+    summary:
+      'Protégez vos profils, réglages et exports par mot de passe SHA-256 ou activez le verrouillage plein écran.',
+    highlights: [
+      'Verrouillage granulaire : profils natals, configuration (33 maisons/21 aspects), navigation temporelle, exports et sortie',
+      'Écran de verrouillage plein écran et verrouillage automatique après inactivité (5, 15 ou 30 min)',
+      'Mot de passe haché en SHA-256 salé avec blocage anti-force brute et journal de sécurité local',
+    ],
+    keywords: 'admin securite mot de passe mdp verrouillage kiosque lecture seule protection',
+    icon: ShieldCheck,
+    actionLabel: 'Ouvrir Espace Admin',
+    runAction: (a) => a.onOpenAdmin?.(),
+  },
+  {
+    id: 'cap-intro-replay',
+    category: 'vr',
+    title: 'Cinématique Céleste — Revoir l’animation (1m 40s)',
+    badge: '4 Mouvements',
+    summary:
+      'Plongez dans la séquence d’ouverture ésotérique en 4 mouvements : nébuleuse Ken Burns, géométrie sacrée, sceau lunaire et musique 432 Hz/528 Hz.',
+    highlights: [
+      '4 mouvements chorégraphiés : Éveil du Cosmos, Géométrie Sacrée, Cœur de l’Expérience et Appel au Voyage',
+      'Particules d’or 60 ips sur Canvas 2D, tracé vectoriel en filigrane d’or et harpe céleste générée en temps réel',
+      'Barre interactive permettant de mettre en pause, rejouer ou sauter directement vers n’importe quel mouvement',
+    ],
+    keywords: 'animation intro splash screen revoir cinematique 4 mouvements 432 hz 528 hz',
+    icon: Film,
+    actionLabel: 'Revoir l’animation',
+    runAction: (a) => a.onOpenIntroReplay?.(),
+  },
 ];
 
 const SHORTCUTS = [
@@ -265,7 +305,7 @@ export const SoftwareGuideHelpView: React.FC<{
     <div className="no-print fixed inset-0 z-10 overflow-y-auto cosmic-scroll pt-20 pb-28 px-4 sm:px-6">
       <div className="mx-auto max-w-[1320px] space-y-5">
         {/* Hero Header */}
-        <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 shadow-2xl shadow-black/50">
+        <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 shadow-2xl shadow-black/50">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="space-y-2 max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/35 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-200">
@@ -291,6 +331,16 @@ export const SoftwareGuideHelpView: React.FC<{
                 <Home className="h-3.5 w-3.5 text-amber-300/80" />
                 <span>Accueil</span>
               </button>
+              {actions.onOpenTutorial && (
+                <button
+                  type="button"
+                  onClick={actions.onOpenTutorial}
+                  className="flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-400/15 px-3.5 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/25 transition-all cursor-pointer"
+                >
+                  <GraduationCap className="h-3.5 w-3.5 text-amber-300" />
+                  <span>Didacticiel pas à pas</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={actions.onOpenAboutAudio}
@@ -386,7 +436,7 @@ export const SoftwareGuideHelpView: React.FC<{
             return (
               <article
                 key={item.id}
-                className="flex flex-col justify-between gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/75 backdrop-blur-xl p-5 shadow-2xl shadow-black/50 hover:border-amber-300/50 transition-all duration-300"
+                className="cosmic-glass-card flex flex-col justify-between gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/75 backdrop-blur-xl p-5 shadow-2xl shadow-black/50"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -438,7 +488,7 @@ export const SoftwareGuideHelpView: React.FC<{
 
         {/* Bottom Reference Row: Shortcuts, Voice Examples & Export Summary */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <section className="rounded-3xl border border-white/10 bg-[#151824]/70 backdrop-blur-xl p-5 space-y-3">
+          <section className="cosmic-glass-card rounded-3xl border border-white/10 bg-[#151824]/70 backdrop-blur-xl p-5 space-y-3">
             <div className="flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-amber-200">
               <Keyboard className="h-4 w-4 text-amber-300" />
               <span>Gestes &amp; Raccourcis</span>
@@ -456,7 +506,7 @@ export const SoftwareGuideHelpView: React.FC<{
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#151824]/70 backdrop-blur-xl p-5 space-y-3">
+          <section className="cosmic-glass-card rounded-3xl border border-white/10 bg-[#151824]/70 backdrop-blur-xl p-5 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-sky-200">
                 <Mic className="h-4 w-4 text-sky-300" />
@@ -486,7 +536,7 @@ export const SoftwareGuideHelpView: React.FC<{
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#151824]/70 backdrop-blur-xl p-5 space-y-3">
+          <section className="cosmic-glass-card rounded-3xl border border-white/10 bg-[#151824]/70 backdrop-blur-xl p-5 space-y-3">
             <div className="flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-emerald-200">
               <BookOpen className="h-4 w-4 text-emerald-300" />
               <span>Export &amp; Communication</span>

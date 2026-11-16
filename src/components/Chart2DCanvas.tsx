@@ -1157,6 +1157,8 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
   const [localDecans, setLocalDecans] = useState<boolean>(wheel2DStyle === 'harmonic');
   const [showDegreesOnWheel, setShowDegreesOnWheel] = useState<boolean>(true);
   const [hoveredPlanetKey, setHoveredPlanetKey] = useState<string | null>(null);
+  const [hoveredZodiacIdx, setHoveredZodiacIdx] = useState<number | null>(null);
+  const [hoveredHouseNum, setHoveredHouseNum] = useState<number | null>(null);
 
   const palette = useMemo(() => getWheel2DPalette(wheel2DStyle), [wheel2DStyle]);
   const showDecanRing =
@@ -1543,6 +1545,108 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
     };
   }, [hoveredPlanetKey, baseChart.planets, outerChart]);
 
+  const goldHoverTheme = useMemo(
+    () =>
+      palette.isLight
+        ? {
+            rimStroke: '#b45309',
+            hairlineStroke: '#f59e0b',
+            fillInner: '#f59e0b',
+            fillOuter: '#b45309',
+            fillInnerOpacity: 0.14,
+            fillOuterOpacity: 0.24,
+            houseFillInnerOpacity: 0.08,
+            houseFillOuterOpacity: 0.2,
+            romanHover: '#92400e',
+          }
+        : {
+            rimStroke: '#fbbf24',
+            hairlineStroke: '#fef3c7',
+            fillInner: '#fde68a',
+            fillOuter: '#f59e0b',
+            fillInnerOpacity: 0.16,
+            fillOuterOpacity: 0.28,
+            houseFillInnerOpacity: 0.08,
+            houseFillOuterOpacity: 0.22,
+            romanHover: '#fde68a',
+          },
+    [palette.isLight]
+  );
+
+  const zodiacSectorGeometries = useMemo(
+    () =>
+      ZODIAC_SIGNS.map((sign, idx) => {
+        const startLon = idx * 30;
+        const endLon = startLon + 30;
+        const aStart = angleForLongitudeValues(
+          startLon,
+          baseChart.ascendant,
+          baseChart.midheaven,
+          wheel2DOrientation
+        );
+        const aEnd = angleForLongitudeValues(
+          endLon,
+          baseChart.ascendant,
+          baseChart.midheaven,
+          wheel2DOrientation
+        );
+        const pOutStart = polar(cx, cy, rOuter, aStart);
+        const pOutEnd = polar(cx, cy, rOuter, aEnd);
+        const pInStart = polar(cx, cy, rZodiacInner, aStart);
+        const pInEnd = polar(cx, cy, rZodiacInner, aEnd);
+        const sectorPath = `M ${pOutStart.x} ${pOutStart.y} A ${rOuter} ${rOuter} 0 0 0 ${pOutEnd.x} ${pOutEnd.y} L ${pInEnd.x} ${pInEnd.y} A ${rZodiacInner} ${rZodiacInner} 0 0 1 ${pInStart.x} ${pInStart.y} Z`;
+        return {
+          sign,
+          chSign: CHINESE_SIGNS_BY_BRANCH[(idx + 3) % 12],
+          sectorPath,
+        };
+      }),
+    [cx, cy, rOuter, rZodiacInner, baseChart.ascendant, baseChart.midheaven, wheel2DOrientation]
+  );
+
+  const houseSectorGeometries = useMemo(() => {
+    if (!showHouses) return [];
+    return baseChart.houses.map((house: HouseCusp) => {
+      const isAngular =
+        house.house === 1 || house.house === 4 || house.house === 7 || house.house === 10;
+      const a = angleForLongitude(house.longitude, baseChart, wheel2DOrientation);
+      const nextHouse = baseChart.houses[house.house % 12];
+      const aNext = angleForLongitude(nextHouse.longitude, baseChart, wheel2DOrientation);
+      const pWedgeOutA = polar(cx, cy, rZodiacInner, a);
+      const pWedgeOutB = polar(cx, cy, rZodiacInner, aNext);
+      const pWedgeInA = polar(cx, cy, rAspect, a);
+      const pWedgeInB = polar(cx, cy, rAspect, aNext);
+
+      let span = (nextHouse.longitude - house.longitude + 360) % 360;
+      if (span === 0) span = 30;
+      const aMid = angleForLongitude(house.longitude + span * 0.5, baseChart, wheel2DOrientation);
+      const pIn = polar(cx, cy, rAspect, a);
+      const pOut = polar(cx, cy, rZodiacInner, a);
+      const pNum = polar(cx, cy, rAspect - 15, aMid);
+      const largeArc = span > 180 ? 1 : 0;
+      const wedgePath = `M ${pWedgeOutA.x} ${pWedgeOutA.y} A ${rZodiacInner} ${rZodiacInner} 0 ${largeArc} 0 ${pWedgeOutB.x} ${pWedgeOutB.y} L ${pWedgeInB.x} ${pWedgeInB.y} A ${rAspect} ${rAspect} 0 ${largeArc} 1 ${pWedgeInA.x} ${pWedgeInA.y} Z`;
+
+      return {
+        house,
+        isAngular,
+        pIn,
+        pOut,
+        pNum,
+        wedgePath,
+      };
+    });
+  }, [showHouses, baseChart, wheel2DOrientation, cx, cy, rZodiacInner, rAspect]);
+
+  const hoveredHouseInfo = useMemo(() => {
+    if (hoveredHouseNum === null) return null;
+    return baseChart.houses.find((h) => h.house === hoveredHouseNum) ?? null;
+  }, [hoveredHouseNum, baseChart.houses]);
+
+  const hoveredZodiacInfo = useMemo(() => {
+    if (hoveredZodiacIdx === null) return null;
+    return zodiacSectorGeometries[hoveredZodiacIdx] ?? null;
+  }, [hoveredZodiacIdx, zodiacSectorGeometries]);
+
   return (
     <div
       className={`no-print fixed inset-0 z-10 flex flex-col pt-16 sm:pt-[70px] pb-20 transition-all duration-200 ${
@@ -1701,6 +1805,10 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
         <div className="relative h-full w-full flex items-center justify-center">
           <svg
             viewBox={`0 0 ${size} ${size}`}
+            onMouseLeave={() => {
+              setHoveredZodiacIdx(null);
+              setHoveredHouseNum(null);
+            }}
             className="max-h-full max-w-full w-auto h-full drop-shadow-[0_18px_45px_rgba(0,0,0,0.65)] select-none"
             style={{ fontFamily: 'var(--font-sans), var(--font-glyph)' }}
             role="img"
@@ -1712,6 +1820,55 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                 <stop offset="45%" stopColor="#f59e0b" stopOpacity="0.18" />
                 <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
               </radialGradient>
+              <radialGradient
+                id="cosmicZodiacHoverFill"
+                gradientUnits="userSpaceOnUse"
+                cx={cx}
+                cy={cy}
+                r={rOuter}
+              >
+                <stop
+                  offset={`${Math.round((rZodiacInner / rOuter) * 100)}%`}
+                  stopColor={goldHoverTheme.fillInner}
+                  stopOpacity={goldHoverTheme.fillInnerOpacity}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={goldHoverTheme.fillOuter}
+                  stopOpacity={goldHoverTheme.fillOuterOpacity}
+                />
+              </radialGradient>
+              <radialGradient
+                id="cosmicHouseHoverFill"
+                gradientUnits="userSpaceOnUse"
+                cx={cx}
+                cy={cy}
+                r={rZodiacInner}
+              >
+                <stop
+                  offset={`${Math.round((rAspect / rZodiacInner) * 100)}%`}
+                  stopColor={goldHoverTheme.fillInner}
+                  stopOpacity={goldHoverTheme.houseFillInnerOpacity}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={goldHoverTheme.fillOuter}
+                  stopOpacity={goldHoverTheme.houseFillOuterOpacity}
+                />
+              </radialGradient>
+              <filter
+                id="cosmicSectorGoldGlow"
+                x="-22%"
+                y="-22%"
+                width="144%"
+                height="144%"
+              >
+                <feGaussianBlur in="SourceGraphic" stdDeviation="2.6" result="goldBlur" />
+                <feMerge>
+                  <feMergeNode in="goldBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
 
             {/* Memoized Static Dial (Zero re-render during planetary transit ticks) */}
@@ -1742,66 +1899,150 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
               isCompass={isCompass}
             />
 
+            {/* Interactive Zodiac Segments: Subtle Illumination & Reactive Golden Border */}
+            <g>
+              {zodiacSectorGeometries.map((sec) => (
+                <path
+                  key={`zodiac-hit-${sec.sign.index}`}
+                  d={sec.sectorPath}
+                  fill="transparent"
+                  onMouseEnter={() => {
+                    setHoveredZodiacIdx(sec.sign.index);
+                    setHoveredHouseNum(null);
+                  }}
+                  onMouseLeave={() =>
+                    setHoveredZodiacIdx((prev) => (prev === sec.sign.index ? null : prev))
+                  }
+                />
+              ))}
+              {zodiacSectorGeometries.map((sec) => {
+                const isHoveredZodiac = hoveredZodiacIdx === sec.sign.index;
+                return (
+                  <g
+                    key={`zodiac-glow-${sec.sign.index}`}
+                    pointerEvents="none"
+                    className="cosmic-wheel-sector-glow"
+                    style={{ opacity: isHoveredZodiac ? 1 : 0 }}
+                  >
+                    <path d={sec.sectorPath} fill="url(#cosmicZodiacHoverFill)" />
+                    <path
+                      d={sec.sectorPath}
+                      fill="none"
+                      stroke={goldHoverTheme.rimStroke}
+                      strokeWidth={2.1}
+                      strokeLinejoin="round"
+                      filter="url(#cosmicSectorGoldGlow)"
+                    />
+                    <path
+                      d={sec.sectorPath}
+                      fill="none"
+                      stroke={goldHoverTheme.hairlineStroke}
+                      strokeWidth={0.9}
+                      strokeOpacity={0.85}
+                      strokeLinejoin="round"
+                    />
+                  </g>
+                );
+              })}
+            </g>
+
             {/* Clickable 12 House Sectors + Cusps */}
             {showHouses &&
-              baseChart.houses.map((house: HouseCusp) => {
-                const isAngular =
-                  house.house === 1 || house.house === 4 || house.house === 7 || house.house === 10;
-                const a = angleForLongitude(house.longitude, baseChart, wheel2DOrientation);
-                const nextHouse = baseChart.houses[house.house % 12];
-                const aNext = angleForLongitude(nextHouse.longitude, baseChart, wheel2DOrientation);
-                const pWedgeOutA = polar(cx, cy, rZodiacInner, a);
-                const pWedgeOutB = polar(cx, cy, rZodiacInner, aNext);
-                const pWedgeInA = polar(cx, cy, rAspect, a);
-                const pWedgeInB = polar(cx, cy, rAspect, aNext);
+              houseSectorGeometries.map(({ house, isAngular, pIn, pOut, pNum, wedgePath }) => {
                 const isSelectedHouse = selectedHouseNum === house.house;
-
-                let span = (nextHouse.longitude - house.longitude + 360) % 360;
-                if (span === 0) span = 30;
-                const aMid = angleForLongitude(
-                  house.longitude + span * 0.5,
-                  baseChart,
-                  wheel2DOrientation
-                );
-                const pIn = polar(cx, cy, rAspect, a);
-                const pOut = polar(cx, cy, rZodiacInner, a);
-                const pNum = polar(cx, cy, rAspect - 15, aMid);
-                const largeArc = span > 180 ? 1 : 0;
-                const wedgePath = `M ${pWedgeOutA.x} ${pWedgeOutA.y} A ${rZodiacInner} ${rZodiacInner} 0 ${largeArc} 0 ${pWedgeOutB.x} ${pWedgeOutB.y} L ${pWedgeInB.x} ${pWedgeInB.y} A ${rAspect} ${rAspect} 0 ${largeArc} 1 ${pWedgeInA.x} ${pWedgeInA.y} Z`;
+                const isHoveredHouse = hoveredHouseNum === house.house;
+                const isActiveHouse = isSelectedHouse || isHoveredHouse;
 
                 return (
                   <g
                     key={house.house}
                     onClick={() => onSelectHouse(house.house)}
+                    onMouseEnter={() => {
+                      setHoveredHouseNum(house.house);
+                      setHoveredZodiacIdx(null);
+                    }}
+                    onMouseLeave={() =>
+                      setHoveredHouseNum((prev) => (prev === house.house ? null : prev))
+                    }
                     className="cursor-pointer"
                   >
+                    <path d={wedgePath} fill="transparent" />
                     <path
                       d={wedgePath}
-                      fill={isSelectedHouse ? palette.rimStroke : 'transparent'}
-                      fillOpacity={isSelectedHouse ? 0.14 : 0}
+                      fill="url(#cosmicHouseHoverFill)"
+                      pointerEvents="none"
+                      className="cosmic-wheel-sector-glow"
+                      style={{ opacity: isSelectedHouse ? 1 : isHoveredHouse ? 0.88 : 0 }}
                     />
                     <line
                       x1={pIn.x}
                       y1={pIn.y}
                       x2={pOut.x}
                       y2={pOut.y}
-                      stroke={isAngular ? palette.angularLine : palette.houseLine}
-                      strokeWidth={isAngular ? 2.1 : 0.95}
-                      strokeDasharray={isAngular ? undefined : '4,3'}
-                      strokeOpacity={isAngular ? 0.95 : 0.78}
+                      stroke={
+                        isActiveHouse
+                          ? goldHoverTheme.rimStroke
+                          : isAngular
+                            ? palette.angularLine
+                            : palette.houseLine
+                      }
+                      strokeWidth={isAngular ? 2.1 : isActiveHouse ? 1.35 : 0.95}
+                      strokeDasharray={isAngular || isActiveHouse ? undefined : '4,3'}
+                      strokeOpacity={isActiveHouse ? 0.92 : isAngular ? 0.95 : 0.78}
                     />
                     <text
                       x={pNum.x}
                       y={pNum.y}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      fontSize={isSelectedHouse ? 13 : 11}
-                      fontWeight={isSelectedHouse || isAngular ? '700' : '600'}
+                      fontSize={isSelectedHouse ? 13 : isHoveredHouse ? 12 : 11}
+                      fontWeight={isActiveHouse || isAngular ? '700' : '600'}
                       style={{ fontFamily: 'var(--font-display)' }}
-                      fill={isSelectedHouse ? palette.angularLine : palette.textMuted}
+                      className="cosmic-wheel-sector-label"
+                      fill={
+                        isSelectedHouse
+                          ? palette.angularLine
+                          : isHoveredHouse
+                            ? goldHoverTheme.romanHover
+                            : palette.textMuted
+                      }
                     >
                       {house.roman}
                     </text>
+                  </g>
+                );
+              })}
+
+            {/* Reactive Golden Border Overlay for Hovered / Selected House Sectors */}
+            {showHouses &&
+              houseSectorGeometries.map(({ house, wedgePath }) => {
+                const isSelectedHouse = selectedHouseNum === house.house;
+                const isHoveredHouse = hoveredHouseNum === house.house;
+                const isActiveHouse = isSelectedHouse || isHoveredHouse;
+
+                return (
+                  <g
+                    key={`house-gold-border-${house.house}`}
+                    pointerEvents="none"
+                    className="cosmic-wheel-sector-glow"
+                    style={{ opacity: isActiveHouse ? 1 : 0 }}
+                  >
+                    <path
+                      d={wedgePath}
+                      fill="none"
+                      stroke={goldHoverTheme.rimStroke}
+                      strokeWidth={isSelectedHouse ? 2.15 : 1.75}
+                      strokeLinejoin="round"
+                      filter="url(#cosmicSectorGoldGlow)"
+                    />
+                    <path
+                      d={wedgePath}
+                      fill="none"
+                      stroke={goldHoverTheme.hairlineStroke}
+                      strokeWidth={0.85}
+                      strokeOpacity={0.82}
+                      strokeLinejoin="round"
+                    />
                   </g>
                 );
               })}
@@ -2292,6 +2533,49 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                 <div className="font-mono-tabular text-slate-300">
                   {hoveredPlanetInfo.planet.formattedDeg} {hoveredPlanetInfo.planet.sign.name} · Maison{' '}
                   {hoveredPlanetInfo.planet.house}
+                </div>
+              </div>
+            )}
+
+            {!hoveredPlanetInfo && hoveredHouseInfo && (
+              <div className="mt-1 rounded-2xl border border-amber-300/35 bg-[#0a0d17]/90 p-2.5 text-[11px] space-y-0.5">
+                <div className="text-[10px] uppercase tracking-wider text-amber-300">
+                  Secteur · Maison {hoveredHouseInfo.roman}
+                </div>
+                <div className="font-semibold text-amber-100">
+                  {hoveredHouseInfo.title}
+                </div>
+                <div className="font-mono-tabular text-slate-300">
+                  Cuspide : {hoveredHouseInfo.formattedDeg} {hoveredHouseInfo.sign.name}
+                </div>
+              </div>
+            )}
+
+            {!hoveredPlanetInfo && !hoveredHouseInfo && hoveredZodiacInfo && (
+              <div className="mt-1 rounded-2xl border border-amber-300/35 bg-[#0a0d17]/90 p-2.5 text-[11px] space-y-0.5">
+                <div className="text-[10px] uppercase tracking-wider text-amber-300">
+                  Segment Zodiacal
+                </div>
+                <div className="font-semibold text-amber-100 flex items-center gap-1.5">
+                  {tradition === 'chinese' ? (
+                    <>
+                      <span>{hoveredZodiacInfo.chSign.hanzi}</span>
+                      <span>
+                        {hoveredZodiacInfo.chSign.name} ({hoveredZodiacInfo.sign.name})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontFamily: 'var(--font-glyph)', fontVariantEmoji: 'text' }}>
+                        {hoveredZodiacInfo.sign.symbol}
+                      </span>
+                      <span>{hoveredZodiacInfo.sign.name}</span>
+                    </>
+                  )}
+                </div>
+                <div className="text-slate-300">
+                  {hoveredZodiacInfo.sign.element} · {hoveredZodiacInfo.sign.modality} · Maître :{' '}
+                  {hoveredZodiacInfo.sign.ruler}
                 </div>
               </div>
             )}

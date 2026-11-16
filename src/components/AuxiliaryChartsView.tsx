@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  BookMarked,
   Calendar,
   Compass,
   Heart,
+  Lock,
   MapPin,
   Orbit,
   Plus,
@@ -27,6 +29,7 @@ import {
 } from '../astro/astroEngine';
 import { CircularCosmicProgress } from './CosmicHomeView';
 import { VoiceDictationButton } from './VoiceDictationButton';
+import { AspectMatrixD3 } from './AspectMatrixD3';
 
 export interface AuxiliaryChartsViewProps {
   mode: ChartMode;
@@ -54,7 +57,11 @@ export interface AuxiliaryChartsViewProps {
   onOpenAscendantCalculator: () => void;
   onOpenWheel: () => void;
   onOpenFullSummary: () => void;
+  onOpenLibrary?: () => void;
   showVoiceSearchButtons: boolean;
+  profilesLocked?: boolean;
+  modesLocked?: boolean;
+  onOpenAdmin?: () => void;
 }
 
 type AuxSectionTab = 'natal' | 'synastry' | 'returns' | 'relocated';
@@ -79,11 +86,17 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
   planetaryReturnExact,
   relocatedLoc,
   onRelocatedLocChange,
+  baseChart,
+  outerChart,
   comparisonAspects,
   onOpenAscendantCalculator,
   onOpenWheel,
   onOpenFullSummary,
+  onOpenLibrary,
   showVoiceSearchButtons,
+  profilesLocked = false,
+  modesLocked = false,
+  onOpenAdmin,
 }) => {
   const [subTab, setSubTab] = useState<AuxSectionTab>(
     mode === 'synastry' || mode === 'composite'
@@ -167,7 +180,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
     <div className="no-print fixed inset-0 z-10 overflow-y-auto cosmic-scroll pt-20 pb-24 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-5">
         {/* Top Module Switcher */}
-        <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-5 shadow-2xl shadow-black/50">
+        <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-5 shadow-2xl shadow-black/50">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-widest uppercase bg-gradient-to-r from-amber-100 via-amber-200 to-indigo-200 bg-clip-text text-transparent">
@@ -221,7 +234,27 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
 
         {/* Sub-section 1: Natal Profile Editor */}
         {subTab === 'natal' && (
-          <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-5">
+          <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-5">
+            {profilesLocked && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/40 bg-amber-400/10 px-4 py-3 text-xs text-amber-100">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-amber-300 shrink-0" />
+                  <span>
+                    L’édition, la création et la suppression des thèmes natals sont verrouillées par l’administrateur.
+                  </span>
+                </div>
+                {onOpenAdmin && (
+                  <button
+                    type="button"
+                    onClick={onOpenAdmin}
+                    className="rounded-full border border-amber-300/50 bg-amber-400/20 px-3 py-1 text-[11px] font-semibold text-amber-100 hover:bg-amber-400/30 cursor-pointer whitespace-nowrap"
+                  >
+                    Déverrouiller Admin
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-amber-300" />
@@ -243,16 +276,28 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 </select>
                 <button
                   type="button"
+                  disabled={profilesLocked}
                   onClick={onCreateNewProfile}
-                  className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-200 hover:border-amber-300/40 cursor-pointer"
+                  className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-200 hover:border-amber-300/40 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5 text-amber-300" />
                   <span>Nouveau</span>
                 </button>
+                {onOpenLibrary && (
+                  <button
+                    type="button"
+                    onClick={onOpenLibrary}
+                    className="flex items-center gap-1 rounded-full border border-indigo-300/35 bg-indigo-500/15 px-3 py-1.5 text-xs font-medium text-indigo-100 hover:border-amber-300/50 cursor-pointer"
+                  >
+                    <BookMarked className="h-3.5 w-3.5 text-amber-300" />
+                    <span>Bibliothèque des Astres</span>
+                  </button>
+                )}
                 <button
                   type="button"
+                  disabled={profilesLocked}
                   onClick={onSaveProfile}
-                  className="flex items-center gap-1 rounded-full bg-amber-400/90 px-3.5 py-1.5 text-xs font-semibold text-slate-950 cursor-pointer"
+                  className="flex items-center gap-1 rounded-full bg-amber-400/90 px-3.5 py-1.5 text-xs font-semibold text-slate-950 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Save className="h-3.5 w-3.5" />
                   <span>Enregistrer</span>
@@ -260,9 +305,10 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 {profiles.length > 1 && (
                   <button
                     type="button"
+                    disabled={profilesLocked}
                     onClick={() => onDeleteProfile(activeProfileId)}
-                    title="Supprimer ce thème"
-                    className="rounded-full border border-rose-400/30 bg-rose-500/10 p-1.5 text-rose-200 hover:bg-rose-500/20 cursor-pointer"
+                    title={profilesLocked ? 'Suppression verrouillée' : 'Supprimer ce thème'}
+                    className="rounded-full border border-rose-400/30 bg-rose-500/10 p-1.5 text-rose-200 hover:bg-rose-500/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -276,12 +322,13 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 <div className="flex items-center gap-1.5">
                   <input
                     type="text"
+                    disabled={profilesLocked}
                     value={draftProfile.name}
                     onChange={(e) => onDraftProfileChange({ name: e.target.value })}
                     placeholder="Ex: Marie, Nathan…"
-                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-xs text-white focus:border-amber-300/60 outline-none"
+                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-xs text-white focus:border-amber-300/60 disabled:opacity-50 outline-none"
                   />
-                  {showVoiceSearchButtons && (
+                  {showVoiceSearchButtons && !profilesLocked && (
                     <VoiceDictationButton
                       onTranscript={(txt) => onDraftProfileChange({ name: txt })}
                       title="Dicter le prénom"
@@ -296,9 +343,10 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 </label>
                 <input
                   type="datetime-local"
+                  disabled={profilesLocked}
                   value={draftProfile.birthDateIso.slice(0, 16)}
                   onChange={(e) => onDraftProfileChange({ birthDateIso: e.target.value })}
-                  className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 font-mono-tabular text-xs text-white focus:border-amber-300/60 disabled:opacity-50 outline-none"
                 />
               </div>
 
@@ -307,11 +355,12 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                   Système de Maisons (33 disponibles)
                 </label>
                 <select
+                  disabled={profilesLocked}
                   value={draftProfile.houseSystem}
                   onChange={(e) =>
                     onDraftProfileChange({ houseSystem: e.target.value as HouseSystem })
                   }
-                  className="w-full rounded-xl border border-white/15 bg-[#0c101d] px-3 py-2 text-xs text-white focus:border-amber-300/60 outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-[#0c101d] px-3 py-2 text-xs text-white focus:border-amber-300/60 disabled:opacity-50 outline-none"
                 >
                   {HOUSE_SYSTEMS.map((hs) => (
                     <option key={hs.id} value={hs.id}>
@@ -343,16 +392,17 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                   <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                   <input
                     type="text"
+                    disabled={profilesLocked}
                     value={cityQuery}
                     onChange={(e) => setCityQuery(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') void handleCitySearch();
+                      if (e.key === 'Enter' && !profilesLocked) void handleCitySearch();
                     }}
                     placeholder="Commune française (35 000+), code postal (75008, 69002), département ou ville mondiale…"
-                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-400 focus:border-amber-300/60 outline-none"
+                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-400 focus:border-amber-300/60 disabled:opacity-50 outline-none"
                   />
                 </div>
-                {showVoiceSearchButtons && (
+                {showVoiceSearchButtons && !profilesLocked && (
                   <VoiceDictationButton
                     onTranscript={(txt) => {
                       setCityQuery(txt);
@@ -363,14 +413,15 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 )}
                 <button
                   type="button"
+                  disabled={profilesLocked}
                   onClick={() => void handleCitySearch()}
-                  className="rounded-xl border border-amber-300/40 bg-amber-400/15 px-4 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/25 cursor-pointer"
+                  className="rounded-xl border border-amber-300/40 bg-amber-400/15 px-4 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/25 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {searchingCity ? 'Recherche…' : 'Chercher commune'}
                 </button>
               </div>
 
-              {cityResults.length > 0 && (
+              {cityResults.length > 0 && !profilesLocked && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {cityResults.map((place, idx) => (
                     <button
@@ -398,7 +449,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
         {/* Sub-section 2: Synastry & Composite */}
         {subTab === 'synastry' && (
           <section className="space-y-4">
-            <div className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-4">
+            <div className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4 text-rose-300" />
@@ -409,8 +460,9 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    disabled={modesLocked}
                     onClick={() => onModeChange('synastry')}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer ${
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer ${
                       mode === 'synastry'
                         ? 'bg-amber-400 text-slate-950'
                         : 'border border-white/15 bg-white/[0.04] text-slate-200'
@@ -420,8 +472,9 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                   </button>
                   <button
                     type="button"
+                    disabled={modesLocked}
                     onClick={() => onModeChange('composite')}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer ${
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer ${
                       mode === 'composite'
                         ? 'bg-purple-400 text-slate-950'
                         : 'border border-white/15 bg-white/[0.04] text-slate-200'
@@ -466,7 +519,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
 
             {/* Compatibility Progress Ring Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5">
+              <div className="cosmic-glass-card flex items-center gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5">
                 <div className="flex-1">
                   <div className="font-display text-xs uppercase tracking-wider text-amber-200">
                     Affinité Affective
@@ -478,7 +531,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 <CircularCosmicProgress percentage={synMetrics.affection} color="gold" />
               </div>
 
-              <div className="flex items-center gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5">
+              <div className="cosmic-glass-card flex items-center gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5">
                 <div className="flex-1">
                   <div className="font-display text-xs uppercase tracking-wider text-sky-200">
                     Dialogue Mental
@@ -490,7 +543,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
                 <CircularCosmicProgress percentage={synMetrics.mind} color="glacier" />
               </div>
 
-              <div className="flex items-center gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5">
+              <div className="cosmic-glass-card flex items-center gap-4 rounded-3xl border border-amber-200/25 bg-[#151824]/70 backdrop-blur-xl p-5">
                 <div className="flex-1">
                   <div className="font-display text-xs uppercase tracking-wider text-purple-200">
                     Croissance Mutuelle
@@ -507,7 +560,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
 
         {/* Sub-section 3: Planetary Returns (25+ points), Progressions & Solar Arc */}
         {subTab === 'returns' && (
-          <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-5">
+          <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-5">
             <div className="flex items-center gap-2">
               <Sun className="h-4 w-4 text-amber-300" />
               <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-amber-200">
@@ -604,7 +657,7 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
 
         {/* Sub-section 4: Relocated Charts */}
         {subTab === 'relocated' && (
-          <section className="rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-4">
+          <section className="cosmic-glass-panel rounded-3xl border border-amber-200/30 bg-[#151824]/75 backdrop-blur-xl p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Compass className="h-4 w-4 text-sky-300" />
@@ -687,6 +740,15 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
             </div>
           </section>
         )}
+
+        {/* Interactive D3.js Aspect Matrix (adapts to Synastry, Returns, Progressions, Relocated & Natal) */}
+        <AspectMatrixD3
+          mode={mode}
+          baseChart={baseChart}
+          outerChart={outerChart}
+          comparisonAspects={comparisonAspects}
+          onOpenWheel={onOpenWheel}
+        />
       </div>
     </div>
   );
