@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   BookMarked,
   Calendar,
+  Check,
   Compass,
+  Copy,
   Heart,
   Lock,
   MapPin,
@@ -16,10 +18,13 @@ import {
   User,
 } from 'lucide-react';
 import {
+  analyzeSolarReturn,
   AstroChart,
   ChartMode,
   CITY_PRESETS,
   ComparisonAspectInfo,
+  findHouseForLongitude,
+  formatDegreeInSign,
   GeocodedPlace,
   HOUSE_SYSTEMS,
   HouseSystem,
@@ -27,6 +32,7 @@ import {
   RETURN_CELESTIAL_POINTS,
   searchPlacesByQuery,
 } from '../astro/astroEngine';
+import { generateChartInterpretation } from '../astro/interpretations';
 import { CircularCosmicProgress } from './CosmicHomeView';
 import { VoiceDictationButton } from './VoiceDictationButton';
 import { AspectMatrixD3 } from './AspectMatrixD3';
@@ -46,6 +52,15 @@ export interface AuxiliaryChartsViewProps {
   onPartnerProfileChange: (id: string) => void;
   solarReturnYear: number;
   onSolarReturnYearChange: (y: number) => void;
+  solarReturnCityId?: string;
+  onSolarReturnCityChange?: (id: string) => void;
+  solarReturnCustomLoc?: { name: string; latitude: number; longitude: number } | null;
+  onSolarReturnCustomLocChange?: (
+    loc: { name: string; latitude: number; longitude: number } | null
+  ) => void;
+  solarReturnExactDate?: Date | null;
+  birthLocation?: { cityName: string; latitude: number; longitude: number };
+  onUseBirthLocationForSR?: () => void;
   planetaryReturnPointId: string;
   onPlanetaryReturnPointChange: (id: string) => void;
   planetaryReturnExact: { date: Date; exact: boolean; angularErrorDeg: number } | null;
@@ -81,6 +96,13 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
   onPartnerProfileChange,
   solarReturnYear,
   onSolarReturnYearChange,
+  solarReturnCityId = 'paris',
+  onSolarReturnCityChange,
+  solarReturnCustomLoc = null,
+  onSolarReturnCustomLocChange,
+  solarReturnExactDate = null,
+  birthLocation,
+  onUseBirthLocationForSR,
   planetaryReturnPointId,
   onPlanetaryReturnPointChange,
   planetaryReturnExact,
@@ -140,6 +162,32 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
   const [relocResults, setRelocResults] = useState<GeocodedPlace[]>([]);
   const [searchingReloc, setSearchingReloc] = useState(false);
 
+  // Birthday residence location search & manual GPS for Solar Return
+  const [srCityQuery, setSrCityQuery] = useState('');
+  const [srCityResults, setSrCityResults] = useState<GeocodedPlace[]>([]);
+  const [searchingSrCity, setSearchingSrCity] = useState(false);
+  const [srManualOpen, setSrManualOpen] = useState(false);
+
+  const activeSrLocation = useMemo(() => {
+    if (solarReturnCustomLoc) return solarReturnCustomLoc;
+    const preset = CITY_PRESETS.find((c) => c.id === solarReturnCityId) ?? CITY_PRESETS[0];
+    return {
+      name: `${preset.name} (${preset.country})`,
+      latitude: preset.latitude,
+      longitude: preset.longitude,
+    };
+  }, [solarReturnCustomLoc, solarReturnCityId]);
+
+  const [srManualName, setSrManualName] = useState(activeSrLocation.name);
+  const [srManualLat, setSrManualLat] = useState(activeSrLocation.latitude.toFixed(4));
+  const [srManualLon, setSrManualLon] = useState(activeSrLocation.longitude.toFixed(4));
+
+  useEffect(() => {
+    setSrManualName(activeSrLocation.name);
+    setSrManualLat(activeSrLocation.latitude.toFixed(4));
+    setSrManualLon(activeSrLocation.longitude.toFixed(4));
+  }, [activeSrLocation]);
+
   const handleCitySearch = async (qStr?: string) => {
     const q = (qStr ?? cityQuery).trim();
     if (!q) return;
@@ -164,6 +212,38 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
     }
   };
 
+  const handleSrCitySearch = async (qStr?: string) => {
+    const q = (qStr ?? srCityQuery).trim();
+    if (!q) return;
+    setSearchingSrCity(true);
+    try {
+      const res = await searchPlacesByQuery(q);
+      setSrCityResults(res);
+      if (res.length === 1 && onSolarReturnCustomLocChange) {
+        onSolarReturnCustomLocChange({
+          name: res[0].name,
+          latitude: res[0].latitude,
+          longitude: res[0].longitude,
+        });
+      }
+    } finally {
+      setSearchingSrCity(false);
+    }
+  };
+
+  const handleApplySrManualGps = () => {
+    const lat = Number(srManualLat.replace(',', '.'));
+    const lon = Number(srManualLon.replace(',', '.'));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const clampedLat = Math.max(-89.9, Math.min(89.9, lat));
+    const clampedLon = Math.max(-180, Math.min(180, lon));
+    onSolarReturnCustomLocChange?.({
+      name: srManualName.trim() || `Résidence (${clampedLat.toFixed(2)}°, ${clampedLon.toFixed(2)}°)`,
+      latitude: clampedLat,
+      longitude: clampedLon,
+    });
+  };
+
   // Synastry compatibility progress ring metrics
   const synMetrics = useMemo(() => {
     const harm = comparisonAspects.filter(
@@ -175,6 +255,23 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
     const evolution = Math.min(98, Math.max(65, 74 + tense * 3 + harm * 3));
     return { affection, mind, evolution };
   }, [comparisonAspects]);
+
+  const [copiedSrSynth, setCopiedSrSynth] = useState(false);
+
+  const srSynthesis = useMemo(() => {
+    if (mode !== 'solarReturn' || !outerChart) return null;
+    const analysis = analyzeSolarReturn(baseChart, outerChart);
+    const report = generateChartInterpretation({
+      mode: 'solarReturn',
+      tradition: 'western',
+      baseChart,
+      outerChart,
+      comparisonAspects,
+      solarReturnAnalysis: analysis,
+      comparativeAnalysis: null,
+    });
+    return report.solarReturnSynthesis ?? null;
+  }, [mode, baseChart, outerChart, comparisonAspects]);
 
   return (
     <div className="no-print fixed inset-0 z-10 overflow-y-auto cosmic-scroll pt-20 pb-24 px-4 sm:px-6 lg:px-8">
@@ -633,23 +730,389 @@ export const AuxiliaryChartsView: React.FC<AuxiliaryChartsViewProps> = ({
               </div>
             </div>
 
-            {planetaryReturnExact && (
+            {/* Implantation du lieu de résidence le jour de l’anniversaire */}
+            <div className="rounded-2xl border border-amber-300/25 bg-[#0b0e19]/85 p-4 space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-amber-300 shrink-0" />
+                  <div>
+                    <h3 className="font-display text-xs font-semibold uppercase tracking-widest text-amber-200">
+                      Implantation du lieu de résidence — Jour de l’anniversaire
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Indispensable pour calculer l’Ascendant, le Milieu du Ciel et les Maisons de votre Révolution Solaire {solarReturnYear}.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {birthLocation && onUseBirthLocationForSR && (
+                    <button
+                      type="button"
+                      disabled={modesLocked}
+                      onClick={onUseBirthLocationForSR}
+                      title={`Utiliser le lieu natal (${birthLocation.cityName})`}
+                      className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-200 hover:border-amber-300/45 hover:text-amber-100 disabled:opacity-50 cursor-pointer"
+                    >
+                      Même ville que naissance ({birthLocation.cityName.split('(')[0].trim()})
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSrManualOpen((v) => !v)}
+                    className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-all cursor-pointer ${
+                      srManualOpen
+                        ? 'border-sky-300/50 bg-sky-400/15 text-sky-100'
+                        : 'border-white/15 bg-white/[0.04] text-slate-300 hover:border-sky-300/40'
+                    }`}
+                  >
+                    GPS précis
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-xs">
+                <div>
+                  <span className="text-slate-400">Résidence anniversaire implantée : </span>
+                  <strong className="text-amber-200">{activeSrLocation.name}</strong>{' '}
+                  <span className="font-mono-tabular text-[11px] text-slate-400">
+                    ({activeSrLocation.latitude.toFixed(3)}°, {activeSrLocation.longitude.toFixed(3)}°)
+                  </span>
+                </div>
+                {mode === 'solarReturn' && outerChart && (() => {
+                  const srAscFmt = formatDegreeInSign(outerChart.ascendant);
+                  const srMcFmt = formatDegreeInSign(outerChart.midheaven);
+                  const ascNatalHouse = baseChart.houses[findHouseForLongitude(outerChart.ascendant, baseChart.houses) - 1];
+                  return (
+                    <div className="font-mono-tabular text-[11px] text-sky-200">
+                      ASC RS : <span className="font-glyph text-amber-200">{outerChart.ascSign.symbol}</span>{' '}
+                      <strong className="text-amber-100">{srAscFmt.formattedDeg} {outerChart.ascSign.name}</strong>{' '}
+                      <span className="text-indigo-200">(M.{ascNatalHouse.roman} nat.)</span> · MC RS :{' '}
+                      {outerChart.mcSign.symbol} {srMcFmt.formattedDeg} {outerChart.mcSign.name}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-slate-300 mb-1">
+                    Villes rapides (France & Monde)
+                  </label>
+                  <select
+                    disabled={modesLocked}
+                    value={solarReturnCustomLoc ? '__custom__' : solarReturnCityId}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') return;
+                      onSolarReturnCustomLocChange?.(null);
+                      onSolarReturnCityChange?.(e.target.value);
+                    }}
+                    className="w-full rounded-xl border border-white/15 bg-[#0c101d] px-3 py-2 text-xs text-white disabled:opacity-50"
+                  >
+                    {solarReturnCustomLoc && (
+                      <option value="__custom__">{solarReturnCustomLoc.name}</option>
+                    )}
+                    <optgroup label="France (Villes & Préfectures)">
+                      {CITY_PRESETS.filter((c) => c.country === 'France').map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.department ? `${c.department} · ` : ''}France)
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Francophonie & Monde">
+                      {CITY_PRESETS.filter((c) => c.country !== 'France').map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.country})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-slate-300 mb-1">
+                    Rechercher une commune (nom, CP) ou ville du monde
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        disabled={modesLocked}
+                        value={srCityQuery}
+                        onChange={(e) => setSrCityQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handleSrCitySearch();
+                        }}
+                        placeholder="Ex: 06000, Annecy, Tokyo, Montréal..."
+                        className="w-full rounded-xl border border-white/15 bg-white/[0.04] pl-8 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-300/60 outline-none disabled:opacity-50"
+                      />
+                    </div>
+                    {showVoiceSearchButtons && (
+                      <VoiceDictationButton
+                        onTranscript={(txt) => {
+                          setSrCityQuery(txt);
+                          void handleSrCitySearch(txt);
+                        }}
+                        title="Dicter le lieu de résidence anniversaire"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      disabled={modesLocked || searchingSrCity}
+                      onClick={() => void handleSrCitySearch()}
+                      className="rounded-xl border border-amber-300/40 bg-amber-400/15 px-3.5 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/25 disabled:opacity-50 cursor-pointer"
+                    >
+                      {searchingSrCity ? '…' : 'OK'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {srCityResults.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {srCityResults.slice(0, 8).map((pl, idx) => {
+                    const selected = solarReturnCustomLoc?.name === pl.name;
+                    return (
+                      <button
+                        key={`${pl.name}-${idx}`}
+                        type="button"
+                        onClick={() => {
+                          onSolarReturnCustomLocChange?.({
+                            name: pl.name,
+                            latitude: pl.latitude,
+                            longitude: pl.longitude,
+                          });
+                          setSrCityResults([]);
+                        }}
+                        className={`rounded-full border px-3 py-1 text-[11px] transition-all cursor-pointer ${
+                          selected
+                            ? 'border-amber-300/60 bg-amber-400/20 text-amber-100'
+                            : 'border-white/15 bg-[#0c101d] text-slate-200 hover:border-amber-300/45'
+                        }`}
+                      >
+                        {pl.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {srManualOpen && (
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1 border-t border-white/10">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] text-slate-400 mb-1">Nom du lieu / Résidence</label>
+                    <input
+                      type="text"
+                      value={srManualName}
+                      onChange={(e) => setSrManualName(e.target.value)}
+                      placeholder="Ex: Résidence Lyon 6e"
+                      className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">Latitude (°)</label>
+                    <input
+                      type="text"
+                      value={srManualLat}
+                      onChange={(e) => setSrManualLat(e.target.value)}
+                      className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono-tabular text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">Longitude (°)</label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={srManualLon}
+                        onChange={(e) => setSrManualLon(e.target.value)}
+                        className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono-tabular text-xs text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplySrManualGps}
+                        className="rounded-xl bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-300 cursor-pointer shrink-0"
+                      >
+                        OK
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Instant exact de Révolution Solaire / Planétaire + bouton d'affichage sur la roue */}
+            {(mode === 'solarReturn' && solarReturnExactDate ? solarReturnExactDate : planetaryReturnExact?.date) && (
               <div className="rounded-2xl border border-amber-300/30 bg-[#0b0e19] p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-300 shrink-0" />
                   <span>
-                    Instant calculé du retour :{' '}
+                    {mode === 'solarReturn' ? `Révolution Solaire ${solarReturnYear} à ` : 'Instant calculé du retour : '}
+                    {mode === 'solarReturn' && (
+                      <strong className="text-amber-100">{activeSrLocation.name} · </strong>
+                    )}
                     <strong className="font-mono-tabular text-amber-200">
                       {new Intl.DateTimeFormat('fr-FR', {
                         dateStyle: 'full',
                         timeStyle: 'short',
-                      }).format(planetaryReturnExact.date)}
+                      }).format(
+                        mode === 'solarReturn' && solarReturnExactDate
+                          ? solarReturnExactDate
+                          : planetaryReturnExact!.date
+                      )}
                     </strong>
                   </span>
                 </div>
-                <span className="font-mono-tabular text-[11px] text-sky-300">
-                  Écart orbe : {planetaryReturnExact.angularErrorDeg}°
-                </span>
+                <div className="flex items-center gap-2">
+                  {planetaryReturnExact && mode !== 'solarReturn' && (
+                    <span className="font-mono-tabular text-[11px] text-sky-300">
+                      Écart orbe : {planetaryReturnExact.angularErrorDeg}°
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mode !== 'solarReturn' && mode !== 'planetaryReturn' && mode !== 'lunarReturn') {
+                        onModeChange('solarReturn');
+                      }
+                      onOpenWheel();
+                    }}
+                    className="rounded-full bg-gradient-to-r from-amber-500/85 to-yellow-400/85 px-3.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:scale-[1.02] transition-all cursor-pointer"
+                  >
+                    Afficher sur la Roue
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mode !== 'solarReturn' && mode !== 'planetaryReturn' && mode !== 'lunarReturn') {
+                        onModeChange('solarReturn');
+                      }
+                      onOpenFullSummary();
+                    }}
+                    className="rounded-full border border-amber-300/45 bg-amber-400/15 px-3.5 py-1.5 text-[11px] font-semibold text-amber-100 hover:bg-amber-400/25 transition-all cursor-pointer"
+                  >
+                    Interprétation complète
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Synthèse croisée Planètes + Maisons + Aspects de la Révolution Solaire */}
+            {mode === 'solarReturn' && srSynthesis && (
+              <div className="rounded-2xl border border-amber-300/35 bg-gradient-to-br from-amber-500/[0.06] via-[#0b0e19]/95 to-sky-500/[0.06] p-5 space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-300 font-semibold">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                      <span>{srSynthesis.headline}</span>
+                    </div>
+                    <div className="text-xs text-sky-200 mt-1">{srSynthesis.subtitle}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard
+                          ?.writeText(srSynthesis.plainTextExport)
+                          .then(() => {
+                            setCopiedSrSynth(true);
+                            setTimeout(() => setCopiedSrSynth(false), 2200);
+                          });
+                      }}
+                      className="flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-amber-100 hover:border-amber-300/60 hover:bg-amber-400/15 transition-all cursor-pointer"
+                    >
+                      {copiedSrSynth ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-300" />
+                          <span className="text-emerald-200">Synthèse copiée</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5 text-amber-300" />
+                          <span>Copier la synthèse</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onOpenFullSummary}
+                      className="rounded-full bg-amber-400/90 px-3.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-amber-300 transition-all cursor-pointer"
+                    >
+                      Détails Planètes / Maisons / Aspects
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs leading-relaxed text-slate-100 bg-white/[0.03] border border-white/10 rounded-xl p-3.5">
+                  {srSynthesis.executiveSynthesis}
+                </p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {/* Planètes-Piliers */}
+                  <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 space-y-2.5">
+                    <div className="text-[10.5px] uppercase tracking-wider font-semibold text-amber-200">
+                      Planètes-Piliers (Signe · Maison · Aspect)
+                    </div>
+                    <div className="space-y-2">
+                      {srSynthesis.pillarPlanets.map((pp) => (
+                        <div key={pp.planetId} className="rounded-lg border border-white/10 bg-[#0b0e19]/80 p-2.5 space-y-1">
+                          <div className="flex items-center justify-between gap-2 text-xs">
+                            <span className="font-semibold text-amber-100">
+                              <span className="font-glyph text-amber-300">{pp.symbol}</span> {pp.name}
+                            </span>
+                            <span className="text-[10px] text-amber-200/85">{pp.roleReason}</span>
+                          </div>
+                          <div className="font-mono-tabular text-[10px] text-sky-200">{pp.positionSummary}</div>
+                          <p className="text-[11px] leading-relaxed text-slate-300">{pp.synthesis}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Maisons Dominantes + Domaines de vie */}
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 space-y-2">
+                      <div className="text-[10.5px] uppercase tracking-wider font-semibold text-sky-200">
+                        Maisons RS les plus activées
+                      </div>
+                      <div className="space-y-2">
+                        {srSynthesis.dominantHouses.map((dh) => (
+                          <div key={dh.house} className="rounded-lg border border-sky-300/15 bg-[#0b0e19]/80 p-2.5 space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-semibold text-sky-100">
+                                Maison {dh.roman} RS · {dh.title}
+                              </span>
+                              <span className="text-[10px] text-indigo-200">→ M.{dh.superposedNatalRoman} nat.</span>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-slate-300">{dh.synthesis}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-amber-300/20 bg-amber-400/[0.05] p-3.5 space-y-1.5">
+                      <div className="text-[10.5px] uppercase tracking-wider font-semibold text-amber-200">
+                        Caps d’Action & Vigilances
+                      </div>
+                      {srSynthesis.actionLevers.map((lev) => (
+                        <div key={lev} className="text-[11px] leading-relaxed text-slate-200">
+                          • {lev}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4 Axes de vie */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {srSynthesis.lifeAxes.map((ax) => (
+                    <div key={ax.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 space-y-1">
+                      <div className="text-xs font-semibold text-amber-100">{ax.title}</div>
+                      <div className="font-mono-tabular text-[10px] text-slate-400">{ax.housesInvolved}</div>
+                      <p className="text-[11px] leading-relaxed text-slate-300">{ax.synthesis}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </section>

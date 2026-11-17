@@ -279,7 +279,11 @@ export async function exportChartReportToPdf(
   doc.setTextColor(30, 41, 59);
   doc.text(
     sanitizePdfText(
-      `ASC : ${baseChart.ascSign.name}  |  MC : ${baseChart.mcSign.name}  |  Pilier BaZi : ${bazi.yearPillar.label}`
+      `ASC Natal : ${baseChart.ascSign.name}${
+        mode === 'solarReturn' && outerChart && solarReturnAnalysis
+          ? `  |  ASC RS : ${solarReturnAnalysis.ascDegFormatted} ${outerChart.ascSign.name} (M.${solarReturnAnalysis.ascInNatalHouse.roman} nat.)`
+          : ''
+      }  |  MC : ${baseChart.mcSign.name}  |  Pilier BaZi : ${bazi.yearPillar.label}`
     ),
     margin,
     y
@@ -397,6 +401,28 @@ export async function exportChartReportToPdf(
   // Synthesis & Main Sections
   drawSectionHeading(`Synthese : ${interpretation.headline}`);
   drawParagraph(interpretation.synthesis, 9.2, [15, 23, 42]);
+
+  if (interpretation.solarReturnSynthesis) {
+    const srs = interpretation.solarReturnSynthesis;
+    drawSectionHeading(`Analyse Croisee Revolution Solaire (Planetes + Maisons + Aspects)`, [146, 64, 14]);
+    drawParagraph(
+      `${srs.aspectClimate.climateLabel} - ${srs.aspectClimate.climateNarrative}`,
+      8.5,
+      [30, 41, 59]
+    );
+    for (const pp of srs.pillarPlanets) {
+      drawParagraph(`${pp.name} [${pp.roleReason}] (${pp.positionSummary}) : ${pp.synthesis}`, 8.3, [51, 65, 85], 2);
+    }
+    for (const dh of srs.dominantHouses) {
+      drawParagraph(`Maison ${dh.roman} RS (-> M.${dh.superposedNatalRoman} natale) : ${dh.synthesis}`, 8.3, [51, 65, 85], 2);
+    }
+    for (const ax of srs.lifeAxes) {
+      drawParagraph(`${ax.title} : ${ax.synthesis}`, 8.3, [51, 65, 85], 2);
+    }
+    for (const lev of srs.actionLevers) {
+      drawParagraph(`- ${lev}`, 8.2, [120, 53, 15], 3);
+    }
+  }
 
   for (const sec of interpretation.sections) {
     ensureSpace(14);

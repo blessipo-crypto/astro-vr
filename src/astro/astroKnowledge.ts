@@ -1007,6 +1007,60 @@ export function getSolarReturnHouseDetailedText(
   return `${baseMeaning} La cuspide RS en ${srHouse.sign.symbol} ${srHouse.sign.name} (${srHouse.sign.keywords.toLowerCase()}) se superpose à votre Maison ${natalSuperposedHouse.roman} natale (${natalSuperposedHouse.title}), reliant ce thème annuel à ${PLANET_HOUSE_FOCUS[natalSuperposedHouse.house] ?? natalSuperposedHouse.meaning}.${rulerSentence}${occSentence}`;
 }
 
+const SOLAR_RETURN_ASC_IN_NATAL_HOUSE: Record<number, string> = {
+  1: 'Configuration majeure de nouveau départ : l’Ascendant annuel revient dans votre Maison I natale, ce qui inaugure un cycle personnel direct, un changement d’image ou de posture, et un besoin fort d’agir par vous-même.',
+  2: 'Les thèmes financiers, la sécurité matérielle, vos talents concrets et la juste valorisation de vos efforts deviennent la porte d’entrée de toute votre année anniversaire.',
+  3: 'Votre année s’ouvre sous le signe de la mobilité, des échanges intellectuels, des démarches administratives ou commerciales, des formations courtes et du lien actif avec l’entourage proche.',
+  4: 'Priorité à la sphère privée, au foyer, au lieu de résidence ou à l’histoire familiale : l’année invite à consolider vos racines, déménager, réaménager votre espace ou protéger votre équilibre intérieur.',
+  5: 'L’année s’éclaire par le cœur, la créativité personnelle, les projets artistiques ou ludiques, les enfants et le plaisir d’exprimer sans retenue ce qui vous anime.',
+  6: 'L’organisation quotidienne, l’hygiène de vie, les méthodes de travail et l’efficacité pratique prennent le devant de la scène : année idéale pour affiner vos routines et prendre soin de votre vitalité.',
+  7: 'L’autre joue un rôle déterminant cette année : couple, associations, contrats importants, clients ou négociations orientent vos choix et vous reflètent ce qu’il faut ajuster.',
+  8: 'Année de lucidité psychologique et de mue profonde : tri salutaire, gestion de ressources partagées (investissements, fiscalité, crédits, héritages) et régénération intérieure.',
+  9: 'Votre horizon s’élargit nettement : voyages lointains, études supérieures, enseignement, publication, droit ou quête de sens deviennent les moteurs principaux des 12 mois.',
+  10: 'Mise en lumière sociale et professionnelle directe : responsabilités accrues, objectifs de carrière, visibilité publique ou redéfinition de votre statut sont au cœur de l’année.',
+  11: 'Projets collectifs, réseaux professionnels, amitiés choisies, appuis extérieurs et idéaux d’avenir donnent l’élan principal de cette Révolution Solaire.',
+  12: 'Année de maturation silencieuse, de retrait fécond ou de travail en coulisses : vous préparez un futur cycle tout en clôturant des dossiers ou schémas devenus caducs.',
+};
+
+export function getSolarReturnAscInNatalHouseInterpretation(houseNum: number): string {
+  return SOLAR_RETURN_ASC_IN_NATAL_HOUSE[houseNum] ?? '';
+}
+
+const SOLAR_RETURN_SUN_REFINED: Record<number, string> = {
+  1: 'Le Soleil en Maison I RS vous place aux commandes directes de l’année : votre énergie vitale demande à se manifester sans intermédiaire, mais veillez à éviter l’impatience ou l’excès d’individualisme.',
+  2: 'Le Soleil en Maison II RS éclaire vos revenus, votre rapport à la valeur personnelle et vos investissements tangibles : privilégiez les démarches rentables, concrètes et mesurables.',
+  3: 'Le Soleil en Maison III RS dynamise vos idées, écrits, contrats courts, apprentissages et déplacements : votre rayonnement passe par le dialogue, la pédagogie et la curiosité.',
+  4: 'Le Soleil en Maison IV RS invite à recentrer votre vitalité sur votre base de vie, la famille, un bien immobilier ou un projet intime mûri loin du bruit extérieur.',
+  5: 'Le Soleil en Maison V RS réveille la joie créative, les élans sentimentaux, la prise de risque artistique ou entrepreneuriale : l’année récompense ce que vous faites avec enthousiasme.',
+  6: 'Le Soleil en Maison VI RS demande rigueur, maîtrise technique, sens du service utile et attention accrue à l’équilibre corps-esprit dans votre quotidien professionnel.',
+  7: 'Le Soleil en Maison VII RS place la réussite de l’année dans l’alliance, la négociation équilibrée, la vie à deux ou l’engagement contractuel clair avec autrui.',
+  8: 'Le Soleil en Maison VIII RS pousse à transformer ce qui stagne, clarifier les engagements financiers communs et gagner en maîtrise émotionnelle face aux changements.',
+  9: 'Le Soleil en Maison IX RS appelle à dépasser vos frontières habituelles par le voyage, la formation supérieure, la recherche, le conseil ou la transmission.',
+  10: 'Le Soleil en Maison X RS (position particulièrement puissante) favorise l’ambition assumée, la reconnaissance méritée, les promotions et la prise de responsabilités publiques.',
+  11: 'Le Soleil en Maison XI RS rayonne à travers les projets d’équipe, l’engagement associatif, les cercles d’influence et l’innovation tournée vers l’avenir.',
+  12: 'Le Soleil en Maison XII RS oriente votre lumière vers la vie intérieure, la recherche discrète, la solidarité ou la préparation méthodique d’un lancement pour l’année suivante.',
+};
+
+export function getSolarReturnSunInHouseRefined(houseNum: number): string {
+  return SOLAR_RETURN_SUN_REFINED[houseNum] ?? getSolarReturnSunHouseMeaning(houseNum);
+}
+
+export function getSolarReturnAngularPlanetMeaning(
+  planetId: PlanetId,
+  planetName: string,
+  angleName: 'ASC' | 'MC' | 'DSC' | 'IC',
+  orb: number
+): string {
+  const angleRole: Record<'ASC' | 'MC' | 'DSC' | 'IC', string> = {
+    ASC: 'à l’Ascendant RS (colore directement votre vitalité, vos décisions immédiates et la manière dont les autres vous perçoivent toute l’année)',
+    MC: 'au Milieu du Ciel RS (domine votre vie professionnelle, votre statut public, vos ambitions et votre direction sociale)',
+    DSC: 'au Descendant RS (agit directement sur le couple, les partenariats, les contrats et les rencontres clés de l’année)',
+    IC: 'au Fond du Ciel RS (transforme l’atmosphère du foyer, la vie familiale, l’immobilier et votre socle psychologique)',
+  };
+  const planetKey = SOLAR_RETURN_PLANET_ROLE[planetId] ?? planetName;
+  return `${planetName} conjoint ${angleName} RS (orbe ${orb}°) — dominante angulaire majeure ${angleRole[angleName]} : ${planetKey.charAt(0).toLowerCase()}${planetKey.slice(1)}.`;
+}
+
 export function getComparisonPlanetDetailedText(
   mode: ChartMode,
   outerPlanet: PlanetPosition,

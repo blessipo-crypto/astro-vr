@@ -40,6 +40,7 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           npm run build
+          npm run verify:security
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
@@ -75,6 +76,7 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           npm run build
+          npm run verify:security
 
       - name: Build Capacitor APK (Release Signé)
         run: |
@@ -242,11 +244,15 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           npm run build
+          npm run verify:security
           rm -rf electron/dist
           cp -r dist electron/dist
 
       - name: Build Windows .exe (Portable + Setup)
         shell: bash
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
           cd electron
           npm install
@@ -274,8 +280,24 @@ jobs:
           path: ./release-assets
           merge-multiple: true
 
-      - name: List downloaded assets
-        run: ls -lh ./release-assets || true
+      - name: Scan Antivirus (ClamAV) & Génération SHA256SUMS.txt
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clamav
+          sudo freshclam || true
+          echo "=== Uranie VR — Rapport de Scan Antivirus (ClamAV) ===" > ./release-assets/ANTIVIRUS-SCAN-REPORT.txt
+          date -u +"Date UTC : %Y-%m-%dT%H:%M:%SZ" >> ./release-assets/ANTIVIRUS-SCAN-REPORT.txt
+          clamscan --version >> ./release-assets/ANTIVIRUS-SCAN-REPORT.txt || true
+          echo "" >> ./release-assets/ANTIVIRUS-SCAN-REPORT.txt
+          clamscan -r --infected ./release-assets/*.exe ./release-assets/*.apk >> ./release-assets/ANTIVIRUS-SCAN-REPORT.txt 2>&1 || {
+            STATUS=$?
+            cat ./release-assets/ANTIVIRUS-SCAN-REPORT.txt
+            exit $STATUS
+          }
+          (cd ./release-assets && sha256sum *.exe *.apk > SHA256SUMS.txt)
+          cat ./release-assets/SHA256SUMS.txt
+          cat ./release-assets/ANTIVIRUS-SCAN-REPORT.txt
 
       - name: Create or update GitHub Release (latest)
         uses: softprops/action-gh-release@v2
@@ -284,13 +306,16 @@ jobs:
           name: Uranie VR — Téléchargements PC & Meta Quest
           make_latest: true
           body: |
-            Téléchargements directs générés automatiquement :
+            Téléchargements directs générés automatiquement (vérifiés par audit statique, scan ClamAV et empreintes SHA-256) :
             - **PC Windows (Portable, sans installation)** : `Uranie-VR-Portable.exe`
             - **PC Windows (Installateur avec raccourcis)** : `Uranie-VR-Setup.exe`
             - **Meta Quest WebXR (VR + Passthrough via GitHub Pages)** : `uranie-vr-quest3-webxr.apk`
             - **Meta Quest Autonome Hors-Ligne** : `uranie-vr-autonome.apk`
+            - **Vérification d’intégrité & Antivirus** : `SHA256SUMS.txt` et `ANTIVIRUS-SCAN-REPORT.txt`
 
             Version WebXR en ligne : https://blessipo-crypto.github.io/astro-vr/
           files: |
             ./release-assets/*.exe
             ./release-assets/*.apk
+            ./release-assets/SHA256SUMS.txt
+            ./release-assets/ANTIVIRUS-SCAN-REPORT.txt

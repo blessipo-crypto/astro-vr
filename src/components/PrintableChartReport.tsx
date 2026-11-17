@@ -394,8 +394,14 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
         </div>
         <div className="text-right text-[11px] text-slate-700 shrink-0">
           <div>
-            <strong>ASC</strong> : {baseChart.ascSign.symbol} {baseChart.ascSign.name}
+            <strong>ASC Natal</strong> : {baseChart.ascSign.symbol} {baseChart.ascSign.name}
           </div>
+          {mode === 'solarReturn' && outerChart && solarReturnAnalysis && (
+            <div className="text-sky-900">
+              <strong>ASC RS</strong> : {outerChart.ascSign.symbol} {solarReturnAnalysis.ascDegFormatted}{' '}
+              {outerChart.ascSign.name} (M.{solarReturnAnalysis.ascInNatalHouse.roman} nat.)
+            </div>
+          )}
           <div>
             <strong>MC</strong> : {baseChart.mcSign.symbol} {baseChart.mcSign.name}
           </div>
@@ -509,6 +515,41 @@ export const PrintableChartReport: React.FC<PrintableChartReportProps> = ({
             {interpretation.synthesis}
           </p>
         )}
+
+        {interpretation.solarReturnSynthesis && (
+          <div className="print-break-inside-avoid border border-amber-300 rounded p-3 bg-amber-50/40 space-y-2">
+            <div className="font-bold text-amber-950 text-xs uppercase tracking-wide">
+              {interpretation.solarReturnSynthesis.headline} — {interpretation.solarReturnSynthesis.aspectClimate.climateLabel}
+            </div>
+            <p className="text-[11px] text-slate-800 leading-relaxed">
+              {interpretation.solarReturnSynthesis.aspectClimate.climateNarrative}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="border border-slate-200 rounded p-2 bg-white space-y-1">
+                <div className="font-bold text-slate-900 text-[10.5px] uppercase">Planètes-Piliers de l’Année</div>
+                {interpretation.solarReturnSynthesis.pillarPlanets.map((pp) => (
+                  <div key={pp.planetId} className="text-[10px] leading-snug text-slate-700 border-t border-slate-100 pt-1">
+                    <strong>{pp.symbol} {pp.name}</strong> ({pp.positionSummary}) : {pp.synthesis}
+                  </div>
+                ))}
+              </div>
+              <div className="border border-slate-200 rounded p-2 bg-white space-y-1">
+                <div className="font-bold text-slate-900 text-[10.5px] uppercase">Maisons Activées & Axes de Vie</div>
+                {interpretation.solarReturnSynthesis.dominantHouses.map((dh) => (
+                  <div key={dh.house} className="text-[10px] leading-snug text-slate-700 border-t border-slate-100 pt-1">
+                    <strong>Maison {dh.roman} RS (→ M.{dh.superposedNatalRoman} nat.)</strong> : {dh.synthesis}
+                  </div>
+                ))}
+                <div className="border-t border-slate-200 pt-1 mt-1 space-y-0.5">
+                  {interpretation.solarReturnSynthesis.actionLevers.map((lev) => (
+                    <div key={lev} className="text-[10px] text-amber-950">• {lev}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {interpretation.sections.map((sec) => (
             <div key={sec.title} className="print-break-inside-avoid border border-slate-200 rounded p-2.5">

@@ -2087,12 +2087,29 @@ export function calculateComparisonAspects(
 }
 
 export interface SolarReturnAnalysis {
+  ascDegFormatted: string;
+  mcDegFormatted: string;
+  ascDecan: number;
   ascInNatalHouse: HouseCusp;
   mcInNatalHouse: HouseCusp;
   sunInSrHouse: HouseCusp;
+  sunInNatalHouse: HouseCusp;
   moonInSrHouse: HouseCusp;
+  moonInNatalHouse: HouseCusp;
   srAscRuler: string;
   srAscRulerPlanet: PlanetPosition | null;
+  srAscRulerSrHouse: HouseCusp | null;
+  srAscRulerNatalHouse: HouseCusp | null;
+  natalAscRulerInSr: PlanetPosition | null;
+  natalAscRulerSrHouse: HouseCusp | null;
+  natalAscRulerNatalOverlayHouse: HouseCusp | null;
+  ascRelationToNatal: {
+    label: string;
+    angleDeg: number;
+    tone: 'pivot' | 'fluid' | 'dynamic' | 'complement';
+  };
+  retrogradeSrPlanets: PlanetPosition[];
+  dominantSrElement: ElementType;
   angularPlanets: Array<{
     planet: PlanetPosition;
     angleName: 'ASC' | 'MC' | 'DSC' | 'IC';
@@ -2101,10 +2118,60 @@ export interface SolarReturnAnalysis {
   summaryText: string;
 }
 
+function describeAscRelation(ascSrLon: number, ascNatalLon: number): SolarReturnAnalysis['ascRelationToNatal'] {
+  const raw = Math.abs(ascSrLon - ascNatalLon) % 360;
+  const sep = raw > 180 ? 360 - raw : raw;
+  const rounded = Math.round(sep);
+  if (sep <= 15) {
+    return {
+      label: 'Conjonction à l’Ascendant Natal (Année-Pivot)',
+      angleDeg: rounded,
+      tone: 'pivot',
+    };
+  }
+  if (Math.abs(sep - 180) <= 15) {
+    return {
+      label: 'Opposition à l’Ascendant Natal (Miroir relationnel)',
+      angleDeg: rounded,
+      tone: 'dynamic',
+    };
+  }
+  if (Math.abs(sep - 90) <= 15) {
+    return {
+      label: 'Carré à l’Ascendant Natal (Tournant & réajustement)',
+      angleDeg: rounded,
+      tone: 'dynamic',
+    };
+  }
+  if (Math.abs(sep - 120) <= 15) {
+    return {
+      label: 'Trigone à l’Ascendant Natal (Élan fluide & naturel)',
+      angleDeg: rounded,
+      tone: 'fluid',
+    };
+  }
+  if (Math.abs(sep - 60) <= 15) {
+    return {
+      label: 'Sextile à l’Ascendant Natal (Ouverture & opportunités)',
+      angleDeg: rounded,
+      tone: 'fluid',
+    };
+  }
+  return {
+    label: 'Quinconce / Réajustement d’attitude avec l’ASC Natal',
+    angleDeg: rounded,
+    tone: 'complement',
+  };
+}
+
 export function analyzeSolarReturn(
   natalChart: AstroChart,
   srChart: AstroChart
 ): SolarReturnAnalysis {
+  const ascFmt = formatDegreeInSign(srChart.ascendant);
+  const mcFmt = formatDegreeInSign(srChart.midheaven);
+  const ascDecan = Math.min(3, Math.floor(ascFmt.degInSign / 10) + 1);
+
   const ascHouseNum = findHouseForLongitude(srChart.ascendant, natalChart.houses);
   const mcHouseNum = findHouseForLongitude(srChart.midheaven, natalChart.houses);
   const ascInNatalHouse = natalChart.houses[ascHouseNum - 1];
@@ -2113,11 +2180,31 @@ export function analyzeSolarReturn(
   const srSun = srChart.planets.find((p) => p.id === 'sun')!;
   const srMoon = srChart.planets.find((p) => p.id === 'moon')!;
   const sunInSrHouse = srChart.houses[srSun.house - 1];
+  const sunInNatalHouse = natalChart.houses[findHouseForLongitude(srSun.longitude, natalChart.houses) - 1];
   const moonInSrHouse = srChart.houses[srMoon.house - 1];
+  const moonInNatalHouse = natalChart.houses[findHouseForLongitude(srMoon.longitude, natalChart.houses) - 1];
 
   const srAscRuler = srChart.ascSign.ruler;
   const srAscRulerPlanet =
     srChart.planets.find((p) => p.name.toLowerCase() === srAscRuler.toLowerCase()) ?? null;
+  const srAscRulerSrHouse = srAscRulerPlanet ? srChart.houses[srAscRulerPlanet.house - 1] : null;
+  const srAscRulerNatalHouse = srAscRulerPlanet
+    ? natalChart.houses[findHouseForLongitude(srAscRulerPlanet.longitude, natalChart.houses) - 1]
+    : null;
+
+  const natalAscRulerName = natalChart.ascSign.ruler;
+  const natalAscRulerInSr =
+    srChart.planets.find((p) => p.name.toLowerCase() === natalAscRulerName.toLowerCase()) ?? null;
+  const natalAscRulerSrHouse = natalAscRulerInSr ? srChart.houses[natalAscRulerInSr.house - 1] : null;
+  const natalAscRulerNatalOverlayHouse = natalAscRulerInSr
+    ? natalChart.houses[findHouseForLongitude(natalAscRulerInSr.longitude, natalChart.houses) - 1]
+    : null;
+
+  const ascRelationToNatal = describeAscRelation(srChart.ascendant, natalChart.ascendant);
+  const retrogradeSrPlanets = srChart.planets.filter((p) => p.retrograde && p.id !== 'northNode');
+  const dominantSrElement = (['Feu', 'Terre', 'Air', 'Eau'] as const).reduce((best, cur) =>
+    srChart.elements[cur] > srChart.elements[best] ? cur : best
+  );
 
   const angleTargets: Array<{ name: 'ASC' | 'MC' | 'DSC' | 'IC'; lon: number }> = [
     { name: 'ASC', lon: srChart.ascendant },
@@ -2139,15 +2226,28 @@ export function analyzeSolarReturn(
   }
   angularPlanets.sort((a, b) => a.orb - b.orb);
 
-  const summaryText = `Ascendant RS en ${srChart.ascSign.name} tombant en Maison ${ascInNatalHouse.roman} natale (${ascInNatalHouse.title.toLowerCase()}) : l’année met en lumière ce secteur natal, tandis que le Soleil RS en Maison ${sunInSrHouse.roman} indique le foyer principal d’action.`;
+  const summaryText = `Ascendant RS à ${ascFmt.formattedDeg} ${srChart.ascSign.name} (${ascDecan}${ascDecan === 1 ? 'er' : 'e'} décan) tombant en Maison ${ascInNatalHouse.roman} natale (${ascInNatalHouse.title.toLowerCase()}) : l’année met en lumière ce secteur natal, tandis que le Soleil RS en Maison ${sunInSrHouse.roman} indique le foyer principal d’action.`;
 
   return {
+    ascDegFormatted: ascFmt.formattedDeg,
+    mcDegFormatted: mcFmt.formattedDeg,
+    ascDecan,
     ascInNatalHouse,
     mcInNatalHouse,
     sunInSrHouse,
+    sunInNatalHouse,
     moonInSrHouse,
+    moonInNatalHouse,
     srAscRuler,
     srAscRulerPlanet,
+    srAscRulerSrHouse,
+    srAscRulerNatalHouse,
+    natalAscRulerInSr,
+    natalAscRulerSrHouse,
+    natalAscRulerNatalOverlayHouse,
+    ascRelationToNatal,
+    retrogradeSrPlanets,
+    dominantSrElement,
     angularPlanets,
     summaryText,
   };

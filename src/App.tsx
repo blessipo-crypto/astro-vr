@@ -111,6 +111,7 @@ const WHEEL_2D_ORIENT_STORAGE_KEY = 'uranie_vr_orient2d_v1';
 const VOICE_FEEDBACK_STORAGE_KEY = 'uranie_vr_voice_feedback_v1';
 const VOICE_SEARCH_BTN_STORAGE_KEY = 'uranie_vr_voice_search_btns_v1';
 const TYPOGRAPHY_STORAGE_KEY = 'uranie_vr_typography_v1';
+const SR_LOCATION_STORAGE_KEY = 'uranie_vr_sr_loc_v1';
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -227,14 +228,40 @@ export default function App() {
   const [solarReturnYear, setSolarReturnYear] = useState<number>(
     () => initialShared?.srYear ?? new Date().getFullYear()
   );
-  const [solarReturnCityId, setSolarReturnCityId] = useState<string>(
-    () => initialShared?.srCityId ?? 'paris'
-  );
+  const [solarReturnCityId, setSolarReturnCityId] = useState<string>(() => {
+    if (initialShared?.srCityId) return initialShared.srCityId;
+    try {
+      const raw = localStorage.getItem(SR_LOCATION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { cityId?: string };
+        if (parsed.cityId) return parsed.cityId;
+      }
+    } catch {
+      // ignore storage error
+    }
+    return 'paris';
+  });
   const [solarReturnCustomLoc, setSolarReturnCustomLoc] = useState<{
     name: string;
     latitude: number;
     longitude: number;
-  } | null>(() => initialShared?.srCustomLoc ?? null);
+  } | null>(() => {
+    if (initialShared?.srCustomLoc !== undefined) return initialShared.srCustomLoc ?? null;
+    try {
+      const raw = localStorage.getItem(SR_LOCATION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          customLoc?: { name: string; latitude: number; longitude: number } | null;
+        };
+        if (parsed.customLoc && typeof parsed.customLoc.latitude === 'number' && typeof parsed.customLoc.longitude === 'number') {
+          return parsed.customLoc;
+        }
+      }
+    } catch {
+      // ignore storage error
+    }
+    return null;
+  });
   const [comparativePair, setComparativePair] = useState<ComparativePairKind>(
     () => initialShared?.compPair ?? 'sr-vs-sr'
   );
@@ -645,6 +672,81 @@ export default function App() {
     );
   }, [partnerProfile, enabledAspectTypes]);
 
+  const solarReturnLocation = useMemo(() => {
+    if (solarReturnCustomLoc) return solarReturnCustomLoc;
+    const preset = CITY_PRESETS.find((c) => c.id === solarReturnCityId) ?? CITY_PRESETS[0];
+    return {
+      name: `${preset.name} (${preset.country})`,
+      latitude: preset.latitude,
+      longitude: preset.longitude,
+    };
+  }, [solarReturnCityId, solarReturnCustomLoc]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SR_LOCATION_STORAGE_KEY,
+        JSON.stringify({ cityId: solarReturnCityId, customLoc: solarReturnCustomLoc })
+      );
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [solarReturnCityId, solarReturnCustomLoc]);
+
+  const handleUseBirthLocationForSR = useCallback(() => {
+    if (modesLocked) {
+      notifyLockedAction('La modification du lieu de résidence anniversaire');
+      return;
+    }
+    setSolarReturnCityId(draftProfile.cityId);
+    if (
+      draftProfile.customCityName &&
+      draftProfile.customLat !== undefined &&
+      draftProfile.customLon !== undefined
+    ) {
+      setSolarReturnCustomLoc({
+        name: draftProfile.customCityName,
+        latitude: draftProfile.customLat,
+        longitude: draftProfile.customLon,
+      });
+    } else {
+      setSolarReturnCustomLoc(null);
+    }
+  }, [draftProfile, modesLocked, notifyLockedAction]);
+
+  const handleSolarReturnYearChangeGuarded = useCallback(
+    (nextYear: number) => {
+      if (modesLocked) {
+        notifyLockedAction('Le changement d’année de Révolution Solaire');
+        return;
+      }
+      setSolarReturnYear(nextYear);
+    },
+    [modesLocked, notifyLockedAction]
+  );
+
+  const handleSolarReturnCityChangeGuarded = useCallback(
+    (nextCityId: string) => {
+      if (modesLocked) {
+        notifyLockedAction('La modification du lieu de résidence anniversaire');
+        return;
+      }
+      setSolarReturnCityId(nextCityId);
+    },
+    [modesLocked, notifyLockedAction]
+  );
+
+  const handleSolarReturnCustomLocChangeGuarded = useCallback(
+    (nextLoc: { name: string; latitude: number; longitude: number } | null) => {
+      if (modesLocked) {
+        notifyLockedAction('La modification du lieu de résidence anniversaire');
+        return;
+      }
+      setSolarReturnCustomLoc(nextLoc);
+    },
+    [modesLocked, notifyLockedAction]
+  );
+
   const solarReturnExactDate: Date | null = useMemo(() => {
     const natalSun = natalChart.planets.find((p) => p.id === 'sun');
     if (!natalSun) return null;
@@ -710,17 +812,11 @@ export default function App() {
     }
 
     if (mode === 'solarReturn' && solarReturnExactDate) {
-      const preset = CITY_PRESETS.find((c) => c.id === solarReturnCityId) ?? CITY_PRESETS[0];
-      const srLoc = solarReturnCustomLoc ?? {
-        name: `${preset.name} (${preset.country})`,
-        latitude: preset.latitude,
-        longitude: preset.longitude,
-      };
       const srChart = calculateAstroChart(
         solarReturnExactDate,
-        srLoc.latitude,
-        srLoc.longitude,
-        srLoc.name,
+        solarReturnLocation.latitude,
+        solarReturnLocation.longitude,
+        solarReturnLocation.name,
         draftProfile.houseSystem,
         enabledAspectTypes
       );
@@ -921,6 +1017,7 @@ export default function App() {
     solarReturnYear,
     solarReturnCityId,
     solarReturnCustomLoc,
+    solarReturnLocation,
     lunarReturnExactDate,
     planetaryReturnExact,
     relocatedLoc,
@@ -2280,6 +2377,25 @@ export default function App() {
             onDignityConfigChange={(patch) => setDignityConfig((prev) => ({ ...prev, ...patch }))}
             pinnedCatalogPoints={pinnedCatalogPoints}
             spacetimeSlot={spacetimeNavigatorElement}
+            solarReturnPanel={
+              mode === 'solarReturn'
+                ? {
+                    year: solarReturnYear,
+                    onYearChange: handleSolarReturnYearChangeGuarded,
+                    cityId: solarReturnCityId,
+                    onCityChange: handleSolarReturnCityChangeGuarded,
+                    customLoc: solarReturnCustomLoc,
+                    onCustomLocChange: handleSolarReturnCustomLocChangeGuarded,
+                    locationName: solarReturnLocation.name,
+                    latitude: solarReturnLocation.latitude,
+                    longitude: solarReturnLocation.longitude,
+                    birthCityName: birthLocation.cityName,
+                    onUseBirthLocation: handleUseBirthLocationForSR,
+                    exactDate: solarReturnExactDate,
+                    modesLocked,
+                  }
+                : undefined
+            }
           />
         </div>
       )}
@@ -2327,7 +2443,14 @@ export default function App() {
           partnerProfileId={partnerProfileId}
           onPartnerProfileChange={setPartnerProfileId}
           solarReturnYear={solarReturnYear}
-          onSolarReturnYearChange={setSolarReturnYear}
+          onSolarReturnYearChange={handleSolarReturnYearChangeGuarded}
+          solarReturnCityId={solarReturnCityId}
+          onSolarReturnCityChange={handleSolarReturnCityChangeGuarded}
+          solarReturnCustomLoc={solarReturnCustomLoc}
+          onSolarReturnCustomLocChange={handleSolarReturnCustomLocChangeGuarded}
+          solarReturnExactDate={solarReturnExactDate}
+          birthLocation={birthLocation}
+          onUseBirthLocationForSR={handleUseBirthLocationForSR}
           planetaryReturnPointId={planetaryReturnPointId}
           onPlanetaryReturnPointChange={setPlanetaryReturnPointId}
           planetaryReturnExact={planetaryReturnExact}
@@ -2371,6 +2494,7 @@ export default function App() {
           natalChart={natalChart}
           solarReturnYear={solarReturnYear}
           solarReturnExactDate={solarReturnExactDate}
+          solarReturnLocationName={solarReturnLocation.name}
           transitDate={transitDate}
           comparisonAspectsCount={comparisonAspects.length}
           actions={{
@@ -2620,11 +2744,13 @@ export default function App() {
           onTransitDateChange={handleTransitDateChange}
           onResetTransitNow={handleResetTransitNow}
           solarReturnYear={solarReturnYear}
-          onSolarReturnYearChange={setSolarReturnYear}
+          onSolarReturnYearChange={handleSolarReturnYearChangeGuarded}
           solarReturnCityId={solarReturnCityId}
-          onSolarReturnCityChange={setSolarReturnCityId}
+          onSolarReturnCityChange={handleSolarReturnCityChangeGuarded}
           solarReturnCustomLoc={solarReturnCustomLoc}
-          onSolarReturnCustomLocChange={setSolarReturnCustomLoc}
+          onSolarReturnCustomLocChange={handleSolarReturnCustomLocChangeGuarded}
+          birthLocationCityName={birthLocation.cityName}
+          onUseBirthLocationForSR={handleUseBirthLocationForSR}
           solarReturnExactDate={solarReturnExactDate}
           lunarReturnExactDate={lunarReturnExactDate}
           timeSpeedDaysPerSec={timeSpeedDaysPerSec}

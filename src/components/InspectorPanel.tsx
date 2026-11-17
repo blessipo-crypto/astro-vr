@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Compass, Moon, Printer, Sparkles, Stars, Sun, X } from 'lucide-react';
+import { Check, Compass, Copy, Moon, Printer, Sparkles, Stars, Sun, X } from 'lucide-react';
 import {
   AspectInfo,
   AstroChart,
@@ -7,6 +7,7 @@ import {
   ComparativeAnalysis,
   ComparisonAspectInfo,
   findHouseForLongitude,
+  formatDegreeInSign,
   HouseCusp,
   PlanetId,
   PlanetPosition,
@@ -96,6 +97,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const [summaryTab, setSummaryTab] = useState<SummaryViewTab>('interpretation');
   const [interpFilter, setInterpFilter] = useState<InterpSubFilter>('overview');
   const [aspectHarmonyFilter, setAspectHarmonyFilter] = useState<AspectHarmonyFilter>('all');
+  const [copiedSrSynthesis, setCopiedSrSynthesis] = useState(false);
 
   if (!selectedPlanet && !selectedHouse && !showFullSummary) return null;
 
@@ -225,37 +227,154 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </div>
 
             {mode === 'solarReturn' && solarReturnAnalysis && outerChart && (
-              <div className="rounded-2xl border border-indigo-300/20 bg-white/[0.03] backdrop-blur-xl p-3.5 space-y-2 hover:border-amber-300/30 transition-all duration-300">
-                <div className="flex items-center gap-1.5 font-semibold text-amber-200">
-                  <Sun className="w-3.5 h-3.5 text-amber-300/80" />
-                  <span>
-                    Retour Solaire exact :{' '}
-                    <span className="font-mono-tabular text-sky-200">
+              <div className="rounded-2xl border border-amber-300/35 bg-gradient-to-br from-amber-500/[0.08] via-[#121628]/90 to-indigo-500/[0.08] backdrop-blur-xl p-4 space-y-3 shadow-lg shadow-black/40">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-300 font-semibold">
+                      <Sun className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                      <span>Révolution Solaire {outerChart.date.getFullYear()}</span>
+                    </div>
+                    <div className="mt-1 text-xs font-medium text-sky-200 font-mono-tabular">
                       {solarReturnExactDate
                         ? new Intl.DateTimeFormat('fr-FR', {
                             dateStyle: 'medium',
                             timeStyle: 'medium',
                           }).format(solarReturnExactDate)
                         : '—'}
-                    </span>
-                  </span>
+                    </div>
+                  </div>
+                  <div className="text-right text-[11px] text-slate-300">
+                    <div className="font-semibold text-amber-100">{outerChart.cityName}</div>
+                    <div className="font-mono-tabular text-[10px] text-slate-400">
+                      {outerChart.latitude.toFixed(2)}°, {outerChart.longitude.toFixed(2)}°
+                    </div>
+                  </div>
                 </div>
+
+                {/* Encart vedette : Ascendant de Révolution Solaire */}
+                <div className="rounded-2xl border border-amber-300/40 bg-[#0b0e19]/90 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-amber-300/90 font-semibold">
+                      Ascendant de Révolution (ASC RS)
+                    </div>
+                    <span className="rounded-full border border-amber-300/35 bg-amber-400/15 px-2 py-0.5 text-[10px] font-medium text-amber-100">
+                      {solarReturnAnalysis.ascDecan}
+                      {solarReturnAnalysis.ascDecan === 1 ? 'er' : 'e'} décan · {outerChart.ascSign.element}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 font-glyph text-2xl text-amber-200">
+                        {outerChart.ascSign.symbol}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-display text-base font-semibold text-amber-100 tracking-wide">
+                          {solarReturnAnalysis.ascDegFormatted} {outerChart.ascSign.name}
+                        </div>
+                        <div className="text-[11px] text-sky-200 font-medium">
+                          Tombe en Maison {solarReturnAnalysis.ascInNatalHouse.roman} natale ({solarReturnAnalysis.ascInNatalHouse.title})
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1.5 pt-1 border-t border-white/10 text-[11px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-400">Rapport à l’ASC Natal ({baseChart.ascSign.symbol} {baseChart.ascSign.name}) :</span>
+                      <span className="font-medium text-indigo-200 text-right">
+                        {solarReturnAnalysis.ascRelationToNatal.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-400">Maître de l’ASC RS (Gouverneur) :</span>
+                      {solarReturnAnalysis.srAscRulerPlanet ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelectPlanet(solarReturnAnalysis.srAscRulerPlanet!.id, 'outer')}
+                          className="font-medium text-amber-200 hover:text-amber-100 underline decoration-amber-300/40 underline-offset-2 cursor-pointer text-right"
+                        >
+                          {solarReturnAnalysis.srAscRulerPlanet.symbol} {solarReturnAnalysis.srAscRulerPlanet.name} en{' '}
+                          {solarReturnAnalysis.srAscRulerPlanet.sign.name} (M.{solarReturnAnalysis.srAscRulerSrHouse?.roman} RS
+                          {solarReturnAnalysis.srAscRulerNatalHouse ? ` · M.${solarReturnAnalysis.srAscRulerNatalHouse.roman} nat.` : ''})
+                        </button>
+                      ) : (
+                        <span className="font-medium text-amber-200">{solarReturnAnalysis.srAscRuler}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Repères complémentaires : MC, Soleil, Dominantes angulaires */}
                 <div className="grid grid-cols-2 gap-1.5 font-mono-tabular text-[11px] text-slate-300">
                   <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
-                    ASC RS : <span className="font-glyph text-amber-200">{outerChart.ascSign.symbol}</span> {outerChart.ascSign.name} (M.{solarReturnAnalysis.ascInNatalHouse.roman} nat.)
+                    <div className="text-[9.5px] uppercase text-slate-400">Milieu du Ciel RS</div>
+                    <div className="text-sky-100 font-semibold">
+                      <span className="font-glyph text-amber-200">{outerChart.mcSign.symbol}</span>{' '}
+                      {solarReturnAnalysis.mcDegFormatted} {outerChart.mcSign.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Maison {solarReturnAnalysis.mcInNatalHouse.roman} natale
+                    </div>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
-                    MC RS : <span className="font-glyph text-amber-200">{outerChart.mcSign.symbol}</span> {outerChart.mcSign.name} (M.{solarReturnAnalysis.mcInNatalHouse.roman} nat.)
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
-                    Soleil RS : Maison {solarReturnAnalysis.sunInSrHouse.roman} RS
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
-                    Maître ASC : <span className="text-amber-200">{solarReturnAnalysis.srAscRuler}</span>
+                    <div className="text-[9.5px] uppercase text-slate-400">Soleil RS</div>
+                    <div className="text-amber-100 font-semibold">
+                      Maison {solarReturnAnalysis.sunInSrHouse.roman} RS
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      {solarReturnAnalysis.sunInSrHouse.title} (M.{solarReturnAnalysis.sunInNatalHouse.roman} nat.)
+                    </div>
                   </div>
                 </div>
+
+                {solarReturnAnalysis.angularPlanets.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] uppercase tracking-wider text-rose-300 font-semibold">
+                      Angles RS :
+                    </span>
+                    {solarReturnAnalysis.angularPlanets.map((ang) => (
+                      <button
+                        key={`${ang.planet.id}-${ang.angleName}`}
+                        type="button"
+                        onClick={() => onSelectPlanet(ang.planet.id, 'outer')}
+                        className="rounded-full border border-rose-300/35 bg-rose-400/10 px-2.5 py-0.5 text-[10.5px] text-rose-100 hover:border-rose-300/60 cursor-pointer"
+                      >
+                        <span className="font-glyph">{ang.planet.symbol}</span> {ang.planet.name} ☌ {ang.angleName} ({ang.orb}°)
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
+            {(mode === 'lunarReturn' || mode === 'planetaryReturn') && outerChart && (() => {
+              const revAscFmt = formatDegreeInSign(outerChart.ascendant);
+              const revMcFmt = formatDegreeInSign(outerChart.midheaven);
+              const revAscNatalHouse = baseChart.houses[findHouseForLongitude(outerChart.ascendant, baseChart.houses) - 1];
+              const revMcNatalHouse = baseChart.houses[findHouseForLongitude(outerChart.midheaven, baseChart.houses) - 1];
+              return (
+                <div className="rounded-2xl border border-amber-300/30 bg-[#0b0e19]/85 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-amber-300 font-semibold">
+                    <span>Ascendant de {mode === 'lunarReturn' ? 'Révolution Lunaire' : 'Révolution Planétaire'}</span>
+                    <span className="text-slate-400 font-normal normal-case">{outerChart.cityName}</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-300/35 bg-amber-400/10 font-glyph text-xl text-amber-200">
+                      {outerChart.ascSign.symbol}
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-semibold text-amber-100">
+                        {revAscFmt.formattedDeg} {outerChart.ascSign.name}
+                      </div>
+                      <div className="text-[11px] text-sky-200">
+                        Maison {revAscNatalHouse.roman} natale ({revAscNatalHouse.title}) · MC {revMcFmt.formattedDeg} {outerChart.mcSign.name} (M.{revMcNatalHouse.roman} nat.)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Exhaustive Sub-navigation for Natal & Solar Return (Planètes, Maisons, Aspects) */}
             {(interpretation.detailedPlanets || interpretation.detailedHouses || interpretation.detailedAspects) && (
@@ -346,6 +465,188 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       </div>
                       <div className="text-[10px] text-slate-400 mt-0.5">Analyse complète</div>
                     </button>
+                  </div>
+                )}
+
+                {mode === 'solarReturn' && interpretation.solarReturnSynthesis && (
+                  <div className="rounded-2xl border border-amber-300/35 bg-gradient-to-br from-amber-500/[0.07] via-[#121628]/90 to-sky-500/[0.06] backdrop-blur-xl p-4 space-y-3.5 shadow-lg shadow-black/40">
+                    <div className="flex flex-wrap items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-300 font-semibold">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                          <span>Synthèse Croisée · Planètes + Maisons + Aspects</span>
+                        </div>
+                        <div className="text-xs font-semibold text-amber-100 mt-0.5">
+                          {interpretation.solarReturnSynthesis.aspectClimate.climateLabel}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard
+                            ?.writeText(interpretation.solarReturnSynthesis!.plainTextExport)
+                            .then(() => {
+                              setCopiedSrSynthesis(true);
+                              setTimeout(() => setCopiedSrSynthesis(false), 2200);
+                            });
+                        }}
+                        className="flex items-center gap-1 rounded-full border border-amber-300/35 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-amber-200 hover:border-amber-300/65 hover:bg-amber-400/15 transition-all cursor-pointer"
+                      >
+                        {copiedSrSynthesis ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-300" />
+                            <span className="text-emerald-200">Copié</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-amber-300" />
+                            <span>Copier l’analyse</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Climat des Aspects */}
+                    <div className="rounded-xl border border-white/10 bg-[#0b0e19]/85 p-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono-tabular">
+                        <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-1.5">
+                          <div className="text-[9.5px] uppercase text-slate-400">RS → Natal ({interpretation.solarReturnSynthesis.aspectClimate.rsToNatal.total})</div>
+                          <div className="text-slate-200 mt-0.5">
+                            <span className="text-emerald-300">{interpretation.solarReturnSynthesis.aspectClimate.rsToNatal.harmonious} harm.</span> ·{' '}
+                            <span className="text-rose-300">{interpretation.solarReturnSynthesis.aspectClimate.rsToNatal.tense} tens.</span> ·{' '}
+                            <span className="text-amber-200">{interpretation.solarReturnSynthesis.aspectClimate.rsToNatal.fusion} conj.</span>
+                          </div>
+                        </div>
+                        <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-1.5">
+                          <div className="text-[9.5px] uppercase text-slate-400">RS ↔ RS ({interpretation.solarReturnSynthesis.aspectClimate.rsInternal.total})</div>
+                          <div className="text-slate-200 mt-0.5">
+                            <span className="text-emerald-300">{interpretation.solarReturnSynthesis.aspectClimate.rsInternal.harmonious} harm.</span> ·{' '}
+                            <span className="text-rose-300">{interpretation.solarReturnSynthesis.aspectClimate.rsInternal.tense} tens.</span> ·{' '}
+                            <span className="text-amber-200">{interpretation.solarReturnSynthesis.aspectClimate.rsInternal.fusion} conj.</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-300">
+                        {interpretation.solarReturnSynthesis.aspectClimate.climateNarrative}
+                      </p>
+                      {(interpretation.solarReturnSynthesis.aspectClimate.tightestTrigger ||
+                        interpretation.solarReturnSynthesis.aspectClimate.tightestInternal) && (
+                        <div className="space-y-1 border-t border-white/10 pt-1.5 text-[10.5px]">
+                          {interpretation.solarReturnSynthesis.aspectClimate.tightestTrigger && (
+                            <div className="text-amber-100">
+                              <span className="text-slate-400">Déclencheur RS→Natal : </span>
+                              {interpretation.solarReturnSynthesis.aspectClimate.tightestTrigger}
+                            </div>
+                          )}
+                          {interpretation.solarReturnSynthesis.aspectClimate.tightestInternal && (
+                            <div className="text-sky-100">
+                              <span className="text-slate-400">Aspect interne clé : </span>
+                              {interpretation.solarReturnSynthesis.aspectClimate.tightestInternal}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Planètes-Piliers (Planète + Maison + Aspect) */}
+                    <div className="space-y-2">
+                      <div className="text-[10.5px] uppercase tracking-wider font-semibold text-amber-200">
+                        Planètes-Piliers de l’Année
+                      </div>
+                      {interpretation.solarReturnSynthesis.pillarPlanets.map((pp) => (
+                        <div
+                          key={pp.planetId}
+                          className="rounded-xl border border-white/10 bg-[#0b0e19]/80 p-3 space-y-1.5 hover:border-amber-300/35 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onSelectPlanet(pp.planetId, 'outer')}
+                              className="text-left font-semibold text-amber-100 hover:text-amber-300 transition-colors cursor-pointer"
+                            >
+                              <span className="font-glyph text-amber-300">{pp.symbol}</span> {pp.name}
+                            </button>
+                            <span className="rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-[9.5px] text-amber-200">
+                              {pp.roleReason}
+                            </span>
+                          </div>
+                          <div className="font-mono-tabular text-[10px] text-sky-200">
+                            {pp.positionSummary}
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-slate-200">{pp.synthesis}</p>
+                          {pp.aspectHighlights.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {pp.aspectHighlights.map((ah) => (
+                                <span
+                                  key={ah}
+                                  className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9.5px] text-slate-300"
+                                >
+                                  {ah}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Maisons RS Dominantes */}
+                    <div className="space-y-2">
+                      <div className="text-[10.5px] uppercase tracking-wider font-semibold text-sky-200">
+                        Maisons RS les plus activées
+                      </div>
+                      {interpretation.solarReturnSynthesis.dominantHouses.map((dh) => (
+                        <div
+                          key={dh.house}
+                          className="rounded-xl border border-sky-300/20 bg-[#0b0e19]/80 p-3 space-y-1"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-sky-100">
+                              Maison {dh.roman} RS · {dh.title}
+                            </span>
+                            <span className="text-[10px] text-indigo-200">
+                              → M.{dh.superposedNatalRoman} natale
+                            </span>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-slate-200">{dh.synthesis}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Synthèse par Grands Domaines de Vie */}
+                    <div className="space-y-2">
+                      <div className="text-[10.5px] uppercase tracking-wider font-semibold text-emerald-200">
+                        Synthèse par Domaines de Vie
+                      </div>
+                      {interpretation.solarReturnSynthesis.lifeAxes.map((ax) => (
+                        <div
+                          key={ax.id}
+                          className="rounded-xl border border-white/10 bg-white/[0.025] p-3 space-y-1"
+                        >
+                          <div className="font-semibold text-amber-100">{ax.title}</div>
+                          <div className="text-[10px] font-mono-tabular text-slate-400">
+                            {ax.housesInvolved}
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-slate-200">{ax.synthesis}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Caps d'Action & Vigilances */}
+                    <div className="space-y-1.5 border-t border-white/10 pt-2.5">
+                      <div className="text-[10.5px] uppercase tracking-wider font-semibold text-amber-200">
+                        Caps d’Action & Vigilances
+                      </div>
+                      {interpretation.solarReturnSynthesis.actionLevers.map((lev) => (
+                        <div
+                          key={lev}
+                          className="flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-400/[0.06] px-3 py-2 text-[11px] leading-relaxed text-slate-100"
+                        >
+                          <Stars className="w-3 h-3 text-amber-300 shrink-0 mt-0.5" />
+                          <span>{lev}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

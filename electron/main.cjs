@@ -1,7 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { app, BrowserWindow, shell, Menu } = require('electron');
+const { app, BrowserWindow, shell, Menu, session } = require('electron');
 
 // Enable WebXR + OpenXR on Windows PCVR headsets (Quest Link / Air Link / SteamVR)
 app.commandLine.appendSwitch('enable-features', 'WebXR,OpenXR');
@@ -59,6 +59,10 @@ function startStaticServer(distDir) {
     const ext = path.extname(fileToServe).toLowerCase();
     res.setHeader('Content-Type', MIME_TYPES[ext] || 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     fs.createReadStream(fileToServe).pipe(res);
   });
 
@@ -125,12 +129,19 @@ async function createMainWindow() {
     }
   });
 
-  // Open external HTTP(S) & mailto links in Windows default browser/mail client
+  // Allow only safe local media/WebXR requests on loopback origin
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const url = webContents.getURL() || '';
+    const allowedPerms = new Set(['media', 'audioCapture', 'fullscreen', 'clipboard-sanitized-write']);
+    callback(url.startsWith(localOrigin) && allowedPerms.has(permission));
+  });
+
+  // Open external HTTPS & mailto links in Windows default browser/mail client
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith(localOrigin)) {
       return { action: 'allow' };
     }
-    if (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('mailto:')) {
+    if (url.startsWith('https://') || url.startsWith('mailto:')) {
       void shell.openExternal(url);
     }
     return { action: 'deny' };
@@ -139,7 +150,7 @@ async function createMainWindow() {
   win.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(localOrigin)) {
       event.preventDefault();
-      if (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('mailto:')) {
+      if (url.startsWith('https://') || url.startsWith('mailto:')) {
         void shell.openExternal(url);
       }
     }

@@ -46,6 +46,7 @@ export interface TutorialDidacticielViewProps {
   natalChart: AstroChart;
   solarReturnYear: number;
   solarReturnExactDate: Date | null;
+  solarReturnLocationName?: string;
   transitDate: Date;
   comparisonAspectsCount: number;
   actions: TutorialActions;
@@ -383,6 +384,7 @@ export const TutorialDidacticielView: React.FC<TutorialDidacticielViewProps> = (
   natalChart,
   solarReturnYear,
   solarReturnExactDate,
+  solarReturnLocationName,
   transitDate,
   comparisonAspectsCount,
   actions,
@@ -646,6 +648,14 @@ export const TutorialDidacticielView: React.FC<TutorialDidacticielViewProps> = (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-300">
                 <span className="font-semibold text-purple-200">Révolution Solaire active :</span>
                 <span className="font-mono-tabular">Année {solarReturnYear}</span>
+                {solarReturnLocationName && (
+                  <>
+                    <span aria-hidden="true" className="text-white/25">·</span>
+                    <span>
+                      Résidence : <strong className="text-amber-200">{solarReturnLocationName}</strong>
+                    </span>
+                  </>
+                )}
                 <span aria-hidden="true" className="text-white/25">·</span>
                 <span>
                   Retour exact :{' '}

@@ -1,13 +1,16 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Box, Compass, RotateCcw } from 'lucide-react';
+import { Box, Compass, MapPin, RotateCcw, Search, X } from 'lucide-react';
 import {
   AspectInfo,
   AstroChart,
+  CITY_PRESETS,
   ComparisonAspectInfo,
   ElementType,
+  GeocodedPlace,
   HouseCusp,
   PlanetId,
   PlanetPosition,
+  searchPlacesByQuery,
   ZODIAC_SIGNS,
 } from '../astro/astroEngine';
 import {
@@ -1124,6 +1127,21 @@ export interface Chart2DCanvasProps {
   onDignityConfigChange?: (patch: Partial<DignityRingsConfig>) => void;
   pinnedCatalogPoints?: CatalogPointEntry[];
   spacetimeSlot?: React.ReactNode;
+  solarReturnPanel?: {
+    year: number;
+    onYearChange: (year: number) => void;
+    cityId: string;
+    onCityChange: (id: string) => void;
+    customLoc: { name: string; latitude: number; longitude: number } | null;
+    onCustomLocChange: (loc: { name: string; latitude: number; longitude: number } | null) => void;
+    locationName: string;
+    latitude: number;
+    longitude: number;
+    birthCityName: string;
+    onUseBirthLocation: () => void;
+    exactDate: Date | null;
+    modesLocked?: boolean;
+  };
 }
 
 export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
@@ -1153,12 +1171,69 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
   onDignityConfigChange,
   pinnedCatalogPoints = [],
   spacetimeSlot,
+  solarReturnPanel,
 }) => {
   const [localDecans, setLocalDecans] = useState<boolean>(wheel2DStyle === 'harmonic');
   const [showDegreesOnWheel, setShowDegreesOnWheel] = useState<boolean>(true);
   const [hoveredPlanetKey, setHoveredPlanetKey] = useState<string | null>(null);
   const [hoveredZodiacIdx, setHoveredZodiacIdx] = useState<number | null>(null);
   const [hoveredHouseNum, setHoveredHouseNum] = useState<number | null>(null);
+  const [srPopoverOpen, setSrPopoverOpen] = useState<boolean>(false);
+  const [srSearchQuery, setSrSearchQuery] = useState<string>('');
+  const [srSearchResults, setSrSearchResults] = useState<GeocodedPlace[]>([]);
+  const [srSearching, setSrSearching] = useState<boolean>(false);
+  const [srSearchError, setSrSearchError] = useState<string | null>(null);
+  const [srManualOpen, setSrManualOpen] = useState<boolean>(false);
+  const [srManualName, setSrManualName] = useState<string>('');
+  const [srManualLat, setSrManualLat] = useState<string>('48.8566');
+  const [srManualLon, setSrManualLon] = useState<string>('2.3522');
+
+  useEffect(() => {
+    if (!solarReturnPanel) {
+      setSrPopoverOpen(false);
+    } else {
+      setSrManualName(solarReturnPanel.locationName);
+      setSrManualLat(solarReturnPanel.latitude.toFixed(4));
+      setSrManualLon(solarReturnPanel.longitude.toFixed(4));
+    }
+  }, [solarReturnPanel]);
+
+  const handleSrQuickSearch = async () => {
+    const q = srSearchQuery.trim();
+    if (!q || !solarReturnPanel) return;
+    setSrSearching(true);
+    setSrSearchError(null);
+    const res = await searchPlacesByQuery(q);
+    setSrSearching(false);
+    if (res.length === 0) {
+      setSrSearchError('Commune ou ville introuvable.');
+      setSrSearchResults([]);
+      return;
+    }
+    solarReturnPanel.onCustomLocChange(res[0]);
+    setSrSearchResults(res.slice(0, 6));
+  };
+
+  const handleSrApplyManual = () => {
+    if (!solarReturnPanel) return;
+    const lat = Number(srManualLat.replace(',', '.'));
+    const lon = Number(srManualLon.replace(',', '.'));
+    if (!Number.isFinite(lat) || lat < -89.9 || lat > 89.9) {
+      setSrSearchError('Latitude invalide (-89.9 à 89.9).');
+      return;
+    }
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      setSrSearchError('Longitude invalide (-180 à 180).');
+      return;
+    }
+    setSrSearchError(null);
+    solarReturnPanel.onCustomLocChange({
+      name: srManualName.trim() || `GPS ${lat.toFixed(2)}°, ${lon.toFixed(2)}°`,
+      latitude: lat,
+      longitude: lon,
+    });
+    setSrManualOpen(false);
+  };
 
   const palette = useMemo(() => getWheel2DPalette(wheel2DStyle), [wheel2DStyle]);
   const showDecanRing =
@@ -1787,6 +1862,237 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
               <RotateCcw className="w-3 h-3 text-amber-300/80" />
               <span>Aspects</span>
             </button>
+          )}
+
+          {solarReturnPanel && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSrPopoverOpen((v) => !v)}
+                title="Implanter le lieu de résidence le jour de l’anniversaire pour la Révolution Solaire"
+                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300 cursor-pointer whitespace-nowrap shrink-0 ${
+                  srPopoverOpen
+                    ? 'border-amber-300/70 bg-amber-400/20 text-amber-100 shadow-[0_0_16px_rgba(245,158,11,0.3)]'
+                    : 'border-amber-300/35 bg-amber-400/10 text-amber-200 hover:border-amber-300/60 hover:text-amber-100'
+                }`}
+              >
+                <MapPin className="w-3 h-3 text-amber-300 shrink-0" />
+                <span className="max-w-[140px] truncate">
+                  RS {solarReturnPanel.year} · {solarReturnPanel.locationName.split(' (')[0]}
+                </span>
+              </button>
+
+              {srPopoverOpen && (
+                <div className="absolute right-0 top-9 z-40 w-[min(92vw,370px)] rounded-3xl border border-amber-200/35 bg-[#0c0e18]/95 backdrop-blur-2xl p-4 text-xs text-slate-200 shadow-2xl shadow-black/75 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300 font-semibold flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3" />
+                        <span>Résidence anniversaire (RS)</span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-slate-400 leading-snug">
+                        Recalcule immédiatement l’Ascendant, le MC et les 12 Maisons de votre Révolution Solaire.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSrPopoverOpen(false)}
+                      aria-label="Fermer le sélecteur de résidence anniversaire"
+                      className="rounded-full border border-white/10 bg-white/[0.04] p-1 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl border border-amber-300/25 bg-amber-400/[0.06] px-3 py-2 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-[10px] uppercase tracking-wider text-amber-300/90">
+                        Lieu implanté
+                      </div>
+                      <div className="font-semibold text-amber-100 truncate">
+                        {solarReturnPanel.locationName}
+                      </div>
+                      <div className="font-mono-tabular text-[10px] text-slate-400">
+                        {solarReturnPanel.latitude.toFixed(3)}°, {solarReturnPanel.longitude.toFixed(3)}°
+                        {solarReturnPanel.exactDate && (
+                          <>
+                            {' · '}
+                            {new Intl.DateTimeFormat('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }).format(solarReturnPanel.exactDate)}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {outerChart && (
+                      <div className="text-right shrink-0">
+                        <div className="text-[10px] uppercase text-sky-300">ASC RS</div>
+                        <div className="font-semibold text-sky-100">
+                          {outerChart.ascSign.symbol} {outerChart.ascSign.name}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-4">
+                      <label className="block text-[10px] text-slate-400 mb-1">Année RS</label>
+                      <input
+                        type="number"
+                        min={1900}
+                        max={2150}
+                        value={solarReturnPanel.year}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          if (Number.isFinite(v) && v >= 1900 && v <= 2150) {
+                            solarReturnPanel.onYearChange(v);
+                          }
+                        }}
+                        className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1.5 font-mono-tabular text-xs text-amber-200 focus:border-amber-300/60 outline-none"
+                      />
+                    </div>
+                    <div className="col-span-8">
+                      <label className="block text-[10px] text-slate-400 mb-1">Villes prédéfinies</label>
+                      <select
+                        value={solarReturnPanel.customLoc ? '__custom__' : solarReturnPanel.cityId}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') return;
+                          solarReturnPanel.onCustomLocChange(null);
+                          solarReturnPanel.onCityChange(e.target.value);
+                        }}
+                        className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1.5 text-xs text-white focus:border-amber-300/60 outline-none cursor-pointer"
+                      >
+                        {solarReturnPanel.customLoc && (
+                          <option value="__custom__">{solarReturnPanel.customLoc.name}</option>
+                        )}
+                        <optgroup label="France (Villes & Préfectures)">
+                          {CITY_PRESETS.filter((c) => c.country === 'France').map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} {c.department ? `(${c.department})` : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Francophonie & Monde">
+                          {CITY_PRESETS.filter((c) => c.country !== 'France').map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} ({c.country})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">
+                      Rechercher une commune (FR / Monde / Code postal)
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative flex-1">
+                        <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={srSearchQuery}
+                          onChange={(e) => setSrSearchQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') void handleSrQuickSearch();
+                          }}
+                          placeholder="Ex: Annecy, 74000, Lisbonne…"
+                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] pl-7 pr-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:border-amber-300/60 outline-none"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        disabled={srSearching}
+                        onClick={() => void handleSrQuickSearch()}
+                        className="rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1.5 text-[11px] font-medium text-amber-100 hover:bg-amber-400/25 cursor-pointer shrink-0"
+                      >
+                        {srSearching ? '…' : 'Implanter'}
+                      </button>
+                    </div>
+                    {srSearchError && (
+                      <div className="mt-1 text-[10px] text-rose-300">{srSearchError}</div>
+                    )}
+                    {srSearchResults.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {srSearchResults.map((cand) => (
+                          <button
+                            key={`${cand.name}-${cand.latitude}-${cand.longitude}`}
+                            type="button"
+                            onClick={() => solarReturnPanel.onCustomLocChange(cand)}
+                            className={`rounded-full border px-2 py-0.5 text-[10px] cursor-pointer ${
+                              solarReturnPanel.customLoc?.name === cand.name
+                                ? 'border-amber-300/60 bg-amber-400/20 text-amber-100'
+                                : 'border-white/15 bg-white/[0.04] text-slate-300 hover:border-amber-300/35'
+                            }`}
+                          >
+                            {cand.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        solarReturnPanel.onUseBirthLocation();
+                        setSrSearchResults([]);
+                      }}
+                      className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[10px] text-slate-200 hover:border-amber-300/40 hover:text-amber-100 cursor-pointer"
+                    >
+                      Même lieu que naissance ({solarReturnPanel.birthCityName.split(' (')[0]})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSrManualOpen((v) => !v)}
+                      className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[10px] text-sky-200 hover:border-sky-300/45 cursor-pointer"
+                    >
+                      {srManualOpen ? 'Masquer GPS' : 'GPS précis'}
+                    </button>
+                  </div>
+
+                  {srManualOpen && (
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
+                      <input
+                        type="text"
+                        value={srManualName}
+                        onChange={(e) => setSrManualName(e.target.value)}
+                        placeholder="Nom du lieu anniversaire"
+                        className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1 text-xs text-white outline-none"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={srManualLat}
+                          onChange={(e) => setSrManualLat(e.target.value)}
+                          placeholder="Latitude (ex: 48.85)"
+                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1 font-mono-tabular text-xs text-white outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={srManualLon}
+                          onChange={(e) => setSrManualLon(e.target.value)}
+                          placeholder="Longitude (ex: 2.35)"
+                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-2.5 py-1 font-mono-tabular text-xs text-white outline-none"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSrApplyManual}
+                        className="w-full rounded-full bg-amber-400/20 border border-amber-300/45 py-1 text-[11px] font-medium text-amber-100 hover:bg-amber-400/30 cursor-pointer"
+                      >
+                        Appliquer ces coordonnées GPS
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           <button
@@ -2512,6 +2818,31 @@ export const Chart2DCanvas: React.FC<Chart2DCanvasProps> = ({
                   <span className="font-semibold text-slate-100">
                     {moon.formattedDeg} {moon.sign.name}
                   </span>
+                </div>
+              )}
+              {solarReturnPanel && (
+                <div className="pt-1 mt-1 border-t border-white/10 space-y-0.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-amber-300/90 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span>Résidence RS {solarReturnPanel.year}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSrPopoverOpen(true)}
+                      className="text-[10px] text-sky-300 hover:text-sky-200 underline cursor-pointer"
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                  <div className="font-semibold text-amber-100 truncate" title={solarReturnPanel.locationName}>
+                    {solarReturnPanel.locationName}
+                  </div>
+                  {outerChart && (
+                    <div className="text-[10px] text-sky-200">
+                      ASC RS : {outerChart.ascSign.symbol} {outerChart.ascSign.name} · MC {outerChart.mcSign.symbol} {outerChart.mcSign.name}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

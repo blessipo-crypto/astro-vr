@@ -7,6 +7,7 @@ import {
   HelpCircle,
   Layers,
   ListTree,
+  MapPin,
   Mic,
   MicOff,
   Pause,
@@ -115,6 +116,8 @@ interface ControlDockProps {
   onSolarReturnCityChange: (id: string) => void;
   solarReturnCustomLoc: { name: string; latitude: number; longitude: number } | null;
   onSolarReturnCustomLocChange: (loc: { name: string; latitude: number; longitude: number } | null) => void;
+  birthLocationCityName?: string;
+  onUseBirthLocationForSR?: () => void;
   solarReturnExactDate: Date | null;
   lunarReturnExactDate: Date | null;
 
@@ -434,6 +437,8 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onSolarReturnCityChange,
   solarReturnCustomLoc,
   onSolarReturnCustomLocChange,
+  birthLocationCityName,
+  onUseBirthLocationForSR,
   solarReturnExactDate,
   lunarReturnExactDate,
   timeSpeedDaysPerSec,
@@ -506,6 +511,10 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   const [natalCandidates, setNatalCandidates] = useState<GeocodedPlace[]>([]);
   const [srPlaceQuery, setSrPlaceQuery] = useState<string>('');
   const [srCandidates, setSrCandidates] = useState<GeocodedPlace[]>([]);
+  const [srManualOpen, setSrManualOpen] = useState<boolean>(false);
+  const [srManualName, setSrManualName] = useState<string>('');
+  const [srManualLat, setSrManualLat] = useState<string>('48.8566');
+  const [srManualLon, setSrManualLon] = useState<string>('2.3522');
   const [placeLookupBusy, setPlaceLookupBusy] = useState<boolean>(false);
   const [placeLookupError, setPlaceLookupError] = useState<string | null>(null);
 
@@ -585,6 +594,26 @@ export const ControlDock: React.FC<ControlDockProps> = ({
     if (results.length > 1) {
       setSrCandidates(results);
     }
+  };
+
+  const handleApplySrManualCoords = () => {
+    const lat = Number(srManualLat.replace(',', '.'));
+    const lon = Number(srManualLon.replace(',', '.'));
+    if (!Number.isFinite(lat) || lat < -89.9 || lat > 89.9) {
+      setPlaceLookupError('Latitude anniversaire invalide (-89.9 à 89.9).');
+      return;
+    }
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      setPlaceLookupError('Longitude anniversaire invalide (-180 à 180).');
+      return;
+    }
+    setPlaceLookupError(null);
+    onSolarReturnCustomLocChange({
+      name: srManualName.trim() || `GPS ${lat.toFixed(2)}°, ${lon.toFixed(2)}°`,
+      latitude: lat,
+      longitude: lon,
+    });
+    setSrManualOpen(false);
   };
 
   const MONTHS_FR = [
@@ -1620,6 +1649,57 @@ export const ControlDock: React.FC<ControlDockProps> = ({
                             {cand.name}
                           </button>
                         ))}
+                      </div>
+                    )}
+                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                      {onUseBirthLocationForSR && (
+                        <button
+                          type="button"
+                          onClick={onUseBirthLocationForSR}
+                          className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-0.5 text-[10px] text-slate-200 hover:border-amber-300/40 hover:text-amber-100 transition-all cursor-pointer"
+                        >
+                          Même ville que naissance{birthLocationCityName ? ` (${birthLocationCityName.split(' (')[0]})` : ''}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSrManualOpen((v) => !v)}
+                        className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-0.5 text-[10px] text-sky-200 hover:border-sky-300/45 transition-all cursor-pointer"
+                      >
+                        <MapPin className="w-2.5 h-2.5" />
+                        <span>{srManualOpen ? 'Masquer GPS' : 'GPS précis'}</span>
+                      </button>
+                    </div>
+                    {srManualOpen && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+                        <input
+                          type="text"
+                          placeholder="Lieu anniversaire"
+                          value={srManualName}
+                          onChange={(e) => setSrManualName(e.target.value)}
+                          className="w-32 rounded-xl border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Lat (48.85)"
+                          value={srManualLat}
+                          onChange={(e) => setSrManualLat(e.target.value)}
+                          className="w-24 rounded-xl border border-white/15 bg-white/[0.04] px-2 py-1 font-mono-tabular text-[11px] text-white outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Lon (2.35)"
+                          value={srManualLon}
+                          onChange={(e) => setSrManualLon(e.target.value)}
+                          className="w-24 rounded-xl border border-white/15 bg-white/[0.04] px-2 py-1 font-mono-tabular text-[11px] text-white outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplySrManualCoords}
+                          className="rounded-full border border-amber-300/45 bg-amber-400/20 px-2.5 py-1 text-[10px] font-medium text-amber-100 hover:bg-amber-400/30 cursor-pointer"
+                        >
+                          Appliquer
+                        </button>
                       </div>
                     )}
                   </div>
